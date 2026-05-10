@@ -234,12 +234,14 @@ persistent UIA element handles yet. `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal and returns
 the pre-action element metadata used for the invocation. `automation set-value`
 does the same for Value-pattern elements, rejecting known read-only values
-before calling UIA `SetValue`.
+before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
+result can include post-action element metadata and whether the requested value
+was observed.
 
 ## Next Integration Steps
 
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Expand the Windows UI Automation path from stable action mapping into richer
-   control-specific actions and result verification.
+2. Expand the Windows UI Automation path from stable action mapping and
+   set-value verification into richer control-specific actions.

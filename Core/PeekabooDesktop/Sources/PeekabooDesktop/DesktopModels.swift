@@ -480,6 +480,8 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
     public let elementIndex: Int
     public let element: DesktopUIAutomationElementSnapshot
     public let value: String?
+    public let postActionElement: DesktopUIAutomationElementSnapshot?
+    public let valueWasVerified: Bool?
 
     public init(
         nativeBackend: String,
@@ -489,7 +491,9 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         maxElements: Int,
         elementIndex: Int,
         element: DesktopUIAutomationElementSnapshot,
-        value: String? = nil)
+        value: String? = nil,
+        postActionElement: DesktopUIAutomationElementSnapshot? = nil,
+        valueWasVerified: Bool? = nil)
     {
         self.nativeBackend = nativeBackend
         self.action = action
@@ -499,6 +503,8 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         self.elementIndex = elementIndex
         self.element = element
         self.value = value
+        self.postActionElement = postActionElement
+        self.valueWasVerified = valueWasVerified
     }
 }
 

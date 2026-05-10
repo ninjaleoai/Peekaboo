@@ -586,6 +586,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         try Self.validateUIAutomationSetValue(nativeResult)
 
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .setValue,
@@ -594,7 +600,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            value: value)
+            value: value,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.value.map { $0 == value })
+    }
+
+    private func refreshedUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationElementSnapshot?
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        return snapshot.elements.first(where: { $0.index == elementIndex })
     }
 
     private static func uiAutomationError(

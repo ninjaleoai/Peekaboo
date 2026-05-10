@@ -147,6 +147,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setValue.action, .setValue)
         XCTAssertEqual(setValue.elementIndex, 0)
         XCTAssertEqual(setValue.value, "Updated value")
+        XCTAssertEqual(setValue.postActionElement?.value, "Updated value")
+        XCTAssertEqual(setValue.valueWasVerified, true)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -650,6 +652,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Updated value\""))
+        XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetValueText() {
@@ -854,32 +858,11 @@ private struct StubDesktopAdapter: DesktopAdapter {
         maxDepth: Int,
         maxElements: Int) throws -> DesktopUIAutomationSnapshot
     {
-        DesktopUIAutomationSnapshot(
-            nativeBackend: "StubUIA",
+        self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,
-            elementCount: 1,
-            didTruncate: false,
-            elements: [
-                DesktopUIAutomationElementSnapshot(
-                    index: 0,
-                    parentIndex: nil,
-                    depth: 0,
-                    name: "Desktop",
-                    localizedControlType: "pane",
-                    controlType: 50033,
-                    controlTypeName: "Pane",
-                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100),
-                    isEnabled: true,
-                    isKeyboardFocusable: false,
-                    hasKeyboardFocus: false,
-                    isOffscreen: false,
-                    supportedPatterns: [.invoke, .value],
-                    availableActions: [.invoke, .setValue],
-                    value: "Example value",
-                    isValueReadOnly: false),
-            ])
+            elementValue: "Example value")
     }
 
     func invokeUIAutomationElement(
@@ -919,6 +902,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: value)
+            .elements
+            .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .setValue,
@@ -927,7 +917,43 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            value: value)
+            value: value,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.value == value)
+    }
+
+    private func stubUIAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementValue: String) -> DesktopUIAutomationSnapshot
+    {
+        DesktopUIAutomationSnapshot(
+            nativeBackend: "StubUIA",
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementCount: 1,
+            didTruncate: false,
+            elements: [
+                DesktopUIAutomationElementSnapshot(
+                    index: 0,
+                    parentIndex: nil,
+                    depth: 0,
+                    name: "Desktop",
+                    localizedControlType: "pane",
+                    controlType: 50033,
+                    controlTypeName: "Pane",
+                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100),
+                    isEnabled: true,
+                    isKeyboardFocusable: false,
+                    hasKeyboardFocus: false,
+                    isOffscreen: false,
+                    supportedPatterns: [.invoke, .value],
+                    availableActions: [.invoke, .setValue],
+                    value: elementValue,
+                    isValueReadOnly: false),
+            ])
     }
 }
 
