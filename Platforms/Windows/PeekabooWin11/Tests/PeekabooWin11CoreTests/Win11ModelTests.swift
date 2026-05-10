@@ -49,6 +49,8 @@ final class Win11ModelTests: XCTestCase {
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
+                .addUIAutomationItemToSelection,
+                .removeUIAutomationItemFromSelection,
             ])
         #endif
 
@@ -79,6 +81,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.selectUIAutomationItem))
+        XCTAssertTrue(info.capabilities.contains(.addUIAutomationItemToSelection))
+        XCTAssertTrue(info.capabilities.contains(.removeUIAutomationItemFromSelection))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -184,6 +188,16 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.addUIAutomationElementToSelection(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
+        XCTAssertThrowsError(try adapter.removeUIAutomationElementFromSelection(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
         XCTAssertThrowsError(try adapter.scrollUIAutomationElementIntoView(
             scope: .root,
             maxDepth: 1,
@@ -241,6 +255,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation expand --index"))
         XCTAssertTrue(output.contains("automation collapse --index"))
         XCTAssertTrue(output.contains("automation select --index"))
+        XCTAssertTrue(output.contains("automation add-to-selection --index"))
+        XCTAssertTrue(output.contains("automation remove-from-selection --index"))
         XCTAssertTrue(output.contains("automation scroll-into-view --index"))
     }
 

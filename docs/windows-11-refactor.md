@@ -64,6 +64,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   bounded snapshot element index
 - SelectionItem-pattern UI Automation selection actions against a bounded
   snapshot element index
+- SelectionItem-pattern UI Automation add-to-selection and
+  remove-from-selection actions against a bounded snapshot element index
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -86,6 +88,10 @@ that can ask their scrollable container to bring the item into view.
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
 as tree items and combo boxes. `automation select --index <n>` covers
 SelectionItem-pattern controls such as list items, menu items, and tabs.
+`automation add-to-selection --index <n>` and
+`automation remove-from-selection --index <n>` cover the SelectionItem pattern
+methods that preserve or reduce a multi-item selection instead of replacing
+the selection like `select`.
 When an element supports the UIA Transform pattern, snapshots include whether
 UIA reports that it can be moved, resized, or rotated.
 `automation move --index <n> --point <x,y>` and
@@ -232,6 +238,16 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func removeUIAutomationElementFromSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func scrollUIAutomationElementIntoView(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -328,6 +344,10 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation collapse --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation select --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation add-to-selection --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation remove-from-selection --scope foreground --index 0 --max-depth 2 --max-elements 64
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -388,8 +408,9 @@ capability, toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
-SelectionItem pattern is present, and scrollIntoView is available when the
-ScrollItem pattern is present.
+SelectionItem pattern is present, addToSelection and removeFromSelection are
+available when the SelectionItem pattern is present, and scrollIntoView is
+available when the ScrollItem pattern is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
@@ -432,7 +453,9 @@ expanded or collapsed state when UIA reports one.
 refreshed post-action element metadata with verification that the selected state
 is true when UIA reports it. `automation toggle` verifies that the refreshed
 toggle state changed when both the pre-action and post-action states are
-observable.
+observable. `automation add-to-selection` and
+`automation remove-from-selection` perform the matching UIA SelectionItem
+methods and verify the refreshed selected state when UIA reports it.
 
 ## Next Integration Steps
 

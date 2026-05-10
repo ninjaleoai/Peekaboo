@@ -173,7 +173,8 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "move, resize, rotate, toggle, expand, collapse, select, or scroll-into-view")
+                    "move, resize, rotate, toggle, expand, collapse, select, " +
+                    "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
         switch subcommand {
@@ -207,6 +208,10 @@ public enum DesktopCommandRunner {
             try self.runAutomationCollapse(args: args, adapter: adapter, stdout: stdout)
         case "select":
             try self.runAutomationSelect(args: args, adapter: adapter, stdout: stdout)
+        case "add-to-selection", "addToSelection":
+            try self.runAutomationAddToSelection(args: args, adapter: adapter, stdout: stdout)
+        case "remove-from-selection", "removeFromSelection":
+            try self.runAutomationRemoveFromSelection(args: args, adapter: adapter, stdout: stdout)
         case "scroll-into-view", "scrollIntoView":
             try self.runAutomationScrollIntoView(args: args, adapter: adapter, stdout: stdout)
         default:
@@ -639,6 +644,58 @@ public enum DesktopCommandRunner {
             elementIndex: self.parseUIAutomationElementIndex(indexValue))))
     }
 
+    private static func runAutomationAddToSelection(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation add-to-selection")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.addUIAutomationElementToSelection(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
+    private static func runAutomationRemoveFromSelection(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation remove-from-selection")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.removeUIAutomationElementFromSelection(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
     private static func runCapture(
         args: [String],
         adapter: any DesktopAdapter,
@@ -1057,6 +1114,10 @@ public enum DesktopCommandRunner {
           automation collapse --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation select --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation add-to-selection --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation remove-from-selection --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation scroll-into-view --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
         """

@@ -155,6 +155,16 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let addToSelection = try await bridge.addUIAutomationElementToSelection(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
+        let removeFromSelection = try await bridge.removeUIAutomationElementFromSelection(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let scrollIntoView = try await bridge.scrollUIAutomationElementIntoView(
             scope: .root,
             maxDepth: 1,
@@ -233,6 +243,8 @@ final class DesktopModelTests: XCTestCase {
                 .toggle,
                 .expand,
                 .select,
+                .addToSelection,
+                .removeFromSelection,
                 .scrollIntoView,
             ])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
@@ -338,6 +350,16 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(select.value, "selected=true")
         XCTAssertEqual(select.postActionElement?.isSelected, true)
         XCTAssertEqual(select.valueWasVerified, true)
+        XCTAssertEqual(addToSelection.action, .addToSelection)
+        XCTAssertEqual(addToSelection.elementIndex, 0)
+        XCTAssertEqual(addToSelection.value, "selected=true")
+        XCTAssertEqual(addToSelection.postActionElement?.isSelected, true)
+        XCTAssertEqual(addToSelection.valueWasVerified, true)
+        XCTAssertEqual(removeFromSelection.action, .removeFromSelection)
+        XCTAssertEqual(removeFromSelection.elementIndex, 0)
+        XCTAssertEqual(removeFromSelection.value, "selected=false")
+        XCTAssertEqual(removeFromSelection.postActionElement?.isSelected, false)
+        XCTAssertEqual(removeFromSelection.valueWasVerified, true)
         XCTAssertEqual(scrollIntoView.action, .scrollIntoView)
         XCTAssertEqual(scrollIntoView.elementIndex, 0)
         XCTAssertEqual(scrollIntoView.value, "visible=true")
@@ -688,6 +710,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
+        XCTAssertTrue(result.stdout.contains("\"addToSelection\""))
+        XCTAssertTrue(result.stdout.contains("\"removeFromSelection\""))
         XCTAssertTrue(result.stdout.contains("\"scrollIntoView\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
@@ -1291,6 +1315,54 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationAddToSelection() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "add-to-selection",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"addToSelection\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"selected=true\""))
+        XCTAssertTrue(result.stdout.contains("\"isSelected\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationRemoveFromSelection() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "remove-from-selection",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"removeFromSelection\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"selected=false\""))
+        XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationScrollIntoView() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1363,6 +1435,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation select"))
     }
 
+    func testDesktopCommandRunnerRejectsMissingAutomationAddToSelectionIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "add-to-selection",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation add-to-selection"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationRemoveFromSelectionIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "remove-from-selection",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation remove-from-selection"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationScrollIntoViewIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1417,6 +1513,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
         XCTAssertTrue(result.stdout.contains("automation select --index"))
+        XCTAssertTrue(result.stdout.contains("automation add-to-selection --index"))
+        XCTAssertTrue(result.stdout.contains("automation remove-from-selection --index"))
         XCTAssertTrue(result.stdout.contains("automation scroll-into-view --index"))
     }
 
@@ -1849,6 +1947,72 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.isSelected)
     }
 
+    func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.changeUIAutomationElementSelection(
+            action: .addToSelection,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            isSelected: true)
+    }
+
+    func removeUIAutomationElementFromSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.changeUIAutomationElementSelection(
+            action: .removeFromSelection,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            isSelected: false)
+    }
+
+    private func changeUIAutomationElementSelection(
+        action: DesktopUIAutomationAction,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        isSelected: Bool) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            isSelected: isSelected)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: action,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "selected=\(isSelected)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isSelected == isSelected)
+    }
+
     func scrollUIAutomationElementIntoView(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2150,6 +2314,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .toggle,
                 .expand,
                 .select,
+                .addToSelection,
+                .removeFromSelection,
                 .scrollIntoView,
             ]
         case .expanded:
@@ -2165,6 +2331,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .toggle,
                 .collapse,
                 .select,
+                .addToSelection,
+                .removeFromSelection,
                 .scrollIntoView,
             ]
         case .partiallyExpanded:
@@ -2181,6 +2349,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .expand,
                 .collapse,
                 .select,
+                .addToSelection,
+                .removeFromSelection,
                 .scrollIntoView,
             ]
         case .leafNode:
@@ -2195,6 +2365,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .rotate,
                 .toggle,
                 .select,
+                .addToSelection,
+                .removeFromSelection,
                 .scrollIntoView,
             ]
         }

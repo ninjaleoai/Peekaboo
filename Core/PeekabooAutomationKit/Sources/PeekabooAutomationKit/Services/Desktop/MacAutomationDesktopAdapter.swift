@@ -348,6 +348,26 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("UI Automation select is not implemented by this adapter")
     }
 
+    public func addUIAutomationElementToSelection(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation add-to-selection is not implemented by this adapter")
+    }
+
+    public func removeUIAutomationElementFromSelection(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation remove-from-selection is not implemented by this adapter")
+    }
+
     public func scrollUIAutomationElementIntoView(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

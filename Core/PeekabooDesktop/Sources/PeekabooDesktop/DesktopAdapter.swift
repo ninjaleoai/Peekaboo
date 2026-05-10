@@ -95,6 +95,16 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func removeUIAutomationElementFromSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func scrollUIAutomationElementIntoView(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -196,6 +206,16 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func removeUIAutomationElementFromSelection(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
@@ -472,6 +492,32 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     {
         try self.adapter.selectUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.addUIAutomationElementToSelection(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func removeUIAutomationElementFromSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.removeUIAutomationElementFromSelection(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,

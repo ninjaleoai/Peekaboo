@@ -33,6 +33,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
+                .addUIAutomationItemToSelection,
+                .removeUIAutomationItemFromSelection,
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
@@ -1186,6 +1188,98 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             valueWasVerified: postActionElement?.isSelected.map { $0 })
     }
 
+    public func addUIAutomationElementToSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.performSelectionItemUIAutomationElement(
+            action: .addToSelection,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func removeUIAutomationElementFromSelection(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.performSelectionItemUIAutomationElement(
+            action: .removeFromSelection,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    private func performSelectionItemUIAutomationElement(
+        action: DesktopUIAutomationAction,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.selectionItem) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support selection item")
+        }
+
+        let nativeResult: PeekabooWin11UIAutomationActionResult
+        if action == .addToSelection {
+            nativeResult = PeekabooWin11AddUIAutomationElementToSelection(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex))
+        } else {
+            nativeResult = PeekabooWin11RemoveUIAutomationElementFromSelection(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex))
+        }
+        try Self.validateUIAutomationSelectionItem(nativeResult, action: action)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+        let targetSelection = action == .addToSelection
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: action,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "selected=\(targetSelection)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isSelected.map { $0 == targetSelection })
+    }
+
     public func scrollUIAutomationElementIntoView(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1684,6 +1778,57 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSelectionItem(
+        _ actionResult: PeekabooWin11UIAutomationActionResult,
+        action: DesktopUIAutomationAction) throws
+    {
+        let actionName = action == .addToSelection ? "add-to-selection" : "remove-from-selection"
+        let methodName = action == .addToSelection ? "AddToSelection" : "RemoveFromSelection"
+        if actionResult.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation \(actionName) failed: \(Self.hresultDescription(actionResult.errorResult))")
+        }
+
+        let didReachAutomation = actionResult.createResult != 0 ||
+            actionResult.rootResult != 0 ||
+            actionResult.walkerResult != 0 ||
+            actionResult.elementCount > 0
+        if actionResult.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(actionResult.initializeResult))")
+        }
+        if !Self.succeeded(actionResult.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(actionResult.createResult))")
+        }
+        if !Self.succeeded(actionResult.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(actionResult.rootResult))")
+        }
+        if !Self.succeeded(actionResult.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(actionResult.walkerResult))")
+        }
+        if actionResult.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(actionResult.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) does not support selection item")
+        }
+        if !Self.succeeded(actionResult.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationSelectionItemPattern query failed: " +
+                    "\(Self.hresultDescription(actionResult.queryResult))")
+        }
+        if !Self.succeeded(actionResult.actionResult) {
+            let description = Self.hresultDescription(actionResult.actionResult)
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationSelectionItemPattern.\(methodName) failed: \(description)")
+        }
+    }
+
     private static func validateUIAutomationScrollIntoView(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -2073,6 +2218,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.selectionItem) {
             actions.append(.select)
+            actions.append(.addToSelection)
+            actions.append(.removeFromSelection)
         }
         if supportedPatterns.contains(.scrollItem) {
             actions.append(.scrollIntoView)

@@ -25,6 +25,8 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case toggleUIAutomation
     case expandCollapseUIAutomation
     case selectUIAutomationItem
+    case addUIAutomationItemToSelection
+    case removeUIAutomationItemFromSelection
     case setUIAutomationRangeValue
     case setUIAutomationScrollPercent
     case setUIAutomationWindowVisualState
@@ -355,6 +357,8 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case expand
     case collapse
     case select
+    case addToSelection
+    case removeFromSelection
     case setRangeValue
     case setScrollPercent
     case setWindowVisualState
