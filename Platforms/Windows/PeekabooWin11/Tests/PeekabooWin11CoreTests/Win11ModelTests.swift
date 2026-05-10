@@ -58,6 +58,20 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(errorOutput.contains("Unknown command"))
     }
 
+    func testCliUsesSharedDesktopCommandRunnerHelp() {
+        var output = ""
+        let status = Win11CLI.run(
+            arguments: ["peekaboo-win11", "--help"],
+            adapter: UnsupportedWin11DesktopAdapter(),
+            stdout: { output = $0 },
+            stderr: { _ in })
+
+        XCTAssertEqual(status, 0)
+        XCTAssertTrue(output.contains("peekaboo-win11"))
+        XCTAssertTrue(output.contains("list displays"))
+        XCTAssertTrue(output.contains("capture screen --path"))
+    }
+
     func testNativeWindowsAdapterCanReadDesktopState() throws {
         #if os(Windows)
         let adapter = Win32DesktopAdapter()

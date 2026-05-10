@@ -23,6 +23,11 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - application enumeration from window-owning processes
 - full-screen or display BMP capture through Win32 GDI
 
+The `peekaboo-win11` executable now delegates its basic command parsing to
+`DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
+adapter construction; the shared package owns the platform-neutral
+`platform-info`, `list`, and `capture screen` command contract.
+
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
 tests and documentation tooling from accidentally pretending the native backend
@@ -58,6 +63,10 @@ It also exposes `DesktopAsyncAdapter` for platform services that are naturally
 async or actor-isolated. A sync-to-async bridge keeps the Win32 adapter usable
 from async call sites without forcing the Windows CLI path to change.
 
+`DesktopCommandRunner` sits above that interface so early platform CLIs do not
+need to duplicate argument parsing, JSON envelopes, help text, or validation
+rules while each platform backend is still being filled in.
+
 That module is deliberately deep: callers get app/window/display/capture
 behavior without learning HWND lifetimes, GDI device contexts, UTF-16 buffers,
 BMP/PNG file details, or platform-specific actor isolation.
@@ -89,7 +98,7 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Make CLI commands depend on the platform-neutral interface instead of
-   directly importing Darwin/CoreGraphics/AppKit at the command layer.
+1. Route the main macOS CLI `list`/`capture` read commands through the same
+   desktop adapter contract where that can preserve existing output behavior.
 2. Add Windows implementations for input and UI Automation after capture and
    enumeration have stable test coverage.

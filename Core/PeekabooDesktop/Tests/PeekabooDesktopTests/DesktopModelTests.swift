@@ -42,6 +42,65 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(applications.map(\.executableName), ["Example"])
         XCTAssertEqual(capture.format, .bmp)
     }
+
+    func testDesktopCommandRunnerRoutesPlatformInfo() {
+        let result = self.runDesktopCommand(["peekaboo-desktop", "platform-info"])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"nativeBackend\" : \"Stub\""))
+        XCTAssertTrue(result.stdout.contains("\"ok\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesListCommands() {
+        let displays = self.runDesktopCommand(["peekaboo-desktop", "list", "displays"])
+        let windows = self.runDesktopCommand(["peekaboo-desktop", "list", "windows", "--include-invisible"])
+        let applications = self.runDesktopCommand(["peekaboo-desktop", "list", "apps"])
+
+        XCTAssertEqual(displays.status, 0)
+        XCTAssertEqual(windows.status, 0)
+        XCTAssertEqual(applications.status, 0)
+        XCTAssertTrue(displays.stdout.contains("\"index\" : 0"))
+        XCTAssertTrue(windows.stdout.contains("\"title\" : \"Window\""))
+        XCTAssertTrue(applications.stdout.contains("\"executableName\" : \"Example\""))
+    }
+
+    func testDesktopCommandRunnerRoutesScreenCapture() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "capture",
+            "screen",
+            "--path",
+            "screen.bmp",
+            "--display",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"path\" : \"screen.bmp\""))
+        XCTAssertTrue(result.stdout.contains("\"format\" : \"bmp\""))
+    }
+
+    func testDesktopCommandRunnerReportsInvalidCommands() {
+        let result = self.runDesktopCommand(["peekaboo-desktop", "unknown"])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Unknown command"))
+    }
+
+    private func runDesktopCommand(_ arguments: [String]) -> CommandResult {
+        var stdout = ""
+        var stderr = ""
+        let status = DesktopCommandRunner.run(
+            arguments: arguments,
+            adapter: StubDesktopAdapter(),
+            stdout: { stdout = $0 },
+            stderr: { stderr = $0 })
+
+        return CommandResult(status: status, stdout: stdout, stderr: stderr)
+    }
 }
 
 private struct StubDesktopAdapter: DesktopAdapter {
@@ -96,4 +155,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             format: .bmp,
             byteCount: 42)
     }
+}
+
+private struct CommandResult {
+    let status: Int32
+    let stdout: String
+    let stderr: String
 }
