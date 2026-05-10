@@ -300,6 +300,12 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation resize --scope foreground --index 0 --size 640,480 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation rotate --scope foreground --index 0 --degrees 45 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation toggle --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation expand --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -357,7 +363,9 @@ available only when the Value pattern is present and known writable,
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
-available when the Window pattern is present, toggle is available when the
+available when the Window pattern is present, move, resize, and rotate are
+available when the Transform pattern is present and UIA reports the matching
+capability, toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, and select is available when the
@@ -381,7 +389,14 @@ rejecting known unscrollable requested axes before calling UIA
 axes when UIA reports them. `automation set-window-state` performs the UIA
 Window pattern visual-state action, rejects known unsupported maximize or
 minimize requests before calling UIA `SetWindowVisualState`, then verifies the
-refreshed visual state when UIA reports it. `automation toggle --index <n>`
+refreshed visual state when UIA reports it. `automation move --index <n>` and
+`automation resize --index <n>` perform the UIA Transform pattern move and
+resize actions after rejecting known unsupported elements, then verify the
+refreshed bounds when the bounded lookup can observe them.
+`automation rotate --index <n>` performs the UIA Transform pattern rotate
+action after rejecting known unsupported elements, then returns refreshed
+post-action metadata without claiming value verification because the current
+snapshot model has no rotation angle field. `automation toggle --index <n>`
 performs the UIA Toggle pattern and returns pre-action metadata plus any
 refreshed post-action element, including the refreshed toggle state when UIA
 reports one.
