@@ -48,6 +48,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Transform-pattern UI Automation move, resize, and rotate actions against a
   bounded snapshot element index
+- refreshed post-action verification metadata for observable UI Automation
+  Toggle, ExpandCollapse, and SelectionItem actions
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -408,10 +410,13 @@ reports one.
 `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 leaf nodes before calling UIA, and return refreshed post-action element
-metadata with the latest expand/collapse state when UIA reports one.
+metadata with the latest expand/collapse state and verification of the target
+expanded or collapsed state when UIA reports one.
 `automation select` performs the UIA SelectionItem pattern and returns
-refreshed post-action element metadata with the latest selected state when UIA
-reports one.
+refreshed post-action element metadata with verification that the selected state
+is true when UIA reports it. `automation toggle` verifies that the refreshed
+toggle state changed when both the pre-action and post-action states are
+observable.
 
 ## Next Integration Steps
 
@@ -419,4 +424,5 @@ reports one.
    same desktop adapter contract where the existing output behavior can be
    preserved.
 2. Continue expanding the Windows UI Automation path from basic
-   control-specific actions into richer action result verification.
+   control-specific actions into richer action result verification where UIA
+   exposes observable post-action state.

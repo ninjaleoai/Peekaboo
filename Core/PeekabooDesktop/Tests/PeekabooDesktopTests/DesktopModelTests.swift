@@ -315,15 +315,22 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
         XCTAssertEqual(toggle.postActionElement?.toggleState, .on)
+        XCTAssertEqual(toggle.valueWasVerified, true)
         XCTAssertEqual(expand.action, .expand)
         XCTAssertEqual(expand.elementIndex, 0)
+        XCTAssertEqual(expand.value, "expanded")
         XCTAssertEqual(expand.postActionElement?.expandCollapseState, .expanded)
+        XCTAssertEqual(expand.valueWasVerified, true)
         XCTAssertEqual(collapse.action, .collapse)
         XCTAssertEqual(collapse.elementIndex, 0)
+        XCTAssertEqual(collapse.value, "collapsed")
         XCTAssertEqual(collapse.postActionElement?.expandCollapseState, .collapsed)
+        XCTAssertEqual(collapse.valueWasVerified, true)
         XCTAssertEqual(select.action, .select)
         XCTAssertEqual(select.elementIndex, 0)
+        XCTAssertEqual(select.value, "selected=true")
         XCTAssertEqual(select.postActionElement?.isSelected, true)
+        XCTAssertEqual(select.valueWasVerified, true)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -1195,6 +1202,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationExpand() {
@@ -1216,7 +1224,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.stderr, "")
         XCTAssertTrue(result.stdout.contains("\"action\" : \"expand\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"expanded\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"expanded\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationCollapse() {
@@ -1238,7 +1248,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.stderr, "")
         XCTAssertTrue(result.stdout.contains("\"action\" : \"collapse\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSelect() {
@@ -1260,7 +1272,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.stderr, "")
         XCTAssertTrue(result.stdout.contains("\"action\" : \"select\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"selected=true\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationToggleIndex() {
@@ -1698,6 +1712,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            toggleState: .on)
+            .elements
+            .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .toggle,
@@ -1706,14 +1728,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: self.stubUIAutomationSnapshot(
-                scope: scope,
-                maxDepth: maxDepth,
-                maxElements: maxElements,
-                elementValue: element.value ?? "",
-                toggleState: .on)
-                .elements
-                .first(where: { $0.index == elementIndex }))
+            postActionElement: postActionElement,
+            valueWasVerified: self.toggleWasVerified(
+                previousState: element.toggleState,
+                postActionElement: postActionElement))
     }
 
     func expandUIAutomationElement(
@@ -1759,6 +1777,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            isSelected: true)
+            .elements
+            .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .select,
@@ -1767,14 +1793,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: self.stubUIAutomationSnapshot(
-                scope: scope,
-                maxDepth: maxDepth,
-                maxElements: maxElements,
-                elementValue: element.value ?? "",
-                isSelected: true)
-                .elements
-                .first(where: { $0.index == elementIndex }))
+            value: "selected=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isSelected)
     }
 
     func moveUIAutomationElement(
@@ -1907,6 +1928,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            expandCollapseState: postActionState)
+            .elements
+            .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: action,
@@ -1915,14 +1944,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: self.stubUIAutomationSnapshot(
-                scope: scope,
-                maxDepth: maxDepth,
-                maxElements: maxElements,
-                elementValue: element.value ?? "",
-                expandCollapseState: postActionState)
-                .elements
-                .first(where: { $0.index == elementIndex }))
+            value: postActionState.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.expandCollapseState == postActionState)
     }
 
     private func stubUIAutomationSnapshot(
@@ -2110,6 +2134,16 @@ private struct StubDesktopAdapter: DesktopAdapter {
             }
         }
         return true
+    }
+
+    private func toggleWasVerified(
+        previousState: DesktopUIAutomationToggleState?,
+        postActionElement: DesktopUIAutomationElementSnapshot?) -> Bool?
+    {
+        guard let previousState, let currentState = postActionElement?.toggleState else {
+            return nil
+        }
+        return currentState != previousState
     }
 }
 

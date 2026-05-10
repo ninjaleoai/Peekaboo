@@ -1030,7 +1030,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: postActionElement)
+            postActionElement: postActionElement,
+            valueWasVerified: Self.toggleWasVerified(
+                previousState: element.toggleState,
+                postActionElement: postActionElement))
     }
 
     public func expandUIAutomationElement(
@@ -1114,6 +1117,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxDepth: maxDepth,
             maxElements: maxElements,
             elementIndex: elementIndex)
+        let targetState: DesktopUIAutomationExpandCollapseState = action == .expand ? .expanded : .collapsed
 
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
@@ -1123,7 +1127,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: postActionElement)
+            value: targetState.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.expandCollapseState.map { $0 == targetState })
     }
 
     public func selectUIAutomationElement(
@@ -1174,7 +1180,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: postActionElement)
+            value: "selected=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isSelected.map { $0 })
     }
 
     private func refreshedUIAutomationElement(
@@ -2337,6 +2345,16 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         return abs(Double(bounds.width) - firstValue) <= 0.000_001 &&
             abs(Double(bounds.height) - secondValue) <= 0.000_001
+    }
+
+    private static func toggleWasVerified(
+        previousState: DesktopUIAutomationToggleState?,
+        postActionElement: DesktopUIAutomationElementSnapshot?) -> Bool?
+    {
+        guard let previousState, let currentState = postActionElement?.toggleState else {
+            return nil
+        }
+        return currentState != previousState
     }
 
     private static func succeeded(_ result: Int32) -> Bool {
