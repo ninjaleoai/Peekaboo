@@ -520,6 +520,7 @@ extension ImageCommand {
 
         for window in windows where seenWindowIdentifiers.insert(window.windowIdentifier).inserted {
             guard window.isVisible,
+                  window.isShareable,
                   !window.isMinimized,
                   !window.isOffScreen,
                   window.isOnScreen,

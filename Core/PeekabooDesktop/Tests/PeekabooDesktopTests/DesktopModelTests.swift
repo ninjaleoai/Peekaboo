@@ -27,6 +27,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(output.contains("\"nativeBackend\" : \"Win32\""))
     }
 
+    func testDesktopWindowDecodesMissingShareableAsTrue() throws {
+        let data = Data("""
+        {
+          "windowIdentifier": 20,
+          "processIdentifier": 30,
+          "title": "Window",
+          "bounds": { "x": 1, "y": 2, "width": 3, "height": 4 },
+          "isVisible": true,
+          "isMinimized": false,
+          "isForeground": true,
+          "executableName": "Example",
+          "index": 0,
+          "isOffScreen": false,
+          "layer": 0,
+          "isOnScreen": true,
+          "alpha": 1.0
+        }
+        """.utf8)
+
+        let window = try JSONDecoder().decode(DesktopWindow.self, from: data)
+
+        XCTAssertTrue(window.isShareable)
+    }
+
     func testSyncAdapterAsyncBridgeForwardsCalls() async throws {
         let bridge = DesktopAdapterAsyncBridge(StubDesktopAdapter())
 

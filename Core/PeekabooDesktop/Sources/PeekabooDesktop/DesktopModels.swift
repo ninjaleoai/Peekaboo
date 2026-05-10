@@ -104,6 +104,7 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
     public let isOffScreen: Bool
     public let layer: Int
     public let isOnScreen: Bool
+    public let isShareable: Bool
     public let alpha: Double
     public let spaceID: UInt64?
     public let spaceName: String?
@@ -123,6 +124,7 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
         isOffScreen: Bool = false,
         layer: Int = 0,
         isOnScreen: Bool = true,
+        isShareable: Bool = true,
         alpha: Double = 1.0,
         spaceID: UInt64? = nil,
         spaceName: String? = nil)
@@ -141,9 +143,53 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
         self.isOffScreen = isOffScreen
         self.layer = layer
         self.isOnScreen = isOnScreen
+        self.isShareable = isShareable
         self.alpha = alpha
         self.spaceID = spaceID
         self.spaceName = spaceName
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case windowIdentifier
+        case processIdentifier
+        case title
+        case bounds
+        case isVisible
+        case isMinimized
+        case isForeground
+        case executableName
+        case index
+        case screenIndex
+        case screenName
+        case isOffScreen
+        case layer
+        case isOnScreen
+        case isShareable
+        case alpha
+        case spaceID
+        case spaceName
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.windowIdentifier = try container.decode(UInt64.self, forKey: .windowIdentifier)
+        self.processIdentifier = try container.decode(UInt32.self, forKey: .processIdentifier)
+        self.title = try container.decode(String.self, forKey: .title)
+        self.bounds = try container.decode(DesktopRect.self, forKey: .bounds)
+        self.isVisible = try container.decode(Bool.self, forKey: .isVisible)
+        self.isMinimized = try container.decode(Bool.self, forKey: .isMinimized)
+        self.isForeground = try container.decode(Bool.self, forKey: .isForeground)
+        self.executableName = try container.decodeIfPresent(String.self, forKey: .executableName)
+        self.index = try container.decode(Int.self, forKey: .index)
+        self.screenIndex = try container.decodeIfPresent(Int.self, forKey: .screenIndex)
+        self.screenName = try container.decodeIfPresent(String.self, forKey: .screenName)
+        self.isOffScreen = try container.decode(Bool.self, forKey: .isOffScreen)
+        self.layer = try container.decode(Int.self, forKey: .layer)
+        self.isOnScreen = try container.decode(Bool.self, forKey: .isOnScreen)
+        self.isShareable = try container.decodeIfPresent(Bool.self, forKey: .isShareable) ?? true
+        self.alpha = try container.decode(Double.self, forKey: .alpha)
+        self.spaceID = try container.decodeIfPresent(UInt64.self, forKey: .spaceID)
+        self.spaceName = try container.decodeIfPresent(String.self, forKey: .spaceName)
     }
 }
 

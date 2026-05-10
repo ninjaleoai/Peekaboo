@@ -59,6 +59,7 @@ extension ServiceWindowInfo {
             isOffScreen: self.isOffScreen,
             layer: self.layer,
             isOnScreen: self.isOnScreen,
+            isShareable: self.isShareableWindow && !self.isExcludedFromWindowsMenu,
             alpha: Double(self.alpha),
             spaceID: self.spaceID,
             spaceName: self.spaceName)

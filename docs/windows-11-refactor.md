@@ -45,6 +45,8 @@ adapter for the `list apps`, `list screens`, and `list windows` read paths
 while preserving the existing JSON payload shapes. The neutral window model
 now carries the cross-platform fields needed by CLI output, including z-order
 index, screen, Space, off-screen, layer, alpha, and on-screen metadata. The
+model also preserves whether a window is shareable so adapter-routed captures
+keep the same hidden/helper-window filter as the macOS observation path. The
 first capture read paths are also routed through the adapter: compatible
 `image --mode screen` PNG captures now use `DesktopAsyncAdapter.captureScreen`,
 and compatible `image --mode area --region x,y,width,height` PNG captures now

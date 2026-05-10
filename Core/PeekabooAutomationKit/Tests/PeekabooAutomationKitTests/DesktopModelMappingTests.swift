@@ -62,7 +62,8 @@ final class DesktopModelMappingTests: XCTestCase {
             screenName: "External Display",
             isOffScreen: false,
             layer: 3,
-            isOnScreen: true)
+            isOnScreen: true,
+            sharingState: .readWrite)
 
         let desktopWindow = window.desktopWindow(processIdentifier: 1234, executableName: "Example")
 
@@ -80,8 +81,33 @@ final class DesktopModelMappingTests: XCTestCase {
         XCTAssertFalse(desktopWindow.isOffScreen)
         XCTAssertEqual(desktopWindow.layer, 3)
         XCTAssertTrue(desktopWindow.isOnScreen)
+        XCTAssertTrue(desktopWindow.isShareable)
         XCTAssertEqual(desktopWindow.alpha, 1)
         XCTAssertEqual(desktopWindow.spaceID, 7)
         XCTAssertEqual(desktopWindow.spaceName, "Work")
+    }
+
+    func testNonShareableWindowInfoMapsToUnshareableDesktopWindow() {
+        let window = ServiceWindowInfo(
+            windowID: 100,
+            title: "Private",
+            bounds: CGRect(x: 0, y: 0, width: 800, height: 600),
+            sharingState: .none)
+
+        let desktopWindow = window.desktopWindow(processIdentifier: 1234, executableName: "Example")
+
+        XCTAssertFalse(desktopWindow.isShareable)
+    }
+
+    func testExcludedWindowInfoMapsToUnshareableDesktopWindow() {
+        let window = ServiceWindowInfo(
+            windowID: 101,
+            title: "Excluded",
+            bounds: CGRect(x: 0, y: 0, width: 800, height: 600),
+            isExcludedFromWindowsMenu: true)
+
+        let desktopWindow = window.desktopWindow(processIdentifier: 1234, executableName: "Example")
+
+        XCTAssertFalse(desktopWindow.isShareable)
     }
 }

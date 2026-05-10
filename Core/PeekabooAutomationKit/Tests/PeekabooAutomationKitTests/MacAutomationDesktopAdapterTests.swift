@@ -53,6 +53,7 @@ final class MacAutomationDesktopAdapterTests: XCTestCase {
         XCTAssertEqual(allWindows.map(\.index), [0, 1])
         XCTAssertEqual(allWindows.compactMap(\.spaceName), ["Work"])
         XCTAssertEqual(allWindows.map(\.isOffScreen), [false, true])
+        XCTAssertEqual(allWindows.map(\.isShareable), [true, false])
     }
 
     func testCaptureWritesPNGOutput() async throws {
@@ -202,7 +203,8 @@ private final class StubDesktopApplicationService: ApplicationServiceProtocol {
             alpha: 0,
             index: 1,
             isOffScreen: true,
-            isOnScreen: true),
+            isOnScreen: true,
+            sharingState: .none),
     ]
 
     func listApplications() async throws -> UnifiedToolOutput<ServiceApplicationListData> {
