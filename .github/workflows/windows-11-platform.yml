@@ -33,7 +33,7 @@ jobs:
       - name: Set up Swift
         uses: compnerd/gha-setup-swift@main
         with:
-          swift-version: swift-6.3-release
+          swift-version: swift-6.3.1-release
           swift-build: 6.3.1-RELEASE
           update-sdk-modules: true
 
