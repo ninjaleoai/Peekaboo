@@ -37,7 +37,10 @@ final class MacAutomationDesktopAdapterTests: XCTestCase {
         let allWindows = try await adapter.listWindows(includeInvisible: true)
 
         XCTAssertEqual(displays.map(\.index), [0, 1])
+        XCTAssertEqual(displays.compactMap(\.name), ["Primary", "Secondary"])
+        XCTAssertEqual(displays.map(\.scaleFactor), [2, 1])
         XCTAssertEqual(applications.map(\.executableName), ["Example"])
+        XCTAssertEqual(applications.compactMap(\.bundleIdentifier), ["com.example.App"])
         XCTAssertEqual(visibleWindows.map(\.title), ["Visible"])
         XCTAssertEqual(allWindows.map(\.title), ["Visible", "Hidden"])
         XCTAssertEqual(allWindows.map(\.processIdentifier), [1234, 1234])

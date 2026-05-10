@@ -23,7 +23,9 @@ extension ScreenInfo {
             index: self.index,
             bounds: self.frame.desktopRect,
             workArea: self.visibleFrame.desktopRect,
-            isPrimary: self.isPrimary)
+            isPrimary: self.isPrimary,
+            name: self.name,
+            scaleFactor: Double(self.scaleFactor))
     }
 }
 
@@ -34,7 +36,9 @@ extension ServiceApplicationInfo {
             executableName: self.name,
             executablePath: self.bundlePath,
             isActive: self.isActive,
-            visibleWindowCount: self.windowCount)
+            visibleWindowCount: self.windowCount,
+            bundleIdentifier: self.bundleIdentifier,
+            isHidden: self.isHidden)
     }
 }
 

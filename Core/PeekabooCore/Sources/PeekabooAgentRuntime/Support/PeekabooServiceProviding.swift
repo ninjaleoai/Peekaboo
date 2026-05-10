@@ -1,6 +1,7 @@
 import Foundation
 import PeekabooAutomation
 import PeekabooAutomationKit
+import PeekabooDesktop
 
 /// Aggregated service provider protocol exposed to higher-level modules.
 @MainActor
@@ -38,6 +39,13 @@ extension PeekabooServiceProviding {
             menu: self.menu,
             screens: self.screens,
             snapshotManager: self.snapshots)
+    }
+
+    public var desktop: any DesktopAsyncAdapter {
+        MacAutomationDesktopAdapter(
+            applications: self.applications,
+            screens: self.screens,
+            screenCapture: self.screenCapture)
     }
 
     /// Install this service container as the default provider for MCP tool contexts and registry helpers.

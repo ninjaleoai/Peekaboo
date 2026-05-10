@@ -37,7 +37,9 @@ is available.
 existing macOS service models into the neutral desktop models, and exposes
 `MacAutomationDesktopAdapter` for async/main-actor macOS automation services.
 That gives the main automation package a shared contract to target without
-changing existing macOS runtime behavior.
+changing existing macOS runtime behavior. The main macOS CLI now uses that
+adapter for the `list apps` and `list screens` read paths while preserving the
+existing JSON payload shapes.
 
 ## Why This Seam
 
@@ -98,7 +100,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Route the main macOS CLI `list`/`capture` read commands through the same
-   desktop adapter contract where that can preserve existing output behavior.
+1. Continue routing the main macOS CLI read paths through the same desktop
+   adapter contract, starting with `list windows` and capture paths where the
+   existing output behavior can be preserved.
 2. Add Windows implementations for input and UI Automation after capture and
    enumeration have stable test coverage.

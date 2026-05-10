@@ -21,6 +21,8 @@ final class DesktopModelMappingTests: XCTestCase {
         XCTAssertEqual(display.bounds, DesktopRect(x: -1920, y: 0, width: 1920, height: 1080))
         XCTAssertEqual(display.workArea, DesktopRect(x: -1920, y: 24, width: 1920, height: 1056))
         XCTAssertFalse(display.isPrimary)
+        XCTAssertEqual(display.name, "External Display")
+        XCTAssertEqual(display.scaleFactor, 2)
     }
 
     func testApplicationInfoMapsToDesktopApplication() {
@@ -39,7 +41,9 @@ final class DesktopModelMappingTests: XCTestCase {
         XCTAssertEqual(desktopApplication.processIdentifier, 1234)
         XCTAssertEqual(desktopApplication.executableName, "Example")
         XCTAssertEqual(desktopApplication.executablePath, "/Applications/Example.app")
+        XCTAssertEqual(desktopApplication.bundleIdentifier, "com.example.App")
         XCTAssertTrue(desktopApplication.isActive)
+        XCTAssertFalse(desktopApplication.isHidden)
         XCTAssertEqual(desktopApplication.visibleWindowCount, 3)
     }
 

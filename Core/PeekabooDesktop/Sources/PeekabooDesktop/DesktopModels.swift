@@ -30,16 +30,28 @@ public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
 public struct DesktopDisplay: Codable, Equatable, Sendable {
     public let id: UInt64
     public let index: Int
+    public let name: String?
     public let bounds: DesktopRect
     public let workArea: DesktopRect
     public let isPrimary: Bool
+    public let scaleFactor: Double
 
-    public init(id: UInt64, index: Int, bounds: DesktopRect, workArea: DesktopRect, isPrimary: Bool) {
+    public init(
+        id: UInt64,
+        index: Int,
+        bounds: DesktopRect,
+        workArea: DesktopRect,
+        isPrimary: Bool,
+        name: String? = nil,
+        scaleFactor: Double = 1.0)
+    {
         self.id = id
         self.index = index
+        self.name = name
         self.bounds = bounds
         self.workArea = workArea
         self.isPrimary = isPrimary
+        self.scaleFactor = scaleFactor
     }
 }
 
@@ -47,7 +59,9 @@ public struct DesktopApplication: Codable, Equatable, Sendable {
     public let processIdentifier: UInt32
     public let executableName: String
     public let executablePath: String?
+    public let bundleIdentifier: String?
     public let isActive: Bool
+    public let isHidden: Bool
     public let visibleWindowCount: Int
 
     public init(
@@ -55,12 +69,16 @@ public struct DesktopApplication: Codable, Equatable, Sendable {
         executableName: String,
         executablePath: String?,
         isActive: Bool,
-        visibleWindowCount: Int)
+        visibleWindowCount: Int,
+        bundleIdentifier: String? = nil,
+        isHidden: Bool = false)
     {
         self.processIdentifier = processIdentifier
         self.executableName = executableName
         self.executablePath = executablePath
+        self.bundleIdentifier = bundleIdentifier
         self.isActive = isActive
+        self.isHidden = isHidden
         self.visibleWindowCount = visibleWindowCount
     }
 }
