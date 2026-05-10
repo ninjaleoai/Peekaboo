@@ -115,6 +115,12 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             state: .maximized)
+        let setDockPosition = try await bridge.setUIAutomationElementDockPosition(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            position: .right)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -220,6 +226,7 @@ final class DesktopModelTests: XCTestCase {
                 .scroll,
                 .expandCollapse,
                 .window,
+                .dock,
                 .selection,
                 .selectionItem,
                 .text,
@@ -238,6 +245,7 @@ final class DesktopModelTests: XCTestCase {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .setDockPosition,
                 .move,
                 .resize,
                 .rotate,
@@ -269,6 +277,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.canMinimizeWindow, true)
         XCTAssertEqual(snapshot.elements.first?.isModalWindow, false)
         XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
+        XCTAssertEqual(snapshot.elements.first?.dockPosition, .left)
         XCTAssertEqual(snapshot.elements.first?.text, "Example text")
         XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
         XCTAssertEqual(snapshot.elements.first?.gridRowCount, 3)
@@ -316,6 +325,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setWindowState.value, "maximized")
         XCTAssertEqual(setWindowState.postActionElement?.windowVisualState, .maximized)
         XCTAssertEqual(setWindowState.valueWasVerified, true)
+        XCTAssertEqual(setDockPosition.action, .setDockPosition)
+        XCTAssertEqual(setDockPosition.elementIndex, 0)
+        XCTAssertEqual(setDockPosition.value, "right")
+        XCTAssertEqual(setDockPosition.postActionElement?.dockPosition, .right)
+        XCTAssertEqual(setDockPosition.valueWasVerified, true)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -706,10 +720,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
+        XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
+        XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
@@ -718,6 +734,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"scrollIntoView\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
+        XCTAssertTrue(result.stdout.contains("\"dockPosition\" : \"left\""))
         XCTAssertTrue(result.stdout.contains("\"selectionCanSelectMultiple\" : true"))
         XCTAssertTrue(result.stdout.contains("\"selectionIsRequired\" : false"))
         XCTAssertTrue(result.stdout.contains("\"selectionSelectedItemCount\" : 0"))
@@ -1074,6 +1091,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSetDockPosition() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-dock-position",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--position",
+            "right",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setDockPosition\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"right\""))
+        XCTAssertTrue(result.stdout.contains("\"dockPosition\" : \"right\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationMove() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1182,6 +1225,50 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("UI Automation window state must be normal"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-dock-position",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --position <top|left|bottom|right|fill|none>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-dock-position",
+            "--position",
+            "right",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation set-dock-position"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationSetDockPosition() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-dock-position",
+            "--index",
+            "0",
+            "--position",
+            "floating",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation dock position must be top"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationMovePoint() {
@@ -1512,6 +1599,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-dock-position --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
         XCTAssertTrue(result.stdout.contains("automation rotate --index"))
@@ -1852,6 +1940,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
             value: state.rawValue,
             postActionElement: postActionElement,
             valueWasVerified: postActionElement?.windowVisualState == state)
+    }
+
+    func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            dockPosition: position)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setDockPosition,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: position.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.dockPosition == position)
     }
 
     func toggleUIAutomationElement(
@@ -2213,6 +2336,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         horizontalScrollPercent: Double = 0.0,
         verticalScrollPercent: Double = 25.0,
         windowVisualState: DesktopUIAutomationWindowVisualState = .normal,
+        dockPosition: DesktopUIAutomationDockPosition = .left,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
         bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
@@ -2247,6 +2371,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .scroll,
                         .expandCollapse,
                         .window,
+                        .dock,
                         .selection,
                         .selectionItem,
                         .text,
@@ -2282,6 +2407,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canMinimizeWindow: true,
                     isModalWindow: false,
                     isTopmostWindow: false,
+                    dockPosition: dockPosition,
                     text: "Example text",
                     supportedTextSelection: .single,
                     gridRowCount: 3,
@@ -2324,6 +2450,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .setDockPosition,
                 .move,
                 .resize,
                 .rotate,
@@ -2339,6 +2466,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .setDockPosition,
                 .move,
                 .resize,
                 .rotate,
@@ -2354,6 +2482,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .setDockPosition,
                 .move,
                 .resize,
                 .rotate,
@@ -2370,6 +2499,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .setDockPosition,
                 .move,
                 .resize,
                 .rotate,

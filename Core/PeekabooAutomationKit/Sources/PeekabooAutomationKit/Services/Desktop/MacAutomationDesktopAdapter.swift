@@ -348,6 +348,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("UI Automation select is not implemented by this adapter")
     }
 
+    public func setUIAutomationElementDockPosition(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        position _: DesktopUIAutomationDockPosition) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation set-dock-position is not implemented by this adapter")
+    }
+
     public func addUIAutomationElementToSelection(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

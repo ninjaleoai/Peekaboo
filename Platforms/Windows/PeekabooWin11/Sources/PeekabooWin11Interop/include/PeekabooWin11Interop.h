@@ -84,6 +84,8 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t isModalWindow;
     int32_t hasIsTopmostWindow;
     int32_t isTopmostWindow;
+    int32_t hasDockPosition;
+    int32_t dockPosition;
     int32_t hasText;
     int32_t hasSupportedTextSelection;
     int32_t supportedTextSelection;
@@ -216,6 +218,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowV
     int32_t maxElements,
     int32_t elementIndex,
     int32_t visualState);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPosition(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t dockPosition);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,

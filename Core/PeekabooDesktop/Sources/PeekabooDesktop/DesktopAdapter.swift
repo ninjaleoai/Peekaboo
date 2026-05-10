@@ -55,6 +55,12 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -170,6 +176,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -395,6 +407,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             state: state)
+    }
+
+    public func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.setUIAutomationElementDockPosition(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            position: position)
     }
 
     public func moveUIAutomationElement(

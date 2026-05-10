@@ -173,7 +173,7 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "move, resize, rotate, toggle, expand, collapse, select, " +
+                    "set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -194,6 +194,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetScrollPercent(args: args, adapter: adapter, stdout: stdout)
         case "set-window-state", "setWindowState":
             try self.runAutomationSetWindowState(args: args, adapter: adapter, stdout: stdout)
+        case "set-dock-position", "setDockPosition":
+            try self.runAutomationSetDockPosition(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -433,6 +435,40 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             state: self.parseUIAutomationWindowVisualState(stateValue))))
+    }
+
+    private static func runAutomationSetDockPosition(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation set-dock-position")
+        }
+
+        let positionValue = try self.value(after: "--position", in: args) ??
+            self.value(after: "--dock-position", in: args)
+        guard let positionValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --position <top|left|bottom|right|fill|none> for automation set-dock-position")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.setUIAutomationElementDockPosition(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            position: self.parseUIAutomationDockPosition(positionValue))))
     }
 
     private static func runAutomationMove(
@@ -986,6 +1022,14 @@ public enum DesktopCommandRunner {
         return state
     }
 
+    private static func parseUIAutomationDockPosition(_ value: String) throws -> DesktopUIAutomationDockPosition {
+        guard let position = DesktopUIAutomationDockPosition(rawValue: value) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation dock position must be top, left, bottom, right, fill, or none")
+        }
+        return position
+    }
+
     private static func parseUIAutomationMovePoint(_ args: [String]) throws -> (Double, Double) {
         if let pointValue = try self.value(after: "--point", in: args) ??
             self.value(after: "--position", in: args)
@@ -1102,6 +1146,8 @@ public enum DesktopCommandRunner {
           automation set-scroll-percent --index <n> [--horizontal <percent>] [--vertical <percent>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-window-state --index <n> --state <normal|maximized|minimized>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

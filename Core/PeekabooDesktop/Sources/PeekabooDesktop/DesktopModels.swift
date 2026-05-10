@@ -30,6 +30,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case setUIAutomationRangeValue
     case setUIAutomationScrollPercent
     case setUIAutomationWindowVisualState
+    case setUIAutomationDockPosition
     case moveUIAutomationElement
     case resizeUIAutomationElement
     case rotateUIAutomationElement
@@ -340,6 +341,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case scroll
     case expandCollapse
     case window
+    case dock
     case selection
     case selectionItem
     case text
@@ -363,6 +365,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case setRangeValue
     case setScrollPercent
     case setWindowVisualState
+    case setDockPosition
     case move
     case resize
     case rotate
@@ -394,6 +397,15 @@ public enum DesktopUIAutomationWindowInteractionState: String, Codable, Equatabl
     case readyForUserInteraction
     case blockedByModalWindow
     case notResponding
+}
+
+public enum DesktopUIAutomationDockPosition: String, Codable, Equatable, Sendable {
+    case top
+    case left
+    case bottom
+    case right
+    case fill
+    case none
 }
 
 public enum DesktopUIAutomationSupportedTextSelection: String, Codable, Equatable, Sendable {
@@ -443,6 +455,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let canMinimizeWindow: Bool?
     public let isModalWindow: Bool?
     public let isTopmostWindow: Bool?
+    public let dockPosition: DesktopUIAutomationDockPosition?
     public let text: String?
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
     public let gridRowCount: Int?
@@ -510,6 +523,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         canMinimizeWindow: Bool? = nil,
         isModalWindow: Bool? = nil,
         isTopmostWindow: Bool? = nil,
+        dockPosition: DesktopUIAutomationDockPosition? = nil,
         text: String? = nil,
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
         gridRowCount: Int? = nil,
@@ -576,6 +590,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.canMinimizeWindow = canMinimizeWindow
         self.isModalWindow = isModalWindow
         self.isTopmostWindow = isTopmostWindow
+        self.dockPosition = dockPosition
         self.text = text
         self.supportedTextSelection = supportedTextSelection
         self.gridRowCount = gridRowCount

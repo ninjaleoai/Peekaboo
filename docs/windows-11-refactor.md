@@ -38,6 +38,9 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Window-pattern UI Automation set-window-state actions against a bounded
   snapshot element index
+- Dock-pattern UI Automation dock position metadata in bounded snapshots
+- Dock-pattern UI Automation set-dock-position actions against a bounded
+  snapshot element index
 - Text-pattern UI Automation selection capability and bounded text preview
   metadata in bounded snapshots
 - Legacy IAccessible-pattern UI Automation fallback metadata in bounded
@@ -83,6 +86,9 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-scroll-percent --index <n>`, and
 `automation set-window-state --index <n>` for Invoke-pattern, Value-pattern,
 RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
+`automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
+covers Dock-pattern controls that can be rearranged within a docking
+container.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
 that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
@@ -204,6 +210,12 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -335,6 +347,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-dock-position --scope foreground --index 0 --position right --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
@@ -396,6 +410,8 @@ keyboard shortcut, default action, role ID, and state ID when UIA reports them.
 When an element supports the UIA Grid pattern, snapshots include row and
 column counts; GridItem elements include row, column, row span, and column
 span when UIA reports them.
+When an element supports the UIA Dock pattern, snapshots include the current
+dock position: top, left, bottom, right, fill, or none.
 When an element supports the UIA Toggle pattern, snapshots also include the
 current toggle state: off, on, or indeterminate. When an element supports the
 UIA ExpandCollapse pattern,
@@ -408,9 +424,10 @@ available only when the Value pattern is present and known writable,
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
-available when the Window pattern is present, move, resize, and rotate are
-available when the Transform pattern is present and UIA reports the matching
-capability, toggle is available when the
+available when the Window pattern is present, setDockPosition is available
+when the Dock pattern is present, move, resize, and rotate are available when
+the Transform pattern is present and UIA reports the matching capability,
+toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
@@ -437,7 +454,9 @@ rejecting known unscrollable requested axes before calling UIA
 axes when UIA reports them. `automation set-window-state` performs the UIA
 Window pattern visual-state action, rejects known unsupported maximize or
 minimize requests before calling UIA `SetWindowVisualState`, then verifies the
-refreshed visual state when UIA reports it. `automation scroll-into-view`
+refreshed visual state when UIA reports it. `automation set-dock-position`
+performs the UIA Dock pattern action, then verifies the refreshed dock position
+when UIA reports it. `automation scroll-into-view`
 performs the UIA ScrollItem pattern action and verifies that the refreshed
 element is no longer off-screen when UIA reports that state.
 `automation move --index <n>` and

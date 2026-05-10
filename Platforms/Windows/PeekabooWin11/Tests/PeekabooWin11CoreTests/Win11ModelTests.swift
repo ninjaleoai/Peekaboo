@@ -42,6 +42,7 @@ final class Win11ModelTests: XCTestCase {
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
+                .setUIAutomationDockPosition,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -74,6 +75,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationWindowVisualState))
+        XCTAssertTrue(info.capabilities.contains(.setUIAutomationDockPosition))
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
@@ -188,6 +190,12 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.setUIAutomationElementDockPosition(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            position: .right))
         XCTAssertThrowsError(try adapter.addUIAutomationElementToSelection(
             scope: .root,
             maxDepth: 1,
@@ -248,6 +256,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation set-range-value --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(output.contains("automation set-window-state --index"))
+        XCTAssertTrue(output.contains("automation set-dock-position --index"))
         XCTAssertTrue(output.contains("automation move --index"))
         XCTAssertTrue(output.contains("automation resize --index"))
         XCTAssertTrue(output.contains("automation rotate --index"))

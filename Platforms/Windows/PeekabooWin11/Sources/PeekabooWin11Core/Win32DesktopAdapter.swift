@@ -38,6 +38,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
+                .setUIAutomationDockPosition,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -826,6 +827,61 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             value: state.rawValue,
             postActionElement: postActionElement,
             valueWasVerified: postActionElement?.windowVisualState.map { $0 == state })
+    }
+
+    public func setUIAutomationElementDockPosition(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        position: DesktopUIAutomationDockPosition) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.dock) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support dock")
+        }
+
+        let nativeResult = PeekabooWin11SetUIAutomationElementDockPosition(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            Self.nativeDockPosition(position))
+        try Self.validateUIAutomationSetDockPosition(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setDockPosition,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: position.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.dockPosition.map { $0 == position })
     }
 
     public func moveUIAutomationElement(
@@ -1636,6 +1692,53 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSetDockPosition(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation set-dock-position failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support dock")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationDockPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationDockPattern.SetDockPosition failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -1991,6 +2094,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let windowInteractionState = Self.uiAutomationWindowInteractionState(
                 hasValue: nativeElement.hasWindowInteractionState,
                 value: nativeElement.windowInteractionState)
+            let dockPosition = Self.uiAutomationDockPosition(
+                hasValue: nativeElement.hasDockPosition,
+                value: nativeElement.dockPosition)
             let isSelected = Self.optionalBool(
                 hasValue: nativeElement.hasIsSelected,
                 value: nativeElement.isSelected)
@@ -2042,6 +2148,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     isHorizontallyScrollable: isHorizontallyScrollable,
                     isVerticallyScrollable: isVerticallyScrollable,
                     expandCollapseState: expandCollapseState,
+                    dockPosition: dockPosition,
                     isSelected: isSelected,
                     selectionCanSelectMultiple: selectionCanSelectMultiple,
                     selectionIsRequired: selectionIsRequired,
@@ -2107,6 +2214,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isTopmostWindow: Self.optionalBool(
                     hasValue: nativeElement.hasIsTopmostWindow,
                     value: nativeElement.isTopmostWindow),
+                dockPosition: dockPosition,
                 text: nativeElement.hasText != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementText(&nativeElement))
                     : nil,
@@ -2185,6 +2293,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         isHorizontallyScrollable: Bool?,
         isVerticallyScrollable: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?,
+        dockPosition _: DesktopUIAutomationDockPosition?,
         isSelected: Bool?,
         selectionCanSelectMultiple: Bool?,
         selectionIsRequired: Bool?,
@@ -2210,6 +2319,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.window) {
             actions.append(.setWindowVisualState)
+        }
+        if supportedPatterns.contains(.dock) {
+            actions.append(.setDockPosition)
         }
         if supportedPatterns.contains(.transform), canMove == true {
             actions.append(.move)
@@ -2323,6 +2435,48 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func uiAutomationDockPosition(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationDockPosition?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .top
+        case 1:
+            return .left
+        case 2:
+            return .bottom
+        case 3:
+            return .right
+        case 4:
+            return .fill
+        case 5:
+            return .none
+        default:
+            return nil
+        }
+    }
+
+    private static func nativeDockPosition(_ position: DesktopUIAutomationDockPosition) -> Int32 {
+        switch position {
+        case .top:
+            return 0
+        case .left:
+            return 1
+        case .bottom:
+            return 2
+        case .right:
+            return 3
+        case .fill:
+            return 4
+        case .none:
+            return 5
+        }
+    }
+
     private static func uiAutomationWindowInteractionState(
         hasValue: Int32,
         value: Int32) -> DesktopUIAutomationWindowInteractionState?
@@ -2385,6 +2539,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if Self.hasPatternBit(mask, 5) {
             patterns.append(.window)
         }
+        if Self.hasPatternBit(mask, 15) {
+            patterns.append(.dock)
+        }
+        if Self.hasPatternBit(mask, 14) {
+            patterns.append(.selection)
+        }
         if Self.hasPatternBit(mask, 6) {
             patterns.append(.selectionItem)
         }
@@ -2408,9 +2568,6 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)
-        }
-        if Self.hasPatternBit(mask, 14) {
-            patterns.append(.selection)
         }
         return patterns
     }
