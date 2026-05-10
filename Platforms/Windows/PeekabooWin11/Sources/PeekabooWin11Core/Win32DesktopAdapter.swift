@@ -609,20 +609,42 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     }
 
     private static func uiAutomationPatterns(from mask: UInt64) -> [DesktopUIAutomationPattern] {
-        [
-            (1 << 0, .invoke),
-            (1 << 1, .value),
-            (1 << 2, .rangeValue),
-            (1 << 3, .scroll),
-            (1 << 4, .expandCollapse),
-            (1 << 5, .window),
-            (1 << 6, .selectionItem),
-            (1 << 7, .text),
-            (1 << 8, .toggle),
-            (1 << 9, .legacyIAccessible),
-        ].compactMap { bit, pattern in
-            (mask & UInt64(bit)) != 0 ? pattern : nil
+        var patterns: [DesktopUIAutomationPattern] = []
+        if Self.hasPatternBit(mask, 0) {
+            patterns.append(.invoke)
         }
+        if Self.hasPatternBit(mask, 1) {
+            patterns.append(.value)
+        }
+        if Self.hasPatternBit(mask, 2) {
+            patterns.append(.rangeValue)
+        }
+        if Self.hasPatternBit(mask, 3) {
+            patterns.append(.scroll)
+        }
+        if Self.hasPatternBit(mask, 4) {
+            patterns.append(.expandCollapse)
+        }
+        if Self.hasPatternBit(mask, 5) {
+            patterns.append(.window)
+        }
+        if Self.hasPatternBit(mask, 6) {
+            patterns.append(.selectionItem)
+        }
+        if Self.hasPatternBit(mask, 7) {
+            patterns.append(.text)
+        }
+        if Self.hasPatternBit(mask, 8) {
+            patterns.append(.toggle)
+        }
+        if Self.hasPatternBit(mask, 9) {
+            patterns.append(.legacyIAccessible)
+        }
+        return patterns
+    }
+
+    private static func hasPatternBit(_ mask: UInt64, _ bit: Int) -> Bool {
+        (mask & (UInt64(1) << UInt64(bit))) != 0
     }
 
     private static func uiAutomationControlTypeName(_ controlType: Int32) -> String? {
