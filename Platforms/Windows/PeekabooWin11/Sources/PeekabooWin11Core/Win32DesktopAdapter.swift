@@ -13,7 +13,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         let collector = DisplayCollector()
         let context = Unmanaged.passUnretained(collector).toOpaque()
 
-        guard EnumDisplayMonitors(nil, nil, displayEnumerationCallback, LPARAM(Int(bitPattern: context))) != 0 else {
+        guard EnumDisplayMonitors(nil, nil, displayEnumerationCallback, LPARAM(Int(bitPattern: context))) else {
             throw Win11DesktopError.win32CallFailed("EnumDisplayMonitors")
         }
 
@@ -24,7 +24,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         let collector = WindowCollector(includeInvisible: includeInvisible)
         let context = Unmanaged.passUnretained(collector).toOpaque()
 
-        guard EnumWindows(windowEnumerationCallback, LPARAM(Int(bitPattern: context))) != 0 else {
+        guard EnumWindows(windowEnumerationCallback, LPARAM(Int(bitPattern: context))) else {
             throw Win11DesktopError.win32CallFailed("EnumWindows")
         }
 
@@ -97,7 +97,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             desktopDC,
             Int32(bounds.x),
             Int32(bounds.y),
-            DWORD(SRCCOPY)) != 0
+            DWORD(SRCCOPY))
         else {
             throw Win11DesktopError.win32CallFailed("BitBlt")
         }
@@ -150,7 +150,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     }
 
     fileprivate static func executablePath(processIdentifier: UInt32) -> String? {
-        let handle = OpenProcess(DWORD(PROCESS_QUERY_LIMITED_INFORMATION), FALSE, DWORD(processIdentifier))
+        let handle = OpenProcess(DWORD(PROCESS_QUERY_LIMITED_INFORMATION), false, DWORD(processIdentifier))
         guard let handle else {
             return nil
         }
@@ -158,7 +158,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
 
         var buffer = [WCHAR](repeating: 0, count: Int(MAX_PATH))
         var size = DWORD(buffer.count)
-        guard QueryFullProcessImageNameW(handle, 0, &buffer, &size) != 0 else {
+        guard QueryFullProcessImageNameW(handle, 0, &buffer, &size) else {
             return nil
         }
 
@@ -243,18 +243,18 @@ private final class WindowCollector {
 
 private let displayEnumerationCallback: MONITORENUMPROC = { monitor, _, _, context in
     guard let rawContext = UnsafeRawPointer(bitPattern: Int(context)) else {
-        return TRUE
+        return true
     }
     guard let monitor else {
-        return TRUE
+        return true
     }
 
     let collector = Unmanaged<DisplayCollector>.fromOpaque(rawContext).takeUnretainedValue()
 
     var info = MONITORINFO()
     info.cbSize = DWORD(MemoryLayout<MONITORINFO>.size)
-    guard GetMonitorInfoW(monitor, &info) != 0 else {
-        return TRUE
+    guard GetMonitorInfoW(monitor, &info) else {
+        return true
     }
 
     let display = Win11Display(
@@ -264,36 +264,36 @@ private let displayEnumerationCallback: MONITORENUMPROC = { monitor, _, _, conte
         workArea: Win32DesktopAdapter.rect(from: info.rcWork),
         isPrimary: (info.dwFlags & DWORD(MONITORINFOF_PRIMARY)) != 0)
     collector.displays.append(display)
-    return TRUE
+    return true
 }
 
 private let windowEnumerationCallback: WNDENUMPROC = { hwnd, context in
     guard let rawContext = UnsafeRawPointer(bitPattern: Int(context)) else {
-        return TRUE
+        return true
     }
     guard let hwnd else {
-        return TRUE
+        return true
     }
 
     let collector = Unmanaged<WindowCollector>.fromOpaque(rawContext).takeUnretainedValue()
-    let isVisible = IsWindowVisible(hwnd) != 0
+    let isVisible = IsWindowVisible(hwnd)
     if !collector.includeInvisible && !isVisible {
-        return TRUE
+        return true
     }
 
     var rect = RECT()
-    guard GetWindowRect(hwnd, &rect) != 0 else {
-        return TRUE
+    guard GetWindowRect(hwnd, &rect) else {
+        return true
     }
 
     let bounds = Win32DesktopAdapter.rect(from: rect)
     if bounds.isEmpty {
-        return TRUE
+        return true
     }
 
     let title = Win32DesktopAdapter.windowTitle(hwnd)
     if title.isEmpty && !collector.includeInvisible {
-        return TRUE
+        return true
     }
 
     let pid = Win32DesktopAdapter.processIdentifier(for: hwnd) ?? 0
@@ -306,11 +306,11 @@ private let windowEnumerationCallback: WNDENUMPROC = { hwnd, context in
         title: title,
         bounds: bounds,
         isVisible: isVisible,
-        isMinimized: IsIconic(hwnd) != 0,
+        isMinimized: IsIconic(hwnd),
         isForeground: hwnd == foregroundWindow,
         executableName: executablePath.map(Win32DesktopAdapter.lastPathComponent))
     collector.windows.append(window)
-    return TRUE
+    return true
 }
 
 private extension Data {
