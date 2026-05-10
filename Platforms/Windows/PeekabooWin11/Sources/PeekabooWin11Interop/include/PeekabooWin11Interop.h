@@ -209,6 +209,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
     double width,
     double height);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11RotateUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double degrees);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,

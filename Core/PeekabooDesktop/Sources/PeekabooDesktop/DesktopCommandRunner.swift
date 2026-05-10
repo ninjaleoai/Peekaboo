@@ -173,7 +173,7 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "move, resize, toggle, expand, collapse, or select")
+                    "move, resize, rotate, toggle, expand, collapse, or select")
         }
 
         switch subcommand {
@@ -197,6 +197,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
             try self.runAutomationResize(args: args, adapter: adapter, stdout: stdout)
+        case "rotate":
+            try self.runAutomationRotate(args: args, adapter: adapter, stdout: stdout)
         case "toggle":
             try self.runAutomationToggle(args: args, adapter: adapter, stdout: stdout)
         case "expand":
@@ -480,6 +482,33 @@ public enum DesktopCommandRunner {
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             width: size.0,
             height: size.1)))
+    }
+
+    private static func runAutomationRotate(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation rotate")
+        }
+
+        let degrees = try self.parseUIAutomationRotateDegrees(args)
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.rotateUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            degrees: degrees)))
     }
 
     private static func runAutomationToggle(
@@ -904,6 +933,15 @@ public enum DesktopCommandRunner {
             try self.parsePositiveFiniteDouble(heightValue, label: "UI Automation resize height"))
     }
 
+    private static func parseUIAutomationRotateDegrees(_ args: [String]) throws -> Double {
+        let degreesValue = try self.value(after: "--degrees", in: args) ??
+            self.value(after: "--angle", in: args)
+        guard let degreesValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --degrees <number> for automation rotate")
+        }
+        return try self.parseFiniteDouble(degreesValue, label: "UI Automation rotate degrees")
+    }
+
     private static func parseDoublePair(
         _ value: String,
         label: String,
@@ -983,6 +1021,8 @@ public enum DesktopCommandRunner {
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation resize --index <n> --size <width,height>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation rotate --index <n> --degrees <number>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation toggle --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation expand --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

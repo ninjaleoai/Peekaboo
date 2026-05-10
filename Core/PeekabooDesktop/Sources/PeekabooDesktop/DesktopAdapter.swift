@@ -69,6 +69,12 @@ public protocol DesktopAdapter: Sendable {
         elementIndex: Int,
         width: Double,
         height: Double) throws -> DesktopUIAutomationActionResult
+    func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -163,6 +169,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         elementIndex: Int,
         width: Double,
         height: Double) async throws -> DesktopUIAutomationActionResult
+    func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) async throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -387,6 +399,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             elementIndex: elementIndex,
             width: width,
             height: height)
+    }
+
+    public func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.rotateUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            degrees: degrees)
     }
 
     public func toggleUIAutomationElement(

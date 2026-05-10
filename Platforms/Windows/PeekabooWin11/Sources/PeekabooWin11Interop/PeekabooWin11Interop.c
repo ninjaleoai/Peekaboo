@@ -20,6 +20,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_WINDOW_VISUAL_STATE 9
 #define PEEKABOO_WIN11_UIA_ACTION_MOVE 10
 #define PEEKABOO_WIN11_UIA_ACTION_RESIZE 11
+#define PEEKABOO_WIN11_UIA_ACTION_ROTATE 12
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1127,11 +1128,15 @@ static void PeekabooWin11TransformElement(
             transformPattern,
             firstValue,
             secondValue);
-    } else {
+    } else if (action == PEEKABOO_WIN11_UIA_ACTION_RESIZE) {
         result->actionResult = (int32_t)IUIAutomationTransformPattern_Resize(
             transformPattern,
             firstValue,
             secondValue);
+    } else {
+        result->actionResult = (int32_t)IUIAutomationTransformPattern_Rotate(
+            transformPattern,
+            firstValue);
     }
     IUIAutomationTransformPattern_Release(transformPattern);
 }
@@ -1451,7 +1456,8 @@ static int32_t PeekabooWin11VisitElementForAction(
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_WINDOW_VISUAL_STATE) {
             PeekabooWin11SetElementWindowVisualState(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_MOVE ||
-            result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE)
+            result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE ||
+            result->action == PEEKABOO_WIN11_UIA_ACTION_ROTATE)
         {
             PeekabooWin11TransformElement(
                 element,
@@ -1875,6 +1881,28 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
         height);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11RotateUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double degrees)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_ROTATE,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        degrees,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -2111,6 +2139,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
     result.elementIndex = elementIndex;
     (void)width;
     (void)height;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11RotateUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double degrees)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 12;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)degrees;
     result.initializeResult = -2147467263;
     return result;
 }

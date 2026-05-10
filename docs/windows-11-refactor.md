@@ -44,8 +44,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Transform-pattern UI Automation movement, resize, and rotation capability
   metadata in bounded snapshots
-- Transform-pattern UI Automation move and resize actions against a bounded
-  snapshot element index
+- Transform-pattern UI Automation move, resize, and rotate actions against a
+  bounded snapshot element index
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -83,6 +83,8 @@ UIA reports that it can be moved, resized, or rotated.
 `automation move --index <n> --point <x,y>` and
 `automation resize --index <n> --size <width,height>` cover Transform-pattern
 movement and resizing for controls that advertise those capabilities.
+`automation rotate --index <n> --degrees <number>` covers Transform-pattern
+rotation for controls where UIA reports `canRotate`.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -196,6 +198,12 @@ public protocol DesktopAdapter: Sendable {
         elementIndex: Int,
         width: Double,
         height: Double) throws -> DesktopUIAutomationActionResult
+    func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,

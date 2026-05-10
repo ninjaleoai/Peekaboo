@@ -129,6 +129,12 @@ final class DesktopModelTests: XCTestCase {
             elementIndex: 0,
             width: 320.0,
             height: 240.0)
+        let rotate = try await bridge.rotateUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            degrees: 45.0)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -216,6 +222,7 @@ final class DesktopModelTests: XCTestCase {
                 .setWindowVisualState,
                 .move,
                 .resize,
+                .rotate,
                 .toggle,
                 .expand,
                 .select,
@@ -252,7 +259,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
         XCTAssertEqual(snapshot.elements.first?.canMove, true)
         XCTAssertEqual(snapshot.elements.first?.canResize, true)
-        XCTAssertEqual(snapshot.elements.first?.canRotate, false)
+        XCTAssertEqual(snapshot.elements.first?.canRotate, true)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -289,6 +296,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(resize.postActionElement?.bounds?.width, 320)
         XCTAssertEqual(resize.postActionElement?.bounds?.height, 240)
         XCTAssertEqual(resize.valueWasVerified, true)
+        XCTAssertEqual(rotate.action, .rotate)
+        XCTAssertEqual(rotate.elementIndex, 0)
+        XCTAssertEqual(rotate.value, "degrees=45.0")
+        XCTAssertEqual(rotate.postActionElement?.name, "Desktop")
+        XCTAssertNil(rotate.valueWasVerified)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -640,6 +652,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
+        XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
@@ -671,7 +684,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridItemColumnSpan\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canResize\" : true"))
-        XCTAssertTrue(result.stdout.contains("\"canRotate\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -752,7 +765,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
-        XCTAssertTrue(result.stdout.contains("\"canRotate\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1046,6 +1059,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationRotate() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "rotate",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--degrees",
+            "45",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"rotate\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"degrees=45.0\""))
+        XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+        XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationSetWindowStateValue() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1102,6 +1141,20 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --size <width,height> for automation resize"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationRotateDegrees() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "rotate",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --degrees <number> for automation rotate"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationToggle() {
@@ -1277,6 +1330,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
+        XCTAssertTrue(result.stdout.contains("automation rotate --index"))
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
@@ -1787,6 +1841,39 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 postActionElement?.bounds?.height == Int(height))
     }
 
+    func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "")
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .rotate,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "degrees=\(degrees)",
+            postActionElement: postActionElement)
+    }
+
     private func expandCollapseUIAutomationElement(
         action: DesktopUIAutomationAction,
         scope: DesktopUIAutomationSnapshotScope,
@@ -1902,7 +1989,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     gridItemColumnSpan: 2,
                     canMove: true,
                     canResize: true,
-                    canRotate: false,
+                    canRotate: true,
                     isSelected: isSelected),
             ])
     }
@@ -1920,6 +2007,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setWindowVisualState,
                 .move,
                 .resize,
+                .rotate,
                 .toggle,
                 .expand,
                 .select,
@@ -1933,6 +2021,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setWindowVisualState,
                 .move,
                 .resize,
+                .rotate,
                 .toggle,
                 .collapse,
                 .select,
@@ -1946,6 +2035,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setWindowVisualState,
                 .move,
                 .resize,
+                .rotate,
                 .toggle,
                 .expand,
                 .collapse,
@@ -1960,6 +2050,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setWindowVisualState,
                 .move,
                 .resize,
+                .rotate,
                 .toggle,
                 .select,
             ]

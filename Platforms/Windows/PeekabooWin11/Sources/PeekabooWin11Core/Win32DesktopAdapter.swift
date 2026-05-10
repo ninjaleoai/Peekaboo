@@ -38,6 +38,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .setUIAutomationWindowVisualState,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
+                .rotateUIAutomationElement,
             ])
     }
 
@@ -866,6 +867,26 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             secondValue: height)
     }
 
+    public func rotateUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        degrees: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard degrees.isFinite else {
+            throw Win11DesktopError.invalidArgument("UI Automation rotate degrees must be a finite number")
+        }
+        return try self.performTransformUIAutomationElement(
+            action: .rotate,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            firstValue: degrees,
+            secondValue: 0.0)
+    }
+
     private func performTransformUIAutomationElement(
         action: DesktopUIAutomationAction,
         scope: DesktopUIAutomationSnapshotScope,
@@ -903,6 +924,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) cannot be resized")
         }
+        if action == .rotate, element.canRotate == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot be rotated")
+        }
 
         let nativeResult: PeekabooWin11UIAutomationActionResult
         if action == .move {
@@ -913,7 +938,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 Int32(elementIndex),
                 firstValue,
                 secondValue)
-        } else {
+        } else if action == .resize {
             nativeResult = PeekabooWin11ResizeUIAutomationElement(
                 Self.nativeUIAutomationScope(scope),
                 Int32(maxDepth),
@@ -921,6 +946,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 Int32(elementIndex),
                 firstValue,
                 secondValue)
+        } else {
+            nativeResult = PeekabooWin11RotateUIAutomationElement(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex),
+                firstValue)
         }
         try Self.validateUIAutomationTransform(nativeResult, action: action)
 
@@ -1594,8 +1626,22 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         _ actionResult: PeekabooWin11UIAutomationActionResult,
         action: DesktopUIAutomationAction) throws
     {
-        let actionName = action == .move ? "move" : "resize"
-        let methodName = action == .move ? "Move" : "Resize"
+        let actionName: String
+        let methodName: String
+        switch action {
+        case .move:
+            actionName = "move"
+            methodName = "Move"
+        case .resize:
+            actionName = "resize"
+            methodName = "Resize"
+        case .rotate:
+            actionName = "rotate"
+            methodName = "Rotate"
+        default:
+            actionName = "transform"
+            methodName = "Transform"
+        }
         if actionResult.errorResult < 0 {
             throw Win11DesktopError.nativeCallFailed(
                 "UI Automation \(actionName) failed: \(Self.hresultDescription(actionResult.errorResult))")
@@ -1738,7 +1784,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                         value: nativeElement.canMove),
                     canResize: Self.optionalBool(
                         hasValue: nativeElement.hasCanResize,
-                        value: nativeElement.canResize)),
+                        value: nativeElement.canResize),
+                    canRotate: Self.optionalBool(
+                        hasValue: nativeElement.hasCanRotate,
+                        value: nativeElement.canRotate)),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
@@ -1837,7 +1886,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         isVerticallyScrollable: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?,
         canMove: Bool?,
-        canResize: Bool?) -> [DesktopUIAutomationAction]
+        canResize: Bool?,
+        canRotate: Bool?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
         if supportedPatterns.contains(.invoke) {
@@ -1862,6 +1912,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.transform), canResize == true {
             actions.append(.resize)
+        }
+        if supportedPatterns.contains(.transform), canRotate == true {
+            actions.append(.rotate)
         }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
@@ -2230,6 +2283,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if action == .move {
             return "x=\(firstValue),y=\(secondValue)"
         }
+        if action == .rotate {
+            return "degrees=\(firstValue)"
+        }
         return "width=\(firstValue),height=\(secondValue)"
     }
 
@@ -2239,6 +2295,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         firstValue: Double,
         secondValue: Double) -> Bool?
     {
+        if action == .rotate {
+            return nil
+        }
         guard let bounds = postActionElement?.bounds else {
             return nil
         }
