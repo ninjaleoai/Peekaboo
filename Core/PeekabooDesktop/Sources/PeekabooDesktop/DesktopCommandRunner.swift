@@ -174,7 +174,7 @@ public enum DesktopCommandRunner {
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "focus, " +
                     "legacy-default-action, " +
-                    "set-value, set-range-value, set-scroll-percent, set-window-state, " +
+                    "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
@@ -192,6 +192,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationFocus(args: args, adapter: adapter, stdout: stdout)
         case "legacy-default-action", "performLegacyDefaultAction", "legacyDefaultAction":
             try self.runAutomationLegacyDefaultAction(args: args, adapter: adapter, stdout: stdout)
+        case "set-legacy-value", "setLegacyValue", "legacy-set-value":
+            try self.runAutomationSetLegacyValue(args: args, adapter: adapter, stdout: stdout)
         case "set-value", "setValue":
             try self.runAutomationSetValue(args: args, adapter: adapter, stdout: stdout)
         case "set-range-value", "setRangeValue":
@@ -385,6 +387,39 @@ public enum DesktopCommandRunner {
             .map(self.parseUIAutomationMaxElements) ?? 64
 
         try stdout(self.success(adapter.setUIAutomationElementValue(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            value: value)))
+    }
+
+    private static func runAutomationSetLegacyValue(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation set-legacy-value")
+        }
+
+        let value = try self.value(after: "--value", in: args) ??
+            self.value(after: "--text", in: args)
+        guard let value else {
+            throw DesktopAdapterError.invalidArgument("Missing --value <text> for automation set-legacy-value")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.setUIAutomationElementLegacyValue(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,
@@ -1198,6 +1233,8 @@ public enum DesktopCommandRunner {
           automation invoke --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation focus --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation legacy-default-action --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation set-legacy-value --index <n> --value <text>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-value --index <n> --value <text>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

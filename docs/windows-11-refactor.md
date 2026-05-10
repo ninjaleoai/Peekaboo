@@ -60,6 +60,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Legacy IAccessible-pattern UI Automation default actions against a bounded
   snapshot element index
+- Legacy IAccessible-pattern UI Automation set-legacy-value actions against a
+  bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
 - RangeValue-pattern UI Automation set-range-value actions against a bounded
@@ -86,17 +88,23 @@ contract, plus `automation status` and bounded `automation snapshot` UI
 Automation commands. It also exposes `automation element --index <n>` as a
 bounded element lookup over the same snapshot traversal, and
 `automation focus --index <n>`, `automation invoke --index <n>`,
+`automation legacy-default-action --index <n>`,
+`automation set-legacy-value --index <n>`,
 `automation set-value --index <n>`,
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`, and
-`automation set-window-state --index <n>` for Invoke-pattern, Value-pattern,
-RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
+`automation set-window-state --index <n>` for Invoke-pattern,
+LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
+and Window-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
 `automation legacy-default-action --index <n>` calls the LegacyIAccessible
 pattern default action for older MSAA-backed controls when UIA exposes a default
 action string.
+`automation set-legacy-value --index <n>` calls the LegacyIAccessible pattern
+`SetValue` method for older MSAA-backed controls when UIA exposes legacy value
+metadata.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
 covers Dock-pattern controls that can be rearranged within a docking
 container.
@@ -206,6 +214,12 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementLegacyValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementValue(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -364,6 +378,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation legacy-default-action --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-legacy-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-range-value --scope foreground --index 0 --value 42.5 --max-depth 2 --max-elements 64
@@ -447,8 +463,9 @@ selected. Elements also expose stable available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
 element is keyboard focusable, invoke is available when the Invoke pattern is
 present, performLegacyDefaultAction is available when the Legacy IAccessible
-pattern exposes a non-empty default action string, setValue is available only
-when the Value pattern is present and known writable,
+pattern exposes a non-empty default action string, setLegacyValue is available
+when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
+element, setValue is available only when the Value pattern is present and known writable,
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
@@ -474,6 +491,9 @@ refreshed lookup when UIA reports it. `automation legacy-default-action --index 
 performs the UIA LegacyIAccessible pattern's Microsoft Active Accessibility
 default action and returns refreshed post-action metadata without claiming value
 verification because the default action's visible effect is provider-specific.
+`automation set-legacy-value --index <n>` performs the UIA LegacyIAccessible
+pattern's `SetValue` method for MSAA-backed controls, then verifies the
+refreshed `legacyValue` metadata when UIA reports one.
 `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal and returns
 the pre-action element metadata used for the invocation. `automation set-value`

@@ -255,6 +255,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation legacy default action is not implemented by this adapter")
     }
 
+    public func setUIAutomationElementLegacyValue(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        value _: String) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation set-legacy-value is not implemented by this adapter")
+    }
+
     public func setUIAutomationElementValue(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

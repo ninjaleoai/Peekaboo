@@ -100,6 +100,12 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let setLegacyValue = try await bridge.setUIAutomationElementLegacyValue(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            value: "Legacy updated")
         let setValue = try await bridge.setUIAutomationElementValue(
             scope: .root,
             maxDepth: 1,
@@ -255,6 +261,7 @@ final class DesktopModelTests: XCTestCase {
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
+                .setLegacyValue,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -329,6 +336,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(legacyDefaultAction.value, "Open")
         XCTAssertEqual(legacyDefaultAction.postActionElement?.legacyDefaultAction, "Open")
         XCTAssertNil(legacyDefaultAction.valueWasVerified)
+        XCTAssertEqual(setLegacyValue.action, .setLegacyValue)
+        XCTAssertEqual(setLegacyValue.elementIndex, 0)
+        XCTAssertEqual(setLegacyValue.value, "Legacy updated")
+        XCTAssertEqual(setLegacyValue.postActionElement?.legacyValue, "Legacy updated")
+        XCTAssertEqual(setLegacyValue.valueWasVerified, true)
         XCTAssertEqual(setValue.action, .setValue)
         XCTAssertEqual(setValue.elementIndex, 0)
         XCTAssertEqual(setValue.value, "Updated value")
@@ -993,6 +1005,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSetLegacyValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-legacy-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "Legacy updated",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setLegacyValue\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"Legacy updated\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy updated\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationInvokeIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1028,6 +1066,33 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains(
             "Missing --index <element-index> for automation legacy-default-action"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetLegacyValueIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-legacy-value",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains(
+            "Missing --index <element-index> for automation set-legacy-value"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetLegacyValueText() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-legacy-value",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-legacy-value"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetValue() {
@@ -1698,6 +1763,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
         XCTAssertTrue(result.stdout.contains("automation focus --index"))
         XCTAssertTrue(result.stdout.contains("automation legacy-default-action --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-legacy-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
@@ -1963,6 +2029,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
             element: element,
             value: element.legacyDefaultAction ?? "default",
             postActionElement: postActionElement)
+    }
+
+    func setUIAutomationElementLegacyValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            legacyValue: value)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setLegacyValue,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: value,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.legacyValue == value)
     }
 
     func setUIAutomationElementValue(
@@ -2501,6 +2602,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         maxDepth: Int,
         maxElements: Int,
         elementValue: String,
+        legacyValue: String = "Legacy value",
         rangeValue: Double = 12.5,
         horizontalScrollPercent: Double = 0.0,
         verticalScrollPercent: Double = 25.0,
@@ -2594,7 +2696,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canRotate: true,
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
-                    legacyValue: "Legacy value",
+                    legacyValue: legacyValue,
                     legacyDescription: "Legacy description",
                     legacyHelp: "Legacy help",
                     legacyKeyboardShortcut: "Alt+D",
@@ -2618,6 +2720,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
+                .setLegacyValue,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2636,6 +2739,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
+                .setLegacyValue,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2654,6 +2758,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
+                .setLegacyValue,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2673,6 +2778,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
+                .setLegacyValue,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,

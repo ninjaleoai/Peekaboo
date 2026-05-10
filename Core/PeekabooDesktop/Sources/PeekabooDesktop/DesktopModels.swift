@@ -23,6 +23,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case focusUIAutomationElement
     case invokeUIAutomation
     case performUIAutomationLegacyDefaultAction
+    case setUIAutomationLegacyValue
     case setUIAutomationValue
     case toggleUIAutomation
     case expandCollapseUIAutomation
@@ -359,6 +360,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case focus
     case invoke
     case performLegacyDefaultAction
+    case setLegacyValue
     case setValue
     case toggle
     case expand

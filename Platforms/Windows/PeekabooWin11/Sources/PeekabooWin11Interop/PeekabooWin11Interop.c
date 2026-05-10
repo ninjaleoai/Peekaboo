@@ -27,6 +27,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION 16
 #define PEEKABOO_WIN11_UIA_ACTION_FOCUS 17
 #define PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION 18
+#define PEEKABOO_WIN11_UIA_ACTION_SET_LEGACY_VALUE 19
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1406,6 +1407,53 @@ static void PeekabooWin11PerformElementLegacyDefaultAction(
     IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
 }
 
+static void PeekabooWin11SetElementLegacyValue(
+    IUIAutomationElement *element,
+    const char *value,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_LegacyIAccessiblePatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationLegacyIAccessiblePattern *legacyPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationLegacyIAccessiblePattern,
+        (void **)&legacyPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || legacyPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    BSTR bstrValue = PeekabooWin11CopyUTF8BSTR(value);
+    if (bstrValue == NULL) {
+        result->actionResult = (int32_t)E_OUTOFMEMORY;
+        IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationLegacyIAccessiblePattern_SetValue(
+        legacyPattern,
+        bstrValue);
+    SysFreeString(bstrValue);
+    IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
+}
+
 static void PeekabooWin11TransformElement(
     IUIAutomationElement *element,
     int32_t action,
@@ -1869,6 +1917,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
             PeekabooWin11PerformElementLegacyDefaultAction(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_LEGACY_VALUE) {
+            PeekabooWin11SetElementLegacyValue(element, value, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_MOVE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_ROTATE)
@@ -2199,6 +2249,29 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationElementLeg
         elementIndex,
         PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION,
         NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementLegacyValue(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    const char *value)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_SET_LEGACY_VALUE,
+        value,
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
@@ -2615,6 +2688,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationElementLeg
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementLegacyValue(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    const char *value)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 19;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)value;
     result.initializeResult = -2147467263;
     return result;
 }
