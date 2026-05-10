@@ -155,6 +155,28 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
+    public func moveUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        x _: Double,
+        y _: Double) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
+    public func resizeUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        width _: Double,
+        height _: Double) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
     public func toggleUIAutomationElement(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

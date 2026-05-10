@@ -280,6 +280,28 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation set-window-state is not implemented by this adapter")
     }
 
+    public func moveUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        x _: Double,
+        y _: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform("UI Automation move is not implemented by this adapter")
+    }
+
+    public func resizeUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        width _: Double,
+        height _: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform("UI Automation resize is not implemented by this adapter")
+    }
+
     public func toggleUIAutomationElement(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

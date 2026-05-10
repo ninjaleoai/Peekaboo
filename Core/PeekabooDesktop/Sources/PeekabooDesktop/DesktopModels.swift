@@ -28,6 +28,8 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case setUIAutomationRangeValue
     case setUIAutomationScrollPercent
     case setUIAutomationWindowVisualState
+    case moveUIAutomationElement
+    case resizeUIAutomationElement
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -353,6 +355,8 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case setRangeValue
     case setScrollPercent
     case setWindowVisualState
+    case move
+    case resize
 }
 
 public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {

@@ -173,7 +173,7 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "toggle, expand, collapse, or select")
+                    "move, resize, toggle, expand, collapse, or select")
         }
 
         switch subcommand {
@@ -193,6 +193,10 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetScrollPercent(args: args, adapter: adapter, stdout: stdout)
         case "set-window-state", "setWindowState":
             try self.runAutomationSetWindowState(args: args, adapter: adapter, stdout: stdout)
+        case "move":
+            try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
+        case "resize":
+            try self.runAutomationResize(args: args, adapter: adapter, stdout: stdout)
         case "toggle":
             try self.runAutomationToggle(args: args, adapter: adapter, stdout: stdout)
         case "expand":
@@ -420,6 +424,62 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             state: self.parseUIAutomationWindowVisualState(stateValue))))
+    }
+
+    private static func runAutomationMove(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation move")
+        }
+
+        let point = try self.parseUIAutomationMovePoint(args)
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.moveUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            x: point.0,
+            y: point.1)))
+    }
+
+    private static func runAutomationResize(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation resize")
+        }
+
+        let size = try self.parseUIAutomationResizeSize(args)
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.resizeUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            width: size.0,
+            height: size.1)))
     }
 
     private static func runAutomationToggle(
@@ -812,6 +872,77 @@ public enum DesktopCommandRunner {
         return state
     }
 
+    private static func parseUIAutomationMovePoint(_ args: [String]) throws -> (Double, Double) {
+        if let pointValue = try self.value(after: "--point", in: args) ??
+            self.value(after: "--position", in: args)
+        {
+            return try self.parseDoublePair(pointValue, label: "Point", requirePositive: false)
+        }
+
+        guard let xValue = try self.value(after: "--x", in: args),
+              let yValue = try self.value(after: "--y", in: args)
+        else {
+            throw DesktopAdapterError.invalidArgument("Missing --point <x,y> for automation move")
+        }
+        return (
+            try self.parseFiniteDouble(xValue, label: "UI Automation move x"),
+            try self.parseFiniteDouble(yValue, label: "UI Automation move y"))
+    }
+
+    private static func parseUIAutomationResizeSize(_ args: [String]) throws -> (Double, Double) {
+        if let sizeValue = try self.value(after: "--size", in: args) {
+            return try self.parseDoublePair(sizeValue, label: "Size", requirePositive: true)
+        }
+
+        guard let widthValue = try self.value(after: "--width", in: args),
+              let heightValue = try self.value(after: "--height", in: args)
+        else {
+            throw DesktopAdapterError.invalidArgument("Missing --size <width,height> for automation resize")
+        }
+        return (
+            try self.parsePositiveFiniteDouble(widthValue, label: "UI Automation resize width"),
+            try self.parsePositiveFiniteDouble(heightValue, label: "UI Automation resize height"))
+    }
+
+    private static func parseDoublePair(
+        _ value: String,
+        label: String,
+        requirePositive: Bool) throws -> (Double, Double)
+    {
+        let parts = value
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        guard parts.count == 2 else {
+            let expected = requirePositive ? "width,height" : "x,y"
+            throw DesktopAdapterError.invalidArgument("\(label) must be \(expected)")
+        }
+
+        if requirePositive {
+            return (
+                try self.parsePositiveFiniteDouble(parts[0], label: "\(label) width"),
+                try self.parsePositiveFiniteDouble(parts[1], label: "\(label) height"))
+        }
+        return (
+            try self.parseFiniteDouble(parts[0], label: "\(label) x"),
+            try self.parseFiniteDouble(parts[1], label: "\(label) y"))
+    }
+
+    private static func parseFiniteDouble(_ value: String, label: String) throws -> Double {
+        guard let number = Double(value), number.isFinite else {
+            throw DesktopAdapterError.invalidArgument("\(label) must be a finite number")
+        }
+        return number
+    }
+
+    private static func parsePositiveFiniteDouble(_ value: String, label: String) throws -> Double {
+        let number = try self.parseFiniteDouble(value, label: label)
+        guard number > 0 else {
+            throw DesktopAdapterError.invalidArgument("\(label) must be greater than 0")
+        }
+        return number
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -848,6 +979,10 @@ public enum DesktopCommandRunner {
           automation set-scroll-percent --index <n> [--horizontal <percent>] [--vertical <percent>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-window-state --index <n> --state <normal|maximized|minimized>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation move --index <n> --point <x,y>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation resize --index <n> --size <width,height>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation toggle --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation expand --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

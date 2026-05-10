@@ -18,6 +18,8 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_RANGE_VALUE 7
 #define PEEKABOO_WIN11_UIA_ACTION_SET_SCROLL_PERCENT 8
 #define PEEKABOO_WIN11_UIA_ACTION_SET_WINDOW_VISUAL_STATE 9
+#define PEEKABOO_WIN11_UIA_ACTION_MOVE 10
+#define PEEKABOO_WIN11_UIA_ACTION_RESIZE 11
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1085,6 +1087,55 @@ static void PeekabooWin11SetElementWindowVisualState(
     IUIAutomationWindowPattern_Release(windowPattern);
 }
 
+static void PeekabooWin11TransformElement(
+    IUIAutomationElement *element,
+    int32_t action,
+    double firstValue,
+    double secondValue,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TransformPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationTransformPattern *transformPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTransformPattern,
+        (void **)&transformPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || transformPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    if (action == PEEKABOO_WIN11_UIA_ACTION_MOVE) {
+        result->actionResult = (int32_t)IUIAutomationTransformPattern_Move(
+            transformPattern,
+            firstValue,
+            secondValue);
+    } else {
+        result->actionResult = (int32_t)IUIAutomationTransformPattern_Resize(
+            transformPattern,
+            firstValue,
+            secondValue);
+    }
+    IUIAutomationTransformPattern_Release(transformPattern);
+}
+
 static void PeekabooWin11ToggleElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -1367,6 +1418,8 @@ static int32_t PeekabooWin11VisitElementForAction(
     double horizontalScrollPercent,
     double verticalScrollPercent,
     int32_t windowVisualState,
+    double transformFirstValue,
+    double transformSecondValue,
     int32_t depth)
 {
     if (result->elementCount >= result->maxElements) {
@@ -1397,6 +1450,15 @@ static int32_t PeekabooWin11VisitElementForAction(
                 result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_WINDOW_VISUAL_STATE) {
             PeekabooWin11SetElementWindowVisualState(element, windowVisualState, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_MOVE ||
+            result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE)
+        {
+            PeekabooWin11TransformElement(
+                element,
+                result->action,
+                transformFirstValue,
+                transformSecondValue,
+                result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
             PeekabooWin11SetElementValue(element, value, result);
         } else {
@@ -1434,6 +1496,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             horizontalScrollPercent,
             verticalScrollPercent,
             windowVisualState,
+            transformFirstValue,
+            transformSecondValue,
             depth + 1);
         if (result->foundElement) {
             IUIAutomationElement_Release(child);
@@ -1558,7 +1622,9 @@ static PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationAct
     double rangeValue,
     double horizontalScrollPercent,
     double verticalScrollPercent,
-    int32_t windowVisualState)
+    int32_t windowVisualState,
+    double transformFirstValue,
+    double transformSecondValue)
 {
     PeekabooWin11UIAutomationActionResult result;
     memset(&result, 0, sizeof(result));
@@ -1637,6 +1703,8 @@ static PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationAct
             horizontalScrollPercent,
             verticalScrollPercent,
             windowVisualState,
+            transformFirstValue,
+            transformSecondValue,
             0);
         IUIAutomationTreeWalker_Release(walker);
     }
@@ -1667,7 +1735,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11InvokeUIAutomationElement(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
@@ -1687,7 +1757,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeValue(
@@ -1707,7 +1779,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeVa
         value,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollPercent(
@@ -1728,7 +1802,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollP
         0.0,
         horizontalPercent,
         verticalPercent,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowVisualState(
@@ -1748,7 +1824,55 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowV
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        visualState);
+        visualState,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double x,
+    double y)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_MOVE,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        x,
+        y);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double width,
+    double height)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_RESIZE,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        width,
+        height);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
@@ -1767,7 +1891,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11ExpandUIAutomationElement(
@@ -1786,7 +1912,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ExpandUIAutomationElement(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11CollapseUIAutomationElement(
@@ -1805,7 +1933,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CollapseUIAutomationElement(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
@@ -1824,7 +1954,9 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
-        0);
+        0,
+        0.0,
+        0.0);
 }
 #else
 PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
@@ -1937,6 +2069,48 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowV
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)visualState;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double x,
+    double y)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 10;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)x;
+    (void)y;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double width,
+    double height)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 11;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)width;
+    (void)height;
     result.initializeResult = -2147467263;
     return result;
 }

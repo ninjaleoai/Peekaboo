@@ -36,6 +36,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
+                .moveUIAutomationElement,
+                .resizeUIAutomationElement,
             ])
     }
 
@@ -822,6 +824,132 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             valueWasVerified: postActionElement?.windowVisualState.map { $0 == state })
     }
 
+    public func moveUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        x: Double,
+        y: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard x.isFinite, y.isFinite else {
+            throw Win11DesktopError.invalidArgument("UI Automation move coordinates must be finite numbers")
+        }
+        return try self.performTransformUIAutomationElement(
+            action: .move,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            firstValue: x,
+            secondValue: y)
+    }
+
+    public func resizeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        width: Double,
+        height: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard width.isFinite, height.isFinite, width > 0, height > 0 else {
+            throw Win11DesktopError.invalidArgument("UI Automation resize dimensions must be greater than 0")
+        }
+        return try self.performTransformUIAutomationElement(
+            action: .resize,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            firstValue: width,
+            secondValue: height)
+    }
+
+    private func performTransformUIAutomationElement(
+        action: DesktopUIAutomationAction,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        firstValue: Double,
+        secondValue: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.transform) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support transform")
+        }
+        if action == .move, element.canMove == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot be moved")
+        }
+        if action == .resize, element.canResize == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot be resized")
+        }
+
+        let nativeResult: PeekabooWin11UIAutomationActionResult
+        if action == .move {
+            nativeResult = PeekabooWin11MoveUIAutomationElement(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex),
+                firstValue,
+                secondValue)
+        } else {
+            nativeResult = PeekabooWin11ResizeUIAutomationElement(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex),
+                firstValue,
+                secondValue)
+        }
+        try Self.validateUIAutomationTransform(nativeResult, action: action)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: action,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: Self.transformValueString(
+                action: action,
+                firstValue: firstValue,
+                secondValue: secondValue),
+            postActionElement: postActionElement,
+            valueWasVerified: Self.transformWasVerified(
+                action: action,
+                postActionElement: postActionElement,
+                firstValue: firstValue,
+                secondValue: secondValue))
+    }
+
     public func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1462,6 +1590,56 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationTransform(
+        _ actionResult: PeekabooWin11UIAutomationActionResult,
+        action: DesktopUIAutomationAction) throws
+    {
+        let actionName = action == .move ? "move" : "resize"
+        let methodName = action == .move ? "Move" : "Resize"
+        if actionResult.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation \(actionName) failed: \(Self.hresultDescription(actionResult.errorResult))")
+        }
+
+        let didReachAutomation = actionResult.createResult != 0 ||
+            actionResult.rootResult != 0 ||
+            actionResult.walkerResult != 0 ||
+            actionResult.elementCount > 0
+        if actionResult.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(actionResult.initializeResult))")
+        }
+        if !Self.succeeded(actionResult.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(actionResult.createResult))")
+        }
+        if !Self.succeeded(actionResult.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(actionResult.rootResult))")
+        }
+        if !Self.succeeded(actionResult.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(actionResult.walkerResult))")
+        }
+        if actionResult.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(actionResult.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) does not support transform")
+        }
+        if !Self.succeeded(actionResult.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationTransformPattern query failed: \(Self.hresultDescription(actionResult.queryResult))")
+        }
+        if !Self.succeeded(actionResult.actionResult) {
+            let description = Self.hresultDescription(actionResult.actionResult)
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationTransformPattern.\(methodName) failed: \(description)")
+        }
+    }
+
     private static func nativeUIAutomationScope(_ scope: DesktopUIAutomationSnapshotScope) -> Int32 {
         switch scope {
         case .root:
@@ -1554,7 +1732,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     isRangeValueReadOnly: isRangeValueReadOnly,
                     isHorizontallyScrollable: isHorizontallyScrollable,
                     isVerticallyScrollable: isVerticallyScrollable,
-                    expandCollapseState: expandCollapseState),
+                    expandCollapseState: expandCollapseState,
+                    canMove: Self.optionalBool(
+                        hasValue: nativeElement.hasCanMove,
+                        value: nativeElement.canMove),
+                    canResize: Self.optionalBool(
+                        hasValue: nativeElement.hasCanResize,
+                        value: nativeElement.canResize)),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
@@ -1651,7 +1835,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         isRangeValueReadOnly: Bool?,
         isHorizontallyScrollable: Bool?,
         isVerticallyScrollable: Bool?,
-        expandCollapseState: DesktopUIAutomationExpandCollapseState?) -> [DesktopUIAutomationAction]
+        expandCollapseState: DesktopUIAutomationExpandCollapseState?,
+        canMove: Bool?,
+        canResize: Bool?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
         if supportedPatterns.contains(.invoke) {
@@ -1670,6 +1856,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.window) {
             actions.append(.setWindowVisualState)
+        }
+        if supportedPatterns.contains(.transform), canMove == true {
+            actions.append(.move)
+        }
+        if supportedPatterns.contains(.transform), canResize == true {
+            actions.append(.resize)
         }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
@@ -2028,6 +2220,34 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             }
         }
         return true
+    }
+
+    private static func transformValueString(
+        action: DesktopUIAutomationAction,
+        firstValue: Double,
+        secondValue: Double) -> String
+    {
+        if action == .move {
+            return "x=\(firstValue),y=\(secondValue)"
+        }
+        return "width=\(firstValue),height=\(secondValue)"
+    }
+
+    private static func transformWasVerified(
+        action: DesktopUIAutomationAction,
+        postActionElement: DesktopUIAutomationElementSnapshot?,
+        firstValue: Double,
+        secondValue: Double) -> Bool?
+    {
+        guard let bounds = postActionElement?.bounds else {
+            return nil
+        }
+        if action == .move {
+            return abs(Double(bounds.x) - firstValue) <= 0.000_001 &&
+                abs(Double(bounds.y) - secondValue) <= 0.000_001
+        }
+        return abs(Double(bounds.width) - firstValue) <= 0.000_001 &&
+            abs(Double(bounds.height) - secondValue) <= 0.000_001
     }
 
     private static func succeeded(_ result: Int32) -> Bool {

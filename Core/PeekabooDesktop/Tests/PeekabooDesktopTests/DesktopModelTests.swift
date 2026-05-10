@@ -115,6 +115,20 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             state: .maximized)
+        let move = try await bridge.moveUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            x: 20.0,
+            y: 30.0)
+        let resize = try await bridge.resizeUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            width: 320.0,
+            height: 240.0)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -200,6 +214,8 @@ final class DesktopModelTests: XCTestCase {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .move,
+                .resize,
                 .toggle,
                 .expand,
                 .select,
@@ -261,6 +277,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setWindowState.value, "maximized")
         XCTAssertEqual(setWindowState.postActionElement?.windowVisualState, .maximized)
         XCTAssertEqual(setWindowState.valueWasVerified, true)
+        XCTAssertEqual(move.action, .move)
+        XCTAssertEqual(move.elementIndex, 0)
+        XCTAssertEqual(move.value, "x=20.0,y=30.0")
+        XCTAssertEqual(move.postActionElement?.bounds?.x, 20)
+        XCTAssertEqual(move.postActionElement?.bounds?.y, 30)
+        XCTAssertEqual(move.valueWasVerified, true)
+        XCTAssertEqual(resize.action, .resize)
+        XCTAssertEqual(resize.elementIndex, 0)
+        XCTAssertEqual(resize.value, "width=320.0,height=240.0")
+        XCTAssertEqual(resize.postActionElement?.bounds?.width, 320)
+        XCTAssertEqual(resize.postActionElement?.bounds?.height, 240)
+        XCTAssertEqual(resize.valueWasVerified, true)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -964,6 +992,60 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationMove() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "move",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--point",
+            "20,30",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"move\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"x=20.0,y=30.0\""))
+        XCTAssertTrue(result.stdout.contains("\"x\" : 20"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 30"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationResize() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "resize",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--size",
+            "320,240",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"resize\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"width=320.0,height=240.0\""))
+        XCTAssertTrue(result.stdout.contains("\"width\" : 320"))
+        XCTAssertTrue(result.stdout.contains("\"height\" : 240"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationSetWindowStateValue() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -992,6 +1074,34 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("UI Automation window state must be normal"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationMovePoint() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "move",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --point <x,y> for automation move"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationResizeSize() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "resize",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --size <width,height> for automation resize"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationToggle() {
@@ -1165,6 +1275,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
+        XCTAssertTrue(result.stdout.contains("automation move --index"))
+        XCTAssertTrue(result.stdout.contains("automation resize --index"))
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
@@ -1593,6 +1705,88 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .first(where: { $0.index == elementIndex }))
     }
 
+    func moveUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        x: Double,
+        y: Double) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            bounds: DesktopRect(
+                x: Int(x),
+                y: Int(y),
+                width: element.bounds?.width ?? 100,
+                height: element.bounds?.height ?? 100))
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .move,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "x=\(x),y=\(y)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.bounds?.x == Int(x) &&
+                postActionElement?.bounds?.y == Int(y))
+    }
+
+    func resizeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        width: Double,
+        height: Double) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            bounds: DesktopRect(
+                x: element.bounds?.x ?? 0,
+                y: element.bounds?.y ?? 0,
+                width: Int(width),
+                height: Int(height)))
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .resize,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "width=\(width),height=\(height)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.bounds?.width == Int(width) &&
+                postActionElement?.bounds?.height == Int(height))
+    }
+
     private func expandCollapseUIAutomationElement(
         action: DesktopUIAutomationAction,
         scope: DesktopUIAutomationSnapshotScope,
@@ -1637,6 +1831,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         windowVisualState: DesktopUIAutomationWindowVisualState = .normal,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
+        bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
@@ -1655,7 +1850,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     localizedControlType: "pane",
                     controlType: 50033,
                     controlTypeName: "Pane",
-                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100),
+                    bounds: bounds,
                     isEnabled: true,
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
@@ -1723,6 +1918,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .move,
+                .resize,
                 .toggle,
                 .expand,
                 .select,
@@ -1734,6 +1931,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .move,
+                .resize,
                 .toggle,
                 .collapse,
                 .select,
@@ -1745,6 +1944,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .move,
+                .resize,
                 .toggle,
                 .expand,
                 .collapse,
@@ -1757,6 +1958,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .move,
+                .resize,
                 .toggle,
                 .select,
             ]

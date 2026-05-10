@@ -55,6 +55,20 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    func moveUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        x: Double,
+        y: Double) throws -> DesktopUIAutomationActionResult
+    func resizeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        width: Double,
+        height: Double) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -135,6 +149,20 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
+    func moveUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        x: Double,
+        y: Double) async throws -> DesktopUIAutomationActionResult
+    func resizeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        width: Double,
+        height: Double) async throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -325,6 +353,40 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             state: state)
+    }
+
+    public func moveUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        x: Double,
+        y: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.moveUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            x: x,
+            y: y)
+    }
+
+    public func resizeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        width: Double,
+        height: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.resizeUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            width: width,
+            height: height)
     }
 
     public func toggleUIAutomationElement(

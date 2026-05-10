@@ -193,6 +193,22 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowV
     int32_t elementIndex,
     int32_t visualState);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double x,
+    double y);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ResizeUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double width,
+    double height);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,

@@ -42,6 +42,8 @@ final class Win11ModelTests: XCTestCase {
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
+                .moveUIAutomationElement,
+                .resizeUIAutomationElement,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
@@ -68,6 +70,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationWindowVisualState))
+        XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
+        XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.selectUIAutomationItem))
@@ -136,6 +140,20 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             state: .maximized))
+        XCTAssertThrowsError(try adapter.moveUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            x: 20,
+            y: 30))
+        XCTAssertThrowsError(try adapter.resizeUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            width: 320,
+            height: 240))
         XCTAssertThrowsError(try adapter.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -201,6 +219,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation set-range-value --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(output.contains("automation set-window-state --index"))
+        XCTAssertTrue(output.contains("automation move --index"))
+        XCTAssertTrue(output.contains("automation resize --index"))
         XCTAssertTrue(output.contains("automation toggle --index"))
         XCTAssertTrue(output.contains("automation expand --index"))
         XCTAssertTrue(output.contains("automation collapse --index"))
