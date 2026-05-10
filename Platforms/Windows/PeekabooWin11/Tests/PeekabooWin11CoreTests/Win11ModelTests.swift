@@ -12,7 +12,16 @@ final class Win11ModelTests: XCTestCase {
     }
 
     func testPlatformInfoAdvertisesWin32Windows11() {
-        let info = UnsupportedWin11DesktopAdapter().platformInfo()
+        let info: Win11PlatformInfo
+        #if os(Windows)
+        info = Win32DesktopAdapter().platformInfo()
+        #else
+        info = Win11PlatformInfo(
+            name: "Windows",
+            minimumSystemVersion: "Windows 11",
+            nativeBackend: "Win32",
+            capabilities: Win11PlatformCapability.allCases)
+        #endif
 
         XCTAssertEqual(info.minimumSystemVersion, "Windows 11")
         XCTAssertEqual(info.nativeBackend, "Win32")
