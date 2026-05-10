@@ -30,6 +30,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .inspectUIAutomation,
                 .focusUIAutomationElement,
                 .invokeUIAutomation,
+                .performUIAutomationLegacyDefaultAction,
                 .setUIAutomationValue,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
@@ -613,6 +614,62 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             value: "focused=true",
             postActionElement: postActionElement,
             valueWasVerified: postActionElement?.hasKeyboardFocus.map { $0 == true })
+    }
+
+    public func performUIAutomationElementLegacyDefaultAction(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.legacyIAccessible) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support legacy default action")
+        }
+        guard let defaultAction = element.legacyDefaultAction, !defaultAction.isEmpty else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) has no legacy default action")
+        }
+
+        let nativeResult = PeekabooWin11PerformUIAutomationElementLegacyDefaultAction(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex))
+        try Self.validateUIAutomationLegacyDefaultAction(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .performLegacyDefaultAction,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: defaultAction,
+            postActionElement: postActionElement)
     }
 
     public func setUIAutomationElementValue(
@@ -1594,6 +1651,55 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationLegacyDefaultAction(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation legacy-default-action failed: " +
+                    "\(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support legacy default action")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationLegacyIAccessiblePattern query failed: " +
+                    "\(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationLegacyIAccessiblePattern.DoDefaultAction failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationSetValue(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -2208,6 +2314,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let selectionSelectedItemCount = Self.optionalInt(
                 hasValue: nativeElement.hasSelectionSelectedItemCount,
                 value: nativeElement.selectionSelectedItemCount)
+            let legacyDefaultAction = nativeElement.hasLegacyDefaultAction != 0
+                ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyDefaultAction(&nativeElement))
+                : nil
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -2243,6 +2352,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     isKeyboardFocusable: isKeyboardFocusable,
                     isValueReadOnly: isValueReadOnly,
                     isRangeValueReadOnly: isRangeValueReadOnly,
+                    legacyDefaultAction: legacyDefaultAction,
                     isHorizontallyScrollable: isHorizontallyScrollable,
                     isVerticallyScrollable: isVerticallyScrollable,
                     expandCollapseState: expandCollapseState,
@@ -2369,10 +2479,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     ? Self.rawString(
                         from: PeekabooWin11UIAutomationElementLegacyKeyboardShortcut(&nativeElement))
                     : nil,
-                legacyDefaultAction: nativeElement.hasLegacyDefaultAction != 0
-                    ? Self.rawString(
-                        from: PeekabooWin11UIAutomationElementLegacyDefaultAction(&nativeElement))
-                    : nil,
+                legacyDefaultAction: legacyDefaultAction,
                 legacyRole: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyRole,
                     value: nativeElement.legacyRole),
@@ -2389,6 +2496,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         isKeyboardFocusable: Bool?,
         isValueReadOnly: Bool?,
         isRangeValueReadOnly: Bool?,
+        legacyDefaultAction: String?,
         isHorizontallyScrollable: Bool?,
         isVerticallyScrollable: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?,
@@ -2407,6 +2515,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.invoke) {
             actions.append(.invoke)
+        }
+        if supportedPatterns.contains(.legacyIAccessible),
+            let legacyDefaultAction,
+            !legacyDefaultAction.isEmpty
+        {
+            actions.append(.performLegacyDefaultAction)
         }
         if supportedPatterns.contains(.value), isValueReadOnly == false {
             actions.append(.setValue)

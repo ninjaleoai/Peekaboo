@@ -95,6 +95,11 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let legacyDefaultAction = try await bridge.performUIAutomationElementLegacyDefaultAction(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let setValue = try await bridge.setUIAutomationElementValue(
             scope: .root,
             maxDepth: 1,
@@ -249,6 +254,7 @@ final class DesktopModelTests: XCTestCase {
             [
                 .focus,
                 .invoke,
+                .performLegacyDefaultAction,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -318,6 +324,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(focus.value, "focused=true")
         XCTAssertEqual(focus.postActionElement?.hasKeyboardFocus, true)
         XCTAssertEqual(focus.valueWasVerified, true)
+        XCTAssertEqual(legacyDefaultAction.action, .performLegacyDefaultAction)
+        XCTAssertEqual(legacyDefaultAction.elementIndex, 0)
+        XCTAssertEqual(legacyDefaultAction.value, "Open")
+        XCTAssertEqual(legacyDefaultAction.postActionElement?.legacyDefaultAction, "Open")
+        XCTAssertNil(legacyDefaultAction.valueWasVerified)
         XCTAssertEqual(setValue.action, .setValue)
         XCTAssertEqual(setValue.elementIndex, 0)
         XCTAssertEqual(setValue.value, "Updated value")
@@ -732,6 +743,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"focus\""))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
+        XCTAssertTrue(result.stdout.contains("\"performLegacyDefaultAction\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
@@ -957,6 +969,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationLegacyDefaultAction() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "legacy-default-action",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"performLegacyDefaultAction\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"Open\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
+        XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationInvokeIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -979,6 +1015,19 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation focus"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationLegacyDefaultActionIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "legacy-default-action",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains(
+            "Missing --index <element-index> for automation legacy-default-action"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetValue() {
@@ -1648,6 +1697,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation element --index"))
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
         XCTAssertTrue(result.stdout.contains("automation focus --index"))
+        XCTAssertTrue(result.stdout.contains("automation legacy-default-action --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
@@ -1881,6 +1931,38 @@ private struct StubDesktopAdapter: DesktopAdapter {
             value: "focused=true",
             postActionElement: postActionElement,
             valueWasVerified: postActionElement?.hasKeyboardFocus == true)
+    }
+
+    func performUIAutomationElementLegacyDefaultAction(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "")
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .performLegacyDefaultAction,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: element.legacyDefaultAction ?? "default",
+            postActionElement: postActionElement)
     }
 
     func setUIAutomationElementValue(
@@ -2535,6 +2617,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             return [
                 .focus,
                 .invoke,
+                .performLegacyDefaultAction,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2552,6 +2635,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             return [
                 .focus,
                 .invoke,
+                .performLegacyDefaultAction,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2569,6 +2653,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             return [
                 .focus,
                 .invoke,
+                .performLegacyDefaultAction,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,
@@ -2587,6 +2672,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             return [
                 .focus,
                 .invoke,
+                .performLegacyDefaultAction,
                 .setValue,
                 .setRangeValue,
                 .setScrollPercent,

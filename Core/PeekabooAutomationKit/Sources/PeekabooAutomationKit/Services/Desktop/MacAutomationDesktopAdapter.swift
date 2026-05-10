@@ -245,6 +245,16 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("UI Automation focus is not implemented by this adapter")
     }
 
+    public func performUIAutomationElementLegacyDefaultAction(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation legacy default action is not implemented by this adapter")
+    }
+
     public func setUIAutomationElementValue(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

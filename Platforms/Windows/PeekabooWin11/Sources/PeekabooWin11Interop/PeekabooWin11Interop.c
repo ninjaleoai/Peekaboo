@@ -26,6 +26,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_REMOVE_FROM_SELECTION 15
 #define PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION 16
 #define PEEKABOO_WIN11_UIA_ACTION_FOCUS 17
+#define PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION 18
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1368,6 +1369,43 @@ static void PeekabooWin11FocusElement(
     result->actionResult = (int32_t)IUIAutomationElement_SetFocus(element);
 }
 
+static void PeekabooWin11PerformElementLegacyDefaultAction(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_LegacyIAccessiblePatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationLegacyIAccessiblePattern *legacyPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationLegacyIAccessiblePattern,
+        (void **)&legacyPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || legacyPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationLegacyIAccessiblePattern_DoDefaultAction(
+        legacyPattern);
+    IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
+}
+
 static void PeekabooWin11TransformElement(
     IUIAutomationElement *element,
     int32_t action,
@@ -1829,6 +1867,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SetElementDockPosition(element, dockPosition, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
             PeekabooWin11FocusElement(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
+            PeekabooWin11PerformElementLegacyDefaultAction(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_MOVE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_ROTATE)
@@ -2136,6 +2176,28 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11FocusUIAutomationElement(
         maxElements,
         elementIndex,
         PEEKABOO_WIN11_UIA_ACTION_FOCUS,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationElementLegacyDefaultAction(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION,
         NULL,
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
@@ -2532,6 +2594,23 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11FocusUIAutomationElement(
     PeekabooWin11UIAutomationActionResult result;
     memset(&result, 0, sizeof(result));
     result.action = 17;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationElementLegacyDefaultAction(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 18;
     result.scope = scope;
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;

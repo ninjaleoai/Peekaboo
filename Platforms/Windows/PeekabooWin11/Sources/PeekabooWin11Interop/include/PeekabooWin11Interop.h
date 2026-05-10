@@ -196,6 +196,12 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11FocusUIAutomationElement(
     int32_t maxElements,
     int32_t elementIndex);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11PerformUIAutomationElementLegacyDefaultAction(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     int32_t scope,
     int32_t maxDepth,

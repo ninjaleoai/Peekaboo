@@ -39,6 +39,7 @@ final class Win11ModelTests: XCTestCase {
                 .inspectUIAutomation,
                 .focusUIAutomationElement,
                 .invokeUIAutomation,
+                .performUIAutomationLegacyDefaultAction,
                 .setUIAutomationValue,
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
@@ -73,6 +74,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.focusUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.performUIAutomationLegacyDefaultAction))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
@@ -128,6 +130,11 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0))
         XCTAssertThrowsError(try adapter.focusUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
+        XCTAssertThrowsError(try adapter.performUIAutomationElementLegacyDefaultAction(
             scope: .root,
             maxDepth: 1,
             maxElements: 4,
@@ -260,6 +267,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation element --index"))
         XCTAssertTrue(output.contains("automation invoke --index"))
         XCTAssertTrue(output.contains("automation focus --index"))
+        XCTAssertTrue(output.contains("automation legacy-default-action --index"))
         XCTAssertTrue(output.contains("automation set-value --index"))
         XCTAssertTrue(output.contains("automation set-range-value --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
