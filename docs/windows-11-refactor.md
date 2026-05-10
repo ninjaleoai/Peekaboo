@@ -34,6 +34,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
   cursor-hit element snapshots through the UIA control view walker
+- stable UI Automation action availability mapping for snapshot elements
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -222,8 +223,11 @@ and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
 selection item, text, toggle, and legacy IAccessible. When an element supports
 the UIA Value pattern, snapshots also include its current string value and
-whether that value is read-only. Root snapshots should stay shallow because
-desktop-wide UIA traversal is expensive. `automation element --index <n>`
+whether that value is read-only. Elements also expose stable available actions
+derived from those patterns: invoke is available when the Invoke pattern is
+present, and setValue is available only when the Value pattern is present and
+known writable. Root snapshots should stay shallow because desktop-wide UIA
+traversal is expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
 invoke and value actions a concrete element lookup surface without introducing
 persistent UIA element handles yet. `automation invoke --index <n>` performs
@@ -237,5 +241,5 @@ before calling UIA `SetValue`.
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Expand the Windows UI Automation path from element lookup, invoke, and value
-   actions into stable control-type/action mapping.
+2. Expand the Windows UI Automation path from stable action mapping into richer
+   control-specific actions and result verification.

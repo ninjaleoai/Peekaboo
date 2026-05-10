@@ -138,6 +138,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(snapshot.elements.first?.supportedPatterns, [.invoke, .value])
+        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
         XCTAssertEqual(invoke.action, .invoke)
@@ -478,7 +479,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isEnabled\" : true"))
         XCTAssertTrue(result.stdout.contains("\"isOffscreen\" : false"))
         XCTAssertTrue(result.stdout.contains("\"supportedPatterns\" : ["))
+        XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
+        XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
@@ -546,6 +549,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
+        XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
     }
@@ -872,6 +876,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     hasKeyboardFocus: false,
                     isOffscreen: false,
                     supportedPatterns: [.invoke, .value],
+                    availableActions: [.invoke, .setValue],
                     value: "Example value",
                     isValueReadOnly: false),
             ])

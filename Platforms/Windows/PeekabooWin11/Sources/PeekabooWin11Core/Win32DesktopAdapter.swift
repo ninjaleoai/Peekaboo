@@ -769,6 +769,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     width: Int(nativeElement.boundsWidth),
                     height: Int(nativeElement.boundsHeight))
                 : nil
+            let supportedPatterns = Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask)
+            let isValueReadOnly = Self.optionalBool(
+                hasValue: nativeElement.hasIsValueReadOnly,
+                value: nativeElement.isValueReadOnly)
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -800,15 +804,30 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isOffscreen: Self.optionalBool(
                     hasValue: nativeElement.hasIsOffscreen,
                     value: nativeElement.isOffscreen),
-                supportedPatterns: Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask),
+                supportedPatterns: supportedPatterns,
+                availableActions: Self.uiAutomationActions(
+                    supportedPatterns: supportedPatterns,
+                    isValueReadOnly: isValueReadOnly),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
-                isValueReadOnly: Self.optionalBool(
-                    hasValue: nativeElement.hasIsValueReadOnly,
-                    value: nativeElement.isValueReadOnly),
+                isValueReadOnly: isValueReadOnly,
                 childCount: Int(nativeElement.childCount))
         }
+    }
+
+    private static func uiAutomationActions(
+        supportedPatterns: [DesktopUIAutomationPattern],
+        isValueReadOnly: Bool?) -> [DesktopUIAutomationAction]
+    {
+        var actions: [DesktopUIAutomationAction] = []
+        if supportedPatterns.contains(.invoke) {
+            actions.append(.invoke)
+        }
+        if supportedPatterns.contains(.value), isValueReadOnly == false {
+            actions.append(.setValue)
+        }
+        return actions
     }
 
     private static func uiAutomationPatterns(from mask: UInt64) -> [DesktopUIAutomationPattern] {

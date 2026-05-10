@@ -334,6 +334,11 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case legacyIAccessible
 }
 
+public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
+    case invoke
+    case setValue
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -352,6 +357,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let hasKeyboardFocus: Bool?
     public let isOffscreen: Bool?
     public let supportedPatterns: [DesktopUIAutomationPattern]
+    public let availableActions: [DesktopUIAutomationAction]
     public let value: String?
     public let isValueReadOnly: Bool?
     public let childCount: Int
@@ -374,6 +380,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         hasKeyboardFocus: Bool? = nil,
         isOffscreen: Bool? = nil,
         supportedPatterns: [DesktopUIAutomationPattern] = [],
+        availableActions: [DesktopUIAutomationAction] = [],
         value: String? = nil,
         isValueReadOnly: Bool? = nil,
         childCount: Int = 0)
@@ -395,6 +402,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.hasKeyboardFocus = hasKeyboardFocus
         self.isOffscreen = isOffscreen
         self.supportedPatterns = supportedPatterns
+        self.availableActions = availableActions
         self.value = value
         self.isValueReadOnly = isValueReadOnly
         self.childCount = childCount
@@ -461,11 +469,6 @@ public struct DesktopUIAutomationElementLookup: Codable, Equatable, Sendable {
         self.elementIndex = elementIndex
         self.element = element
     }
-}
-
-public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
-    case invoke
-    case setValue
 }
 
 public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
