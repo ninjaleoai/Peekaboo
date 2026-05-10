@@ -4,12 +4,14 @@ on:
   push:
     paths:
       - "Platforms/Windows/PeekabooWin11/**"
+      - "Core/PeekabooDesktop/**"
       - "scripts/windows/build-win11.ps1"
       - "docs/windows-11-refactor.md"
       - ".github/workflows/windows-11-platform.yml"
   pull_request:
     paths:
       - "Platforms/Windows/PeekabooWin11/**"
+      - "Core/PeekabooDesktop/**"
       - "scripts/windows/build-win11.ps1"
       - "docs/windows-11-refactor.md"
       - ".github/workflows/windows-11-platform.yml"

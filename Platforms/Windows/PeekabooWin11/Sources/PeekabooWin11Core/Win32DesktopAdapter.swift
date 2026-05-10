@@ -6,7 +6,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     public init() {}
 
     public func platformInfo() -> Win11PlatformInfo {
-        Win11PlatformInfo()
+        Win11PlatformInfo(
+            name: "Windows",
+            minimumSystemVersion: "Windows 11",
+            nativeBackend: "Win32",
+            capabilities: Win11PlatformCapability.allCases)
     }
 
     public func listDisplays() throws -> [Win11Display] {
@@ -14,7 +18,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         let context = Unmanaged.passUnretained(collector).toOpaque()
 
         guard EnumDisplayMonitors(nil, nil, displayEnumerationCallback, LPARAM(Int(bitPattern: context))) else {
-            throw Win11DesktopError.win32CallFailed("EnumDisplayMonitors")
+            throw Win11DesktopError.nativeCallFailed("EnumDisplayMonitors")
         }
 
         return collector.displays
@@ -25,7 +29,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         let context = Unmanaged.passUnretained(collector).toOpaque()
 
         guard EnumWindows(windowEnumerationCallback, LPARAM(Int(bitPattern: context))) else {
-            throw Win11DesktopError.win32CallFailed("EnumWindows")
+            throw Win11DesktopError.nativeCallFailed("EnumWindows")
         }
 
         return collector.windows
@@ -71,17 +75,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         guard let desktopDC = GetDC(nil) else {
-            throw Win11DesktopError.win32CallFailed("GetDC")
+            throw Win11DesktopError.nativeCallFailed("GetDC")
         }
         defer { ReleaseDC(nil, desktopDC) }
 
         guard let memoryDC = CreateCompatibleDC(desktopDC) else {
-            throw Win11DesktopError.win32CallFailed("CreateCompatibleDC")
+            throw Win11DesktopError.nativeCallFailed("CreateCompatibleDC")
         }
         defer { DeleteDC(memoryDC) }
 
         guard let bitmap = CreateCompatibleBitmap(desktopDC, Int32(bounds.width), Int32(bounds.height)) else {
-            throw Win11DesktopError.win32CallFailed("CreateCompatibleBitmap")
+            throw Win11DesktopError.nativeCallFailed("CreateCompatibleBitmap")
         }
         defer { DeleteObject(bitmap) }
 
@@ -99,7 +103,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             Int32(bounds.y),
             DWORD(SRCCOPY))
         else {
-            throw Win11DesktopError.win32CallFailed("BitBlt")
+            throw Win11DesktopError.nativeCallFailed("BitBlt")
         }
 
         let data = try Self.bitmapData(bitmap: bitmap, dc: memoryDC, width: bounds.width, height: bounds.height)
@@ -197,7 +201,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         guard Int(lines) == height else {
-            throw Win11DesktopError.win32CallFailed("GetDIBits")
+            throw Win11DesktopError.nativeCallFailed("GetDIBits")
         }
 
         var data = Data()

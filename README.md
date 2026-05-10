@@ -148,7 +148,8 @@ Set providers via `PEEKABOO_AI_PROVIDERS` or `peekaboo config add`.
 This fork includes an initial native Windows 11 refactor slice in
 [`Platforms/Windows/PeekabooWin11`](Platforms/Windows/PeekabooWin11). It is a
 standalone Swift package with a Win32-backed adapter for display/window/app
-enumeration and BMP screen capture. See
+enumeration and BMP screen capture, built on the shared desktop model seam in
+[`Core/PeekabooDesktop`](Core/PeekabooDesktop). See
 [`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the seam and
 next integration steps.
 

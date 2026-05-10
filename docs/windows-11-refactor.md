@@ -14,9 +14,9 @@ Peekaboo is still macOS-first. The Windows fork now has a first native seam at
 ## Current Slice
 
 `PeekabooWin11` is a standalone Swift package that avoids AppKit, CoreGraphics,
-ScreenCaptureKit, AXorcist, and macOS permission types. It defines neutral
-desktop models and a `Win11DesktopAdapter` interface for Windows 11 automation
-primitives:
+ScreenCaptureKit, AXorcist, and macOS permission types. It consumes the neutral
+desktop models and `DesktopAdapter` interface from `Core/PeekabooDesktop`, then
+publishes Windows-named type aliases for Windows 11 automation primitives:
 
 - display enumeration
 - visible window enumeration
@@ -36,15 +36,15 @@ and AXorcist are spread across capture, observation, window, input, and CLI
 modules. A direct rename from macOS services to Windows services would make the
 interface nearly as complex as the implementation.
 
-The Windows 11 package starts with a smaller interface:
+The shared desktop package starts with a smaller interface:
 
 ```swift
-public protocol Win11DesktopAdapter: Sendable {
-    func platformInfo() -> Win11PlatformInfo
-    func listDisplays() throws -> [Win11Display]
-    func listWindows(includeInvisible: Bool) throws -> [Win11Window]
-    func listApplications() throws -> [Win11Application]
-    func captureScreen(displayIndex: Int?, outputPath: String) throws -> Win11CaptureResult
+public protocol DesktopAdapter: Sendable {
+    func platformInfo() -> DesktopPlatformInfo
+    func listDisplays() throws -> [DesktopDisplay]
+    func listWindows(includeInvisible: Bool) throws -> [DesktopWindow]
+    func listApplications() throws -> [DesktopApplication]
+    func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
 }
 ```
 
@@ -79,11 +79,9 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Move neutral geometry and desktop models into shared `PeekabooFoundation`
-   after the Windows package is green on CI.
-2. Add a platform-neutral desktop adapter seam in `PeekabooAutomationKit` and
+1. Wire `Core/PeekabooDesktop` into `PeekabooAutomationKit` and
    wire macOS as the first adapter, preserving current behavior.
-3. Make CLI commands depend on the platform-neutral interface instead of
+2. Make CLI commands depend on the platform-neutral interface instead of
    directly importing Darwin/CoreGraphics/AppKit at the command layer.
-4. Add Windows implementations for input and UI Automation after capture and
+3. Add Windows implementations for input and UI Automation after capture and
    enumeration have stable test coverage.

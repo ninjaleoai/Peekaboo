@@ -12,9 +12,15 @@ let package = Package(
             name: "peekaboo-win11",
             targets: ["PeekabooWin11CLI"]),
     ],
+    dependencies: [
+        .package(path: "../../../Core/PeekabooDesktop"),
+    ],
     targets: [
         .target(
-            name: "PeekabooWin11Core"),
+            name: "PeekabooWin11Core",
+            dependencies: [
+                .product(name: "PeekabooDesktop", package: "PeekabooDesktop"),
+            ]),
         .executableTarget(
             name: "PeekabooWin11CLI",
             dependencies: ["PeekabooWin11Core"],
