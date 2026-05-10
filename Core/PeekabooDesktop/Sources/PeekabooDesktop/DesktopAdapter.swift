@@ -49,6 +49,12 @@ public protocol DesktopAdapter: Sendable {
         elementIndex: Int,
         horizontalPercent: Double?,
         verticalPercent: Double?) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -123,6 +129,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         elementIndex: Int,
         horizontalPercent: Double?,
         verticalPercent: Double?) async throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -298,6 +310,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             elementIndex: elementIndex,
             horizontalPercent: horizontalPercent,
             verticalPercent: verticalPercent)
+    }
+
+    public func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.setUIAutomationElementWindowVisualState(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            state: state)
     }
 
     public func toggleUIAutomationElement(

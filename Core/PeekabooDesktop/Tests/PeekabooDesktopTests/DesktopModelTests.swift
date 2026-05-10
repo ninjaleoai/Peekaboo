@@ -109,6 +109,12 @@ final class DesktopModelTests: XCTestCase {
             elementIndex: 0,
             horizontalPercent: nil,
             verticalPercent: 75.0)
+        let setWindowState = try await bridge.setUIAutomationElementWindowVisualState(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            state: .maximized)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -184,7 +190,16 @@ final class DesktopModelTests: XCTestCase {
             ])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
-            [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .select])
+            [
+                .invoke,
+                .setValue,
+                .setRangeValue,
+                .setScrollPercent,
+                .setWindowVisualState,
+                .toggle,
+                .expand,
+                .select,
+            ])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
         XCTAssertEqual(snapshot.elements.first?.rangeValue, 12.5)
@@ -226,6 +241,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setScrollPercent.value, "horizontal=noScroll,vertical=75.0")
         XCTAssertEqual(setScrollPercent.postActionElement?.verticalScrollPercent, 75.0)
         XCTAssertEqual(setScrollPercent.valueWasVerified, true)
+        XCTAssertEqual(setWindowState.action, .setWindowVisualState)
+        XCTAssertEqual(setWindowState.elementIndex, 0)
+        XCTAssertEqual(setWindowState.value, "maximized")
+        XCTAssertEqual(setWindowState.postActionElement?.windowVisualState, .maximized)
+        XCTAssertEqual(setWindowState.valueWasVerified, true)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -576,6 +596,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
+        XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -885,6 +906,62 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("UI Automation scroll percent must be a finite number"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSetWindowState() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-window-state",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--state",
+            "maximized",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setWindowVisualState\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"maximized\""))
+        XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"maximized\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetWindowStateValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-window-state",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --state <normal|maximized|minimized>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationSetWindowState() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-window-state",
+            "--index",
+            "0",
+            "--state",
+            "hidden",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation window state must be normal"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationToggle() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1055,6 +1132,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
@@ -1356,6 +1434,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 verticalPercent: verticalPercent))
     }
 
+    func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            windowVisualState: state)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setWindowVisualState,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: state.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.windowVisualState == state)
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1489,6 +1602,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         rangeValue: Double = 12.5,
         horizontalScrollPercent: Double = 0.0,
         verticalScrollPercent: Double = 25.0,
+        windowVisualState: DesktopUIAutomationWindowVisualState = .normal,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
@@ -1541,7 +1655,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isVerticallyScrollable: true,
                     toggleState: toggleState,
                     expandCollapseState: expandCollapseState,
-                    windowVisualState: .normal,
+                    windowVisualState: windowVisualState,
                     windowInteractionState: .readyForUserInteraction,
                     canMaximizeWindow: true,
                     canMinimizeWindow: true,
@@ -1556,13 +1670,49 @@ private struct StubDesktopAdapter: DesktopAdapter {
     {
         switch expandCollapseState {
         case .collapsed:
-            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .select]
+            return [
+                .invoke,
+                .setValue,
+                .setRangeValue,
+                .setScrollPercent,
+                .setWindowVisualState,
+                .toggle,
+                .expand,
+                .select,
+            ]
         case .expanded:
-            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .collapse, .select]
+            return [
+                .invoke,
+                .setValue,
+                .setRangeValue,
+                .setScrollPercent,
+                .setWindowVisualState,
+                .toggle,
+                .collapse,
+                .select,
+            ]
         case .partiallyExpanded:
-            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .collapse, .select]
+            return [
+                .invoke,
+                .setValue,
+                .setRangeValue,
+                .setScrollPercent,
+                .setWindowVisualState,
+                .toggle,
+                .expand,
+                .collapse,
+                .select,
+            ]
         case .leafNode:
-            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .select]
+            return [
+                .invoke,
+                .setValue,
+                .setRangeValue,
+                .setScrollPercent,
+                .setWindowVisualState,
+                .toggle,
+                .select,
+            ]
         }
     }
 

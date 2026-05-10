@@ -36,6 +36,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   cursor-hit element snapshots through the UIA control view walker
 - stable UI Automation action availability mapping for snapshot elements
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
+- Window-pattern UI Automation set-window-state actions against a bounded
+  snapshot element index
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -61,8 +63,9 @@ bounded element lookup over the same snapshot traversal, and
 `automation invoke --index <n>`, `automation set-value --index <n>`,
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`, and
-`automation toggle --index <n>` for Invoke-pattern, Value-pattern,
-RangeValue-pattern, Scroll-pattern, and Toggle-pattern UIA actions.
+`automation set-window-state --index <n>` for Invoke-pattern, Value-pattern,
+RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
+`automation toggle --index <n>` covers Toggle-pattern controls.
 `automation expand --index <n>` and
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
 as tree items and combo boxes. `automation select --index <n>` covers
@@ -160,6 +163,12 @@ public protocol DesktopAdapter: Sendable {
         elementIndex: Int,
         horizontalPercent: Double?,
         verticalPercent: Double?) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -254,6 +263,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-scroll-percent --scope foreground --index 0 --vertical 75 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation toggle --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation expand --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -304,7 +315,8 @@ patterns: invoke is available when the Invoke pattern is present, setValue is
 available only when the Value pattern is present and known writable,
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
-present and at least one axis is known scrollable, toggle is available when the
+present and at least one axis is known scrollable, setWindowVisualState is
+available when the Window pattern is present, toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, and select is available when the
@@ -326,8 +338,13 @@ elements, rejecting known read-only and out-of-range values before calling UIA
 rejecting known unscrollable requested axes before calling UIA
 `SetScrollPercent`, then verifies refreshed scroll percentages for requested
 axes when UIA reports them. `automation toggle --index <n>` performs the UIA
-Toggle pattern and returns pre-action metadata plus any refreshed post-action
-element, including the refreshed toggle state when UIA reports one.
+axes when UIA reports them. `automation set-window-state` performs the UIA
+Window pattern visual-state action, rejects known unsupported maximize or
+minimize requests before calling UIA `SetWindowVisualState`, then verifies the
+refreshed visual state when UIA reports it. `automation toggle --index <n>`
+performs the UIA Toggle pattern and returns pre-action metadata plus any
+refreshed post-action element, including the refreshed toggle state when UIA
+reports one.
 `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 leaf nodes before calling UIA, and return refreshed post-action element

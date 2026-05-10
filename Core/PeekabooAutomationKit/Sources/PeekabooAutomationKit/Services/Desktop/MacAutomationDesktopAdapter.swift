@@ -269,6 +269,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation set-scroll-percent is not implemented by this adapter")
     }
 
+    public func setUIAutomationElementWindowVisualState(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        state _: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation set-window-state is not implemented by this adapter")
+    }
+
     public func toggleUIAutomationElement(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

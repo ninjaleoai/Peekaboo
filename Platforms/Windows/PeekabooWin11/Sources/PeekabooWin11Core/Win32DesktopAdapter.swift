@@ -35,6 +35,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .selectUIAutomationItem,
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
+                .setUIAutomationWindowVisualState,
             ])
     }
 
@@ -758,6 +759,69 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 verticalPercent: verticalPercent))
     }
 
+    public func setUIAutomationElementWindowVisualState(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.window) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support window state")
+        }
+        if state == .maximized, element.canMaximizeWindow == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot be maximized")
+        }
+        if state == .minimized, element.canMinimizeWindow == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot be minimized")
+        }
+
+        let nativeResult = PeekabooWin11SetUIAutomationElementWindowVisualState(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            Self.nativeWindowVisualState(state))
+        try Self.validateUIAutomationSetWindowVisualState(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setWindowVisualState,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: state.rawValue,
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.windowVisualState.map { $0 == state })
+    }
+
     public func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1209,6 +1273,53 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSetWindowVisualState(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation set-window-state failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support window state")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationWindowPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationWindowPattern.SetWindowVisualState failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -1524,6 +1635,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         {
             actions.append(.setScrollPercent)
         }
+        if supportedPatterns.contains(.window) {
+            actions.append(.setWindowVisualState)
+        }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
         }
@@ -1602,6 +1716,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return .minimized
         default:
             return nil
+        }
+    }
+
+    private static func nativeWindowVisualState(_ state: DesktopUIAutomationWindowVisualState) -> Int32 {
+        switch state {
+        case .normal:
+            return 0
+        case .maximized:
+            return 1
+        case .minimized:
+            return 2
         }
     }
 
