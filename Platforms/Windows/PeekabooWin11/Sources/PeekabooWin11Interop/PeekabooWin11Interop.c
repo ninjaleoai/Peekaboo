@@ -301,7 +301,7 @@ static void PeekabooWin11CopyElementTogglePattern(
         return;
     }
 
-    ToggleState toggleState = ToggleState_Off;
+    enum ToggleState toggleState = ToggleState_Off;
     HRESULT stateResult = IUIAutomationTogglePattern_get_CurrentToggleState(
         togglePattern,
         &toggleState);
