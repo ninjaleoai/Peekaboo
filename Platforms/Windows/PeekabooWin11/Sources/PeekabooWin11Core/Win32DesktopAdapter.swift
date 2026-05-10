@@ -25,6 +25,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .scrollMouse,
                 .dragMouse,
                 .sendHotkey,
+                .typeText,
             ])
     }
 
@@ -369,6 +370,90 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         default:
             return nil
         }
+    }
+
+    public func typeText(_ text: String, delayMilliseconds: Int) throws -> DesktopTypingResult {
+        guard !text.isEmpty else {
+            throw Win11DesktopError.invalidArgument("Text must not be empty")
+        }
+        guard delayMilliseconds >= 0 else {
+            throw Win11DesktopError.invalidArgument("Typing delay must be a non-negative integer")
+        }
+
+        for character in text {
+            try Self.typeCharacter(character)
+            if delayMilliseconds > 0 {
+                Thread.sleep(forTimeInterval: Double(delayMilliseconds) / 1_000)
+            }
+        }
+
+        return DesktopTypingResult(
+            text: text,
+            characterCount: text.count,
+            delayMilliseconds: delayMilliseconds)
+    }
+
+    private static func typeCharacter(_ character: Character) throws {
+        switch character {
+        case "\n", "\r":
+            Self.tapKey(Win32VirtualKey(name: "enter", virtualKey: 0x0D))
+            return
+        case "\t":
+            Self.tapKey(Win32VirtualKey(name: "tab", virtualKey: 0x09))
+            return
+        default:
+            break
+        }
+
+        let scalars = Array(character.unicodeScalars)
+        guard scalars.count == 1, let scalar = scalars.first, scalar.value <= UInt16.max else {
+            throw Win11DesktopError.invalidArgument("Unsupported text character: \(character)")
+        }
+
+        let translated = VkKeyScanW(WCHAR(scalar.value))
+        guard translated != -1 else {
+            throw Win11DesktopError.invalidArgument("Unsupported text character: \(character)")
+        }
+
+        let translatedBits = UInt16(bitPattern: translated)
+        let virtualKey = Win32VirtualKey(
+            name: String(character),
+            virtualKey: BYTE(translatedBits & 0x00FF))
+        let modifiers = try Self.modifierKeys(forShiftState: (translatedBits >> 8) & 0x00FF)
+
+        for modifier in modifiers {
+            Self.sendKey(modifier, flags: 0)
+        }
+        defer {
+            for modifier in modifiers.reversed() {
+                Self.sendKey(modifier, flags: DWORD(KEYEVENTF_KEYUP))
+            }
+        }
+
+        Self.tapKey(virtualKey)
+    }
+
+    private static func modifierKeys(forShiftState shiftState: UInt16) throws -> [Win32VirtualKey] {
+        guard (shiftState & 0xF8) == 0 else {
+            throw Win11DesktopError.invalidArgument("Unsupported keyboard layout modifier state")
+        }
+
+        var modifiers: [Win32VirtualKey] = []
+        if (shiftState & 0x01) != 0 {
+            modifiers.append(Win32VirtualKey(name: "shift", virtualKey: 0x10))
+        }
+        if (shiftState & 0x02) != 0 {
+            modifiers.append(Win32VirtualKey(name: "ctrl", virtualKey: 0x11))
+        }
+        if (shiftState & 0x04) != 0 {
+            modifiers.append(Win32VirtualKey(name: "alt", virtualKey: 0x12))
+        }
+        return modifiers
+    }
+
+    private static func tapKey(_ key: Win32VirtualKey) {
+        Self.sendKey(key, flags: 0)
+        Self.sendKey(key, flags: DWORD(KEYEVENTF_KEYUP))
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

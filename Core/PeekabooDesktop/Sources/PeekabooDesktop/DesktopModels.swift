@@ -18,6 +18,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case scrollMouse
     case dragMouse
     case sendHotkey
+    case typeText
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -276,6 +277,18 @@ public struct DesktopHotkeyResult: Codable, Equatable, Sendable {
     public init(keys: [String], holdDurationMilliseconds: Int) {
         self.keys = keys
         self.holdDurationMilliseconds = holdDurationMilliseconds
+    }
+}
+
+public struct DesktopTypingResult: Codable, Equatable, Sendable {
+    public let text: String
+    public let characterCount: Int
+    public let delayMilliseconds: Int
+
+    public init(text: String, characterCount: Int, delayMilliseconds: Int) {
+        self.text = text
+        self.characterCount = characterCount
+        self.delayMilliseconds = delayMilliseconds
     }
 }
 

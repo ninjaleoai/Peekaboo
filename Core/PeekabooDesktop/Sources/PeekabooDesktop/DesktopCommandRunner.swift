@@ -48,7 +48,7 @@ public enum DesktopCommandRunner {
     {
         guard let subcommand = args.first else {
             throw DesktopAdapterError.invalidArgument(
-                "Missing input subcommand: position, move, click, scroll, drag, or hotkey")
+                "Missing input subcommand: position, move, click, scroll, drag, hotkey, or type")
         }
 
         switch subcommand {
@@ -123,6 +123,18 @@ public enum DesktopCommandRunner {
             try stdout(self.success(adapter.hotkey(
                 keys: self.parseKeys(keysValue),
                 holdDurationMilliseconds: holdDuration)))
+        case "type", "text":
+            let textValue = try self.value(after: "--text", in: args) ??
+                self.value(after: "--value", in: args)
+            guard let textValue, !textValue.isEmpty else {
+                throw DesktopAdapterError.invalidArgument("Missing --text <text> for input type")
+            }
+            let delayMilliseconds = try (self.value(after: "--delay-ms", in: args) ??
+                self.value(after: "--delay", in: args))
+                .map(self.parseTypingDelayMilliseconds) ?? 0
+            try stdout(self.success(adapter.typeText(
+                textValue,
+                delayMilliseconds: delayMilliseconds)))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
@@ -376,6 +388,13 @@ public enum DesktopCommandRunner {
         return milliseconds
     }
 
+    private static func parseTypingDelayMilliseconds(_ value: String) throws -> Int {
+        guard let milliseconds = Int(value), milliseconds >= 0 else {
+            throw DesktopAdapterError.invalidArgument("Typing delay must be a non-negative integer")
+        }
+        return milliseconds
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -400,6 +419,7 @@ public enum DesktopCommandRunner {
           input scroll --point <x,y> --direction <up|down|left|right> [--amount <n>]
           input drag --from <x,y> --to <x,y> [--button left|right|middle] [--steps <n>]
           input hotkey --keys <key1,key2> [--hold-ms <n>]
+          input type --text <text> [--delay-ms <n>]
         """
     }
 

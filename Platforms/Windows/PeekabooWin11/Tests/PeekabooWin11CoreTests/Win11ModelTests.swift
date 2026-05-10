@@ -35,6 +35,7 @@ final class Win11ModelTests: XCTestCase {
                 .scrollMouse,
                 .dragMouse,
                 .sendHotkey,
+                .typeText,
             ])
         #endif
 
@@ -51,6 +52,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.scrollMouse))
         XCTAssertTrue(info.capabilities.contains(.dragMouse))
         XCTAssertTrue(info.capabilities.contains(.sendHotkey))
+        XCTAssertTrue(info.capabilities.contains(.typeText))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -83,6 +85,7 @@ final class Win11ModelTests: XCTestCase {
             button: .left,
             steps: 1))
         XCTAssertThrowsError(try adapter.hotkey(keys: ["shift"], holdDurationMilliseconds: 0))
+        XCTAssertThrowsError(try adapter.typeText("a", delayMilliseconds: 0))
         #endif
     }
 
@@ -119,6 +122,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input scroll --point"))
         XCTAssertTrue(output.contains("input drag --from"))
         XCTAssertTrue(output.contains("input hotkey --keys"))
+        XCTAssertTrue(output.contains("input type --text"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -321,6 +325,29 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.hotkey(keys: ["not-a-key"], holdDurationMilliseconds: 0))
         #else
         throw XCTSkip("Native Windows hotkey validation test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanTypeText() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let result = try adapter.typeText("a", delayMilliseconds: 0)
+
+        XCTAssertEqual(result.text, "a")
+        XCTAssertEqual(result.characterCount, 1)
+        XCTAssertEqual(result.delayMilliseconds, 0)
+        #else
+        throw XCTSkip("Native Windows typing smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterRejectsUnsupportedTextCharacter() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+
+        XCTAssertThrowsError(try adapter.typeText("\u{1F642}", delayMilliseconds: 0))
+        #else
+        throw XCTSkip("Native Windows typing validation test only runs on Windows.")
         #endif
     }
 }

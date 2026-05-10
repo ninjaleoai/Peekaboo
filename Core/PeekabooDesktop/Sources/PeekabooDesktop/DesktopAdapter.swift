@@ -19,6 +19,7 @@ public protocol DesktopAdapter: Sendable {
         button: DesktopMouseButton,
         steps: Int) throws -> DesktopDragResult
     func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult
+    func typeText(_ text: String, delayMilliseconds: Int) throws -> DesktopTypingResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -43,6 +44,7 @@ public protocol DesktopAsyncAdapter: Sendable {
         button: DesktopMouseButton,
         steps: Int) async throws -> DesktopDragResult
     func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult
+    func typeText(_ text: String, delayMilliseconds: Int) async throws -> DesktopTypingResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -119,6 +121,10 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
 
     public func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult {
         try self.adapter.hotkey(keys: keys, holdDurationMilliseconds: holdDurationMilliseconds)
+    }
+
+    public func typeText(_ text: String, delayMilliseconds: Int) async throws -> DesktopTypingResult {
+        try self.adapter.typeText(text, delayMilliseconds: delayMilliseconds)
     }
 }
 
