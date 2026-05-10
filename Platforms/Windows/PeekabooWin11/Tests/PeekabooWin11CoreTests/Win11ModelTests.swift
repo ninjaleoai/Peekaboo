@@ -41,6 +41,7 @@ final class Win11ModelTests: XCTestCase {
                 .setUIAutomationValue,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
+                .selectUIAutomationItem,
             ])
         #endif
 
@@ -63,6 +64,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.selectUIAutomationItem))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -124,6 +126,11 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.selectUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
         #endif
     }
 
@@ -169,6 +176,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation toggle --index"))
         XCTAssertTrue(output.contains("automation expand --index"))
         XCTAssertTrue(output.contains("automation collapse --index"))
+        XCTAssertTrue(output.contains("automation select --index"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {

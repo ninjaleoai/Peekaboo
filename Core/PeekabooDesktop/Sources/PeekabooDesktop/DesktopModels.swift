@@ -24,6 +24,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case setUIAutomationValue
     case toggleUIAutomation
     case expandCollapseUIAutomation
+    case selectUIAutomationItem
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -342,6 +343,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case toggle
     case expand
     case collapse
+    case select
 }
 
 public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {
@@ -380,6 +382,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isValueReadOnly: Bool?
     public let toggleState: DesktopUIAutomationToggleState?
     public let expandCollapseState: DesktopUIAutomationExpandCollapseState?
+    public let isSelected: Bool?
     public let childCount: Int
 
     public init(
@@ -405,6 +408,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isValueReadOnly: Bool? = nil,
         toggleState: DesktopUIAutomationToggleState? = nil,
         expandCollapseState: DesktopUIAutomationExpandCollapseState? = nil,
+        isSelected: Bool? = nil,
         childCount: Int = 0)
     {
         self.index = index
@@ -429,6 +433,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isValueReadOnly = isValueReadOnly
         self.toggleState = toggleState
         self.expandCollapseState = expandCollapseState
+        self.isSelected = isSelected
         self.childCount = childCount
     }
 }

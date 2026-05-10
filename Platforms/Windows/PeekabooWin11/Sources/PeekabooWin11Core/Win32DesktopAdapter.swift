@@ -32,6 +32,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .setUIAutomationValue,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
+                .selectUIAutomationItem,
             ])
     }
 
@@ -751,6 +752,57 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             postActionElement: postActionElement)
     }
 
+    public func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.selectionItem) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support selection item")
+        }
+
+        let nativeResult = PeekabooWin11SelectUIAutomationElement(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex))
+        try Self.validateUIAutomationSelect(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .select,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            postActionElement: postActionElement)
+    }
+
     private func refreshedUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1006,6 +1058,52 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSelect(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation select failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support selection item")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationSelectionItemPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationSelectionItemPattern.Select failed: \(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func nativeUIAutomationScope(_ scope: DesktopUIAutomationSnapshotScope) -> Int32 {
         switch scope {
         case .root:
@@ -1042,6 +1140,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let expandCollapseState = Self.uiAutomationExpandCollapseState(
                 hasValue: nativeElement.hasExpandCollapseState,
                 value: nativeElement.expandCollapseState)
+            let isSelected = Self.optionalBool(
+                hasValue: nativeElement.hasIsSelected,
+                value: nativeElement.isSelected)
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -1086,6 +1187,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     hasValue: nativeElement.hasToggleState,
                     value: nativeElement.toggleState),
                 expandCollapseState: expandCollapseState,
+                isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }
     }
@@ -1117,6 +1219,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             case .leafNode, nil:
                 break
             }
+        }
+        if supportedPatterns.contains(.selectionItem) {
+            actions.append(.select)
         }
         return actions
     }

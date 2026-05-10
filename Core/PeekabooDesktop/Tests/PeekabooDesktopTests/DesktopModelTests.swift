@@ -111,6 +111,11 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let select = try await bridge.selectUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -152,12 +157,15 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
-        XCTAssertEqual(snapshot.elements.first?.supportedPatterns, [.invoke, .value, .expandCollapse, .toggle])
-        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue, .toggle, .expand])
+        XCTAssertEqual(
+            snapshot.elements.first?.supportedPatterns,
+            [.invoke, .value, .expandCollapse, .selectionItem, .toggle])
+        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue, .toggle, .expand, .select])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
         XCTAssertEqual(snapshot.elements.first?.toggleState, .off)
         XCTAssertEqual(snapshot.elements.first?.expandCollapseState, .collapsed)
+        XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
         XCTAssertEqual(invoke.element.name, "Desktop")
@@ -176,6 +184,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(collapse.action, .collapse)
         XCTAssertEqual(collapse.elementIndex, 0)
         XCTAssertEqual(collapse.postActionElement?.expandCollapseState, .collapsed)
+        XCTAssertEqual(select.action, .select)
+        XCTAssertEqual(select.elementIndex, 0)
+        XCTAssertEqual(select.postActionElement?.isSelected, true)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -513,11 +524,13 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
+        XCTAssertTrue(result.stdout.contains("\"select\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"toggleState\" : \"off\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
+        XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
     func testDesktopCommandRunnerRoutesFocusedAutomationSnapshot() {
@@ -586,6 +599,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
+        XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationElementIndex() {
@@ -768,6 +782,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSelect() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "select",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"select\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"isSelected\" : true"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationToggleIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -802,6 +838,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation collapse"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSelectIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "select",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation select"))
     }
 
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
@@ -839,6 +887,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
+        XCTAssertTrue(result.stdout.contains("automation select --index"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -1120,6 +1169,37 @@ private struct StubDesktopAdapter: DesktopAdapter {
             postActionState: .collapsed)
     }
 
+    func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .select,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            postActionElement: self.stubUIAutomationSnapshot(
+                scope: scope,
+                maxDepth: maxDepth,
+                maxElements: maxElements,
+                elementValue: element.value ?? "",
+                isSelected: true)
+                .elements
+                .first(where: { $0.index == elementIndex }))
+    }
+
     private func expandCollapseUIAutomationElement(
         action: DesktopUIAutomationAction,
         scope: DesktopUIAutomationSnapshotScope,
@@ -1159,7 +1239,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
         maxElements: Int,
         elementValue: String,
         toggleState: DesktopUIAutomationToggleState = .off,
-        expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed) -> DesktopUIAutomationSnapshot
+        expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
+        isSelected: Bool = false) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
             nativeBackend: "StubUIA",
@@ -1182,12 +1263,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
                     isOffscreen: false,
-                    supportedPatterns: [.invoke, .value, .expandCollapse, .toggle],
+                    supportedPatterns: [.invoke, .value, .expandCollapse, .selectionItem, .toggle],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
                     isValueReadOnly: false,
                     toggleState: toggleState,
-                    expandCollapseState: expandCollapseState),
+                    expandCollapseState: expandCollapseState,
+                    isSelected: isSelected),
             ])
     }
 
@@ -1196,13 +1278,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
     {
         switch expandCollapseState {
         case .collapsed:
-            return [.invoke, .setValue, .toggle, .expand]
+            return [.invoke, .setValue, .toggle, .expand, .select]
         case .expanded:
-            return [.invoke, .setValue, .toggle, .collapse]
+            return [.invoke, .setValue, .toggle, .collapse, .select]
         case .partiallyExpanded:
-            return [.invoke, .setValue, .toggle, .expand, .collapse]
+            return [.invoke, .setValue, .toggle, .expand, .collapse, .select]
         case .leafNode:
-            return [.invoke, .setValue, .toggle]
+            return [.invoke, .setValue, .toggle, .select]
         }
     }
 }

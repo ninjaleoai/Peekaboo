@@ -48,6 +48,8 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t toggleState;
     int32_t hasExpandCollapseState;
     int32_t expandCollapseState;
+    int32_t hasIsSelected;
+    int32_t isSelected;
     int32_t childCount;
     char name[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char automationIdentifier[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -124,6 +126,12 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ExpandUIAutomationElement(
     int32_t elementIndex);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11CollapseUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
     int32_t maxElements,

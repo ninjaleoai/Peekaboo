@@ -51,6 +51,11 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -103,6 +108,11 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     func collapseUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func selectUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
@@ -265,6 +275,19 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     {
         try self.adapter.collapseUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.selectUIAutomationElement(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,

@@ -41,6 +41,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Toggle-pattern UI Automation actions against a bounded snapshot element index
 - ExpandCollapse-pattern UI Automation expand/collapse actions against a
   bounded snapshot element index
+- SelectionItem-pattern UI Automation selection actions against a bounded
+  snapshot element index
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -55,7 +57,8 @@ bounded element lookup over the same snapshot traversal, and
 `automation toggle --index <n>` for Invoke-pattern, Value-pattern, and
 Toggle-pattern UIA actions. `automation expand --index <n>` and
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
-as tree items and combo boxes.
+as tree items and combo boxes. `automation select --index <n>` covers
+SelectionItem-pattern controls such as list items, menu items, and tabs.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -151,6 +154,11 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func selectUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 ```
 
@@ -226,6 +234,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation expand --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation collapse --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation select --scope foreground --index 0 --max-depth 2 --max-elements 64
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -254,13 +264,15 @@ whether that value is read-only. When an element supports the UIA Toggle
 pattern, snapshots also include the current toggle state: off, on, or
 indeterminate. When an element supports the UIA ExpandCollapse pattern,
 snapshots also include the current expand/collapse state: collapsed, expanded,
-partially expanded, or leaf node. Elements also expose stable available actions
-derived from those patterns: invoke is available when the Invoke pattern is
-present, setValue is available only when the Value pattern is present and known
-writable, toggle is available when the Toggle pattern is present, expand is
-available for collapsed or partially expanded ExpandCollapse elements, and
-collapse is available for expanded or partially expanded ExpandCollapse
-elements.
+partially expanded, or leaf node. When an element supports the UIA
+SelectionItem pattern, snapshots also include whether the item is currently
+selected. Elements also expose stable available actions derived from those
+patterns: invoke is available when the Invoke pattern is present, setValue is
+available only when the Value pattern is present and known writable, toggle is
+available when the Toggle pattern is present, expand is available for collapsed
+or partially expanded ExpandCollapse elements, collapse is available for
+expanded or partially expanded ExpandCollapse elements, and select is available
+when the SelectionItem pattern is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
@@ -277,6 +289,9 @@ including the refreshed toggle state when UIA reports one. `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 leaf nodes before calling UIA, and return refreshed post-action element
 metadata with the latest expand/collapse state when UIA reports one.
+`automation select` performs the UIA SelectionItem pattern and returns
+refreshed post-action element metadata with the latest selected state when UIA
+reports one.
 
 ## Next Integration Steps
 
