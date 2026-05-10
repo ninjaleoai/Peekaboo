@@ -52,11 +52,11 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
-    public func cursorPosition() throws -> Win11Point {
+    public func cursorPosition() throws -> DesktopPoint {
         throw self.unsupported()
     }
 
-    public func moveCursor(to _: Win11Point) throws -> Win11Point {
+    public func moveCursor(to _: DesktopPoint) throws -> DesktopPoint {
         throw self.unsupported()
     }
 

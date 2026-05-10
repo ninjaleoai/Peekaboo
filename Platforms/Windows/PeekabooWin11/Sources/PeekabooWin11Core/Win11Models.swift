@@ -2,7 +2,6 @@ import PeekabooDesktop
 
 public typealias Win11PlatformCapability = DesktopPlatformCapability
 public typealias Win11PlatformInfo = DesktopPlatformInfo
-public typealias Win11Point = DesktopPoint
 public typealias Win11Display = DesktopDisplay
 public typealias Win11Application = DesktopApplication
 public typealias Win11Window = DesktopWindow

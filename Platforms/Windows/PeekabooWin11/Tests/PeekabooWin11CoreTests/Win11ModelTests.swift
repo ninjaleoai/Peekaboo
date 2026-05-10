@@ -1,3 +1,4 @@
+import PeekabooDesktop
 import XCTest
 @testable import PeekabooWin11Core
 
@@ -59,7 +60,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.captureWindow(windowIdentifier: 1, outputPath: "window.bmp"))
         XCTAssertThrowsError(try adapter.captureFrontmost(outputPath: "frontmost.bmp"))
         XCTAssertThrowsError(try adapter.cursorPosition())
-        XCTAssertThrowsError(try adapter.moveCursor(to: Win11Point(x: 0, y: 0)))
+        XCTAssertThrowsError(try adapter.moveCursor(to: DesktopPoint(x: 0, y: 0)))
         #endif
     }
 

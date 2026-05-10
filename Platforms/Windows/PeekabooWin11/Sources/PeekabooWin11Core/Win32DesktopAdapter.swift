@@ -1,5 +1,6 @@
 #if os(Windows)
 import Foundation
+import PeekabooDesktop
 import WinSDK
 
 public struct Win32DesktopAdapter: Win11DesktopAdapter {
@@ -125,16 +126,16 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         return try self.captureArea(bounds, outputPath: outputPath)
     }
 
-    public func cursorPosition() throws -> Win11Point {
+    public func cursorPosition() throws -> DesktopPoint {
         var point = POINT()
         guard GetCursorPos(&point) else {
             throw Win11DesktopError.nativeCallFailed("GetCursorPos")
         }
 
-        return Win11Point(x: Int(point.x), y: Int(point.y))
+        return DesktopPoint(x: Int(point.x), y: Int(point.y))
     }
 
-    public func moveCursor(to point: Win11Point) throws -> Win11Point {
+    public func moveCursor(to point: DesktopPoint) throws -> DesktopPoint {
         guard SetCursorPos(Int32(clamping: point.x), Int32(clamping: point.y)) else {
             throw Win11DesktopError.nativeCallFailed("SetCursorPos")
         }
