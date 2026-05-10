@@ -1994,6 +1994,15 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let isSelected = Self.optionalBool(
                 hasValue: nativeElement.hasIsSelected,
                 value: nativeElement.isSelected)
+            let selectionCanSelectMultiple = Self.optionalBool(
+                hasValue: nativeElement.hasSelectionCanSelectMultiple,
+                value: nativeElement.selectionCanSelectMultiple)
+            let selectionIsRequired = Self.optionalBool(
+                hasValue: nativeElement.hasSelectionIsRequired,
+                value: nativeElement.selectionIsRequired)
+            let selectionSelectedItemCount = Self.optionalInt(
+                hasValue: nativeElement.hasSelectionSelectedItemCount,
+                value: nativeElement.selectionSelectedItemCount)
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -2033,6 +2042,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     isHorizontallyScrollable: isHorizontallyScrollable,
                     isVerticallyScrollable: isVerticallyScrollable,
                     expandCollapseState: expandCollapseState,
+                    isSelected: isSelected,
+                    selectionCanSelectMultiple: selectionCanSelectMultiple,
+                    selectionIsRequired: selectionIsRequired,
+                    selectionSelectedItemCount: selectionSelectedItemCount,
                     canMove: Self.optionalBool(
                         hasValue: nativeElement.hasCanMove,
                         value: nativeElement.canMove),
@@ -2118,6 +2131,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 gridItemColumnSpan: Self.optionalInt(
                     hasValue: nativeElement.hasGridItemColumnSpan,
                     value: nativeElement.gridItemColumnSpan),
+                selectionCanSelectMultiple: selectionCanSelectMultiple,
+                selectionIsRequired: selectionIsRequired,
+                selectionSelectedItemCount: selectionSelectedItemCount,
                 canMove: Self.optionalBool(
                     hasValue: nativeElement.hasCanMove,
                     value: nativeElement.canMove),
@@ -2169,6 +2185,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         isHorizontallyScrollable: Bool?,
         isVerticallyScrollable: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?,
+        isSelected: Bool?,
+        selectionCanSelectMultiple: Bool?,
+        selectionIsRequired: Bool?,
+        selectionSelectedItemCount: Int?,
         canMove: Bool?,
         canResize: Bool?,
         canRotate: Bool?) -> [DesktopUIAutomationAction]
@@ -2218,8 +2238,14 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.selectionItem) {
             actions.append(.select)
-            actions.append(.addToSelection)
-            actions.append(.removeFromSelection)
+            if selectionCanSelectMultiple == true {
+                actions.append(.addToSelection)
+            }
+            if isSelected == true,
+                selectionIsRequired != true || (selectionSelectedItemCount ?? 0) > 1
+            {
+                actions.append(.removeFromSelection)
+            }
         }
         if supportedPatterns.contains(.scrollItem) {
             actions.append(.scrollIntoView)
@@ -2382,6 +2408,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)
+        }
+        if Self.hasPatternBit(mask, 14) {
+            patterns.append(.selection)
         }
         return patterns
     }

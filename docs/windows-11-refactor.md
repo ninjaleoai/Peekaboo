@@ -44,6 +44,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
   metadata in bounded snapshots
+- Selection-pattern UI Automation multi-select, required-selection, and
+  selected item count metadata in bounded snapshots
 - Transform-pattern UI Automation movement, resize, and rotation capability
   metadata in bounded snapshots
 - Transform-pattern UI Automation move, resize, and rotate actions against a
@@ -91,7 +93,11 @@ SelectionItem-pattern controls such as list items, menu items, and tabs.
 `automation add-to-selection --index <n>` and
 `automation remove-from-selection --index <n>` cover the SelectionItem pattern
 methods that preserve or reduce a multi-item selection instead of replacing
-the selection like `select`.
+the selection like `select`. Snapshot action availability uses the selection
+container metadata when UIA exposes it, so add-to-selection is only advertised
+when the container reports multi-selection support and remove-from-selection is
+only advertised for selected items, with required single-selection containers
+suppressed.
 When an element supports the UIA Transform pattern, snapshots include whether
 UIA reports that it can be moved, resized, or rotated.
 `automation move --index <n> --point <x,y>` and
@@ -409,8 +415,9 @@ Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
-available when the SelectionItem pattern is present, and scrollIntoView is
-available when the ScrollItem pattern is present.
+available when Selection-pattern metadata indicates the selection container can
+support the action, and scrollIntoView is available when the ScrollItem pattern
+is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later

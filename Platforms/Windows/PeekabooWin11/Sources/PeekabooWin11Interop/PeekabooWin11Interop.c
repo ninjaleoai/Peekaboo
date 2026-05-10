@@ -246,6 +246,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_GridItemPatternId, 1ULL << 11, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TransformPatternId, 1ULL << 12, snapshot);
     PeekabooWin11MarkPattern(element, UIA_ScrollItemPatternId, 1ULL << 13, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_SelectionPatternId, 1ULL << 14, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -943,6 +944,74 @@ static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
     IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
 }
 
+static void PeekabooWin11CopySelectionPatternFromElement(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_SelectionPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationSelectionPattern *selectionPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationSelectionPattern,
+        (void **)&selectionPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || selectionPattern == NULL) {
+        return;
+    }
+
+    BOOL canSelectMultiple = FALSE;
+    HRESULT canSelectMultipleResult = IUIAutomationSelectionPattern_get_CurrentCanSelectMultiple(
+        selectionPattern,
+        &canSelectMultiple);
+    if (PeekabooWin11Succeeded(canSelectMultipleResult)) {
+        snapshot->hasSelectionCanSelectMultiple = 1;
+        snapshot->selectionCanSelectMultiple = canSelectMultiple ? 1 : 0;
+    }
+
+    BOOL isSelectionRequired = FALSE;
+    HRESULT isSelectionRequiredResult = IUIAutomationSelectionPattern_get_CurrentIsSelectionRequired(
+        selectionPattern,
+        &isSelectionRequired);
+    if (PeekabooWin11Succeeded(isSelectionRequiredResult)) {
+        snapshot->hasSelectionIsRequired = 1;
+        snapshot->selectionIsRequired = isSelectionRequired ? 1 : 0;
+    }
+
+    IUIAutomationElementArray *selectedElements = NULL;
+    HRESULT selectionResult = IUIAutomationSelectionPattern_GetCurrentSelection(
+        selectionPattern,
+        &selectedElements);
+    if (PeekabooWin11Succeeded(selectionResult) && selectedElements != NULL) {
+        int selectedCount = 0;
+        HRESULT lengthResult = IUIAutomationElementArray_get_Length(
+            selectedElements,
+            &selectedCount);
+        if (PeekabooWin11Succeeded(lengthResult)) {
+            snapshot->hasSelectionSelectedItemCount = 1;
+            snapshot->selectionSelectedItemCount = (int32_t)selectedCount;
+        }
+        IUIAutomationElementArray_Release(selectedElements);
+    }
+
+    IUIAutomationSelectionPattern_Release(selectionPattern);
+}
+
+static void PeekabooWin11CopyElementSelectionPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    PeekabooWin11CopySelectionPatternFromElement(element, snapshot);
+}
+
 static void PeekabooWin11CopyElementSelectionItemPattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -974,6 +1043,15 @@ static void PeekabooWin11CopyElementSelectionItemPattern(
     if (PeekabooWin11Succeeded(selectedResult)) {
         snapshot->hasIsSelected = 1;
         snapshot->isSelected = isSelected ? 1 : 0;
+    }
+
+    IUIAutomationElement *selectionContainer = NULL;
+    HRESULT containerResult = IUIAutomationSelectionItemPattern_get_CurrentSelectionContainer(
+        selectionItemPattern,
+        &selectionContainer);
+    if (PeekabooWin11Succeeded(containerResult) && selectionContainer != NULL) {
+        PeekabooWin11CopySelectionPatternFromElement(selectionContainer, snapshot);
+        IUIAutomationElement_Release(selectionContainer);
     }
 
     IUIAutomationSelectionItemPattern_Release(selectionItemPattern);
@@ -1541,6 +1619,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
+    PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 

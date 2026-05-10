@@ -340,6 +340,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case scroll
     case expandCollapse
     case window
+    case selection
     case selectionItem
     case text
     case toggle
@@ -450,6 +451,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let gridItemColumn: Int?
     public let gridItemRowSpan: Int?
     public let gridItemColumnSpan: Int?
+    public let selectionCanSelectMultiple: Bool?
+    public let selectionIsRequired: Bool?
+    public let selectionSelectedItemCount: Int?
     public let canMove: Bool?
     public let canResize: Bool?
     public let canRotate: Bool?
@@ -514,6 +518,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         gridItemColumn: Int? = nil,
         gridItemRowSpan: Int? = nil,
         gridItemColumnSpan: Int? = nil,
+        selectionCanSelectMultiple: Bool? = nil,
+        selectionIsRequired: Bool? = nil,
+        selectionSelectedItemCount: Int? = nil,
         canMove: Bool? = nil,
         canResize: Bool? = nil,
         canRotate: Bool? = nil,
@@ -577,6 +584,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.gridItemColumn = gridItemColumn
         self.gridItemRowSpan = gridItemRowSpan
         self.gridItemColumnSpan = gridItemColumnSpan
+        self.selectionCanSelectMultiple = selectionCanSelectMultiple
+        self.selectionIsRequired = selectionIsRequired
+        self.selectionSelectedItemCount = selectionSelectedItemCount
         self.canMove = canMove
         self.canResize = canResize
         self.canRotate = canRotate

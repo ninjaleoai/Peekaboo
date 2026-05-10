@@ -220,6 +220,7 @@ final class DesktopModelTests: XCTestCase {
                 .scroll,
                 .expandCollapse,
                 .window,
+                .selection,
                 .selectionItem,
                 .text,
                 .toggle,
@@ -244,7 +245,6 @@ final class DesktopModelTests: XCTestCase {
                 .expand,
                 .select,
                 .addToSelection,
-                .removeFromSelection,
                 .scrollIntoView,
             ])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
@@ -277,6 +277,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.gridItemColumn, 0)
         XCTAssertEqual(snapshot.elements.first?.gridItemRowSpan, 1)
         XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
+        XCTAssertEqual(snapshot.elements.first?.selectionCanSelectMultiple, true)
+        XCTAssertEqual(snapshot.elements.first?.selectionIsRequired, false)
+        XCTAssertEqual(snapshot.elements.first?.selectionSelectedItemCount, 0)
         XCTAssertEqual(snapshot.elements.first?.canMove, true)
         XCTAssertEqual(snapshot.elements.first?.canResize, true)
         XCTAssertEqual(snapshot.elements.first?.canRotate, true)
@@ -707,14 +710,17 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
+        XCTAssertTrue(result.stdout.contains("\"selection\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
         XCTAssertTrue(result.stdout.contains("\"addToSelection\""))
-        XCTAssertTrue(result.stdout.contains("\"removeFromSelection\""))
         XCTAssertTrue(result.stdout.contains("\"scrollIntoView\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
+        XCTAssertTrue(result.stdout.contains("\"selectionCanSelectMultiple\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"selectionIsRequired\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"selectionSelectedItemCount\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 12.5"))
         XCTAssertTrue(result.stdout.contains("\"rangeMinimum\" : 0"))
@@ -2241,6 +2247,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .scroll,
                         .expandCollapse,
                         .window,
+                        .selection,
                         .selectionItem,
                         .text,
                         .toggle,
@@ -2250,7 +2257,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .transform,
                         .scrollItem,
                     ],
-                    availableActions: self.stubAvailableActions(for: expandCollapseState),
+                    availableActions: self.stubAvailableActions(
+                        for: expandCollapseState,
+                        isSelected: isSelected),
                     value: elementValue,
                     isValueReadOnly: false,
                     rangeValue: rangeValue,
@@ -2281,6 +2290,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     gridItemColumn: 0,
                     gridItemRowSpan: 1,
                     gridItemColumnSpan: 2,
+                    selectionCanSelectMultiple: true,
+                    selectionIsRequired: false,
+                    selectionSelectedItemCount: isSelected ? 1 : 0,
                     canMove: true,
                     canResize: true,
                     canRotate: true,
@@ -2298,8 +2310,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
     }
 
     private func stubAvailableActions(
-        for expandCollapseState: DesktopUIAutomationExpandCollapseState) -> [DesktopUIAutomationAction]
+        for expandCollapseState: DesktopUIAutomationExpandCollapseState,
+        isSelected: Bool) -> [DesktopUIAutomationAction]
     {
+        let selectionActions: [DesktopUIAutomationAction] = isSelected
+            ? [.select, .addToSelection, .removeFromSelection]
+            : [.select, .addToSelection]
         switch expandCollapseState {
         case .collapsed:
             return [
@@ -2313,9 +2329,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .rotate,
                 .toggle,
                 .expand,
-                .select,
-                .addToSelection,
-                .removeFromSelection,
+            ] + selectionActions + [
                 .scrollIntoView,
             ]
         case .expanded:
@@ -2330,9 +2344,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .rotate,
                 .toggle,
                 .collapse,
-                .select,
-                .addToSelection,
-                .removeFromSelection,
+            ] + selectionActions + [
                 .scrollIntoView,
             ]
         case .partiallyExpanded:
@@ -2348,9 +2360,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .toggle,
                 .expand,
                 .collapse,
-                .select,
-                .addToSelection,
-                .removeFromSelection,
+            ] + selectionActions + [
                 .scrollIntoView,
             ]
         case .leafNode:
@@ -2364,9 +2374,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .resize,
                 .rotate,
                 .toggle,
-                .select,
-                .addToSelection,
-                .removeFromSelection,
+            ] + selectionActions + [
                 .scrollIntoView,
             ]
         }
