@@ -135,5 +135,72 @@ extension ImageCommandTests {
         #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
         try? FileManager.default.removeItem(atPath: path)
     }
+
+    @Test(.tags(.imageCapture))
+    func `Compatible window ID captures route through desktop adapter`() async throws {
+        let window = ServiceWindowInfo(
+            windowID: 42,
+            title: "Adapter Window",
+            bounds: CGRect(x: 10, y: 20, width: 640, height: 480),
+            index: 7
+        )
+        let app = ServiceApplicationInfo(
+            processIdentifier: 4242,
+            bundleIdentifier: "dev.peekaboo.adapter",
+            name: "AdapterApp",
+            windowCount: 1
+        )
+        let captureResult = Self.makeCaptureResult(app: app, window: window)
+        let captureService = StubScreenCaptureService(permissionGranted: true)
+        var requestedWindowID: CGWindowID?
+        var requestedScale: CaptureScalePreference?
+        captureService.captureWindowByIdHandler = { windowID, scale in
+            requestedWindowID = windowID
+            requestedScale = scale
+            return captureResult
+        }
+
+        let applications = StubApplicationService(
+            applications: [app],
+            windowsByApp: [app.name: [window]]
+        )
+        let services = TestServicesFactory.makePeekabooServices(
+            applications: applications,
+            screenCapture: captureService
+        )
+        let path = Self.makeTempCapturePath("desktop-adapter-window.png")
+
+        let result = try await InProcessCommandRunner.run(
+            [
+                "image",
+                "--window-id", "\(window.windowID)",
+                "--path", path,
+                "--json",
+            ],
+            services: services
+        )
+
+        #expect(result.exitStatus == 0)
+        #expect(requestedWindowID == CGWindowID(window.windowID))
+        #expect(requestedScale == .logical1x)
+
+        let response = try JSONDecoder().decode(
+            CodableJSONResponse<ImageCaptureResult>.self,
+            from: Data(result.combinedOutput.utf8)
+        )
+        let captureSpan = try #require(
+            response.data.observations[0].spans.first { $0.name == "capture.window" }
+        )
+        #expect(captureSpan.metadata["source"] == "desktop-adapter")
+        #expect(response.data.observations[0].target?.source == "desktop-adapter")
+        #expect(response.data.files[0].path == path)
+        #expect(response.data.files[0].item_label == "Adapter Window")
+        #expect(response.data.files[0].window_title == "Adapter Window")
+        #expect(response.data.files[0].window_id == UInt32(window.windowID))
+        #expect(response.data.files[0].window_index == 7)
+        #expect(response.data.files[0].mime_type == "image/png")
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
+        try? FileManager.default.removeItem(atPath: path)
+    }
 }
 #endif

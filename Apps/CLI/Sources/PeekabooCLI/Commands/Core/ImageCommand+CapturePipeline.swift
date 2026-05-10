@@ -67,6 +67,11 @@ extension ImageCommand {
     }
 
     private func captureWindowById(_ windowId: Int) async throws -> [ImageCapturedFile] {
+        let desktop = self.services.desktop
+        if await self.canUseDesktopWindowCapture(adapter: desktop, windowId: windowId) {
+            return try await self.captureDesktopWindowById(windowId, adapter: desktop)
+        }
+
         let observation = try await self.captureObservation(
             target: .windowID(CGWindowID(windowId)),
             preferredName: "window-\(windowId)",
@@ -250,6 +255,77 @@ extension ImageCommand {
                 "format": result.format.rawValue,
                 "source": "desktop-adapter",
             ])
+    }
+
+    private func canUseDesktopWindowCapture(adapter: any DesktopAsyncAdapter, windowId: Int) async -> Bool {
+        guard windowId >= 0,
+              self.format == .png,
+              !self.retina,
+              self.captureEngine == nil,
+              self.configuredCaptureEnginePreference == nil
+        else {
+            return false
+        }
+
+        let platformInfo = await adapter.platformInfo()
+        return platformInfo.capabilities.contains(.captureWindowPNG)
+    }
+
+    private func captureDesktopWindowById(
+        _ windowId: Int,
+        adapter: any DesktopAsyncAdapter
+    ) async throws -> [ImageCapturedFile] {
+        let windowIdentifier = UInt64(windowId)
+        let window = await self.desktopWindow(adapter: adapter, windowIdentifier: windowIdentifier)
+        let preferredName = Self.preferredDesktopWindowCaptureName(window: window, windowId: windowId)
+        let outputURL = self.makeOutputURL(preferredName: "window-\(windowId)", index: nil)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+
+        let snapshot = await self.desktopSnapshot(adapter: adapter)
+        let start = ContinuousClock.now
+        let result = try await adapter.captureWindow(
+            windowIdentifier: windowIdentifier,
+            outputPath: outputURL.path)
+        let span = Self.desktopCaptureSpan(name: "capture.window", start: start, result: result)
+        let windowTitle = window?.title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return [
+            ImageCapturedFile(
+                file: SavedFile(
+                    path: result.path,
+                    item_label: preferredName,
+                    window_title: windowTitle?.isEmpty == false ? windowTitle : nil,
+                    window_id: UInt32(clamping: windowIdentifier),
+                    window_index: window?.index,
+                    mime_type: result.format.mimeType),
+                observation: ImageObservationDiagnostics(
+                    spans: [span],
+                    stateSnapshot: snapshot,
+                    target: DesktopObservationTargetDiagnostics(
+                        requestedKind: "window",
+                        resolvedKind: "window",
+                        source: "desktop-adapter",
+                        bounds: result.bounds.cgRect))),
+        ]
+    }
+
+    private func desktopWindow(
+        adapter: any DesktopAsyncAdapter,
+        windowIdentifier: UInt64
+    ) async -> DesktopWindow? {
+        let windows = (try? await adapter.listWindows(includeInvisible: true)) ?? []
+        return windows.first { $0.windowIdentifier == windowIdentifier }
+    }
+
+    private static func preferredDesktopWindowCaptureName(window: DesktopWindow?, windowId: Int) -> String {
+        let title = window?.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let title, !title.isEmpty {
+            return title
+        }
+
+        return "window-\(windowId)"
     }
 
     private func captureApplicationWindow(_ target: ImageWindowObservationTarget) async throws -> [ImageCapturedFile] {
