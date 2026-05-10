@@ -934,6 +934,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
                 isValueReadOnly: isValueReadOnly,
+                toggleState: Self.uiAutomationToggleState(
+                    hasValue: nativeElement.hasToggleState,
+                    value: nativeElement.toggleState),
                 childCount: Int(nativeElement.childCount))
         }
     }
@@ -953,6 +956,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             actions.append(.toggle)
         }
         return actions
+    }
+
+    private static func uiAutomationToggleState(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationToggleState?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .off
+        case 1:
+            return .on
+        case 2:
+            return .indeterminate
+        default:
+            return nil
+        }
     }
 
     private static func uiAutomationPatterns(from mask: UInt64) -> [DesktopUIAutomationPattern] {

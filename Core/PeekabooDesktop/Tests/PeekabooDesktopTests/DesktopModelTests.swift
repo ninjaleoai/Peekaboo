@@ -146,6 +146,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue, .toggle])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
+        XCTAssertEqual(snapshot.elements.first?.toggleState, .off)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
         XCTAssertEqual(invoke.element.name, "Desktop")
@@ -157,6 +158,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
+        XCTAssertEqual(toggle.postActionElement?.toggleState, .on)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -496,6 +498,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"toggleState\" : \"off\""))
     }
 
     func testDesktopCommandRunnerRoutesFocusedAutomationSnapshot() {
@@ -987,14 +990,22 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            postActionElement: element)
+            postActionElement: self.stubUIAutomationSnapshot(
+                scope: scope,
+                maxDepth: maxDepth,
+                maxElements: maxElements,
+                elementValue: element.value ?? "",
+                toggleState: .on)
+                .elements
+                .first(where: { $0.index == elementIndex }))
     }
 
     private func stubUIAutomationSnapshot(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
-        elementValue: String) -> DesktopUIAutomationSnapshot
+        elementValue: String,
+        toggleState: DesktopUIAutomationToggleState = .off) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
             nativeBackend: "StubUIA",
@@ -1020,7 +1031,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     supportedPatterns: [.invoke, .value, .toggle],
                     availableActions: [.invoke, .setValue, .toggle],
                     value: elementValue,
-                    isValueReadOnly: false),
+                    isValueReadOnly: false,
+                    toggleState: toggleState),
             ])
     }
 }

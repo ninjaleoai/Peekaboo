@@ -341,6 +341,12 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case toggle
 }
 
+public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {
+    case off
+    case on
+    case indeterminate
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -362,6 +368,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let availableActions: [DesktopUIAutomationAction]
     public let value: String?
     public let isValueReadOnly: Bool?
+    public let toggleState: DesktopUIAutomationToggleState?
     public let childCount: Int
 
     public init(
@@ -385,6 +392,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         availableActions: [DesktopUIAutomationAction] = [],
         value: String? = nil,
         isValueReadOnly: Bool? = nil,
+        toggleState: DesktopUIAutomationToggleState? = nil,
         childCount: Int = 0)
     {
         self.index = index
@@ -407,6 +415,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.availableActions = availableActions
         self.value = value
         self.isValueReadOnly = isValueReadOnly
+        self.toggleState = toggleState
         self.childCount = childCount
     }
 }

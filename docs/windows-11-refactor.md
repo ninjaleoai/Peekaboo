@@ -232,10 +232,12 @@ and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
 selection item, text, toggle, and legacy IAccessible. When an element supports
 the UIA Value pattern, snapshots also include its current string value and
-whether that value is read-only. Elements also expose stable available actions
-derived from those patterns: invoke is available when the Invoke pattern is
-present, and setValue is available only when the Value pattern is present and
-known writable, and toggle is available when the Toggle pattern is present.
+whether that value is read-only. When an element supports the UIA Toggle
+pattern, snapshots also include the current toggle state: off, on, or
+indeterminate. Elements also expose stable available actions derived from those
+patterns: invoke is available when the Invoke pattern is present, setValue is
+available only when the Value pattern is present and known writable, and toggle
+is available when the Toggle pattern is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
@@ -247,7 +249,8 @@ does the same for Value-pattern elements, rejecting known read-only values
 before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
 result can include post-action element metadata and whether the requested value
 was observed. `automation toggle --index <n>` performs the UIA Toggle pattern
-and returns pre-action metadata plus any refreshed post-action element.
+and returns pre-action metadata plus any refreshed post-action element,
+including the refreshed toggle state when UIA reports one.
 
 ## Next Integration Steps
 

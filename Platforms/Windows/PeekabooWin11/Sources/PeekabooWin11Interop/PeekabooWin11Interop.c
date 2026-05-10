@@ -277,6 +277,42 @@ static void PeekabooWin11CopyElementValuePattern(
     IUIAutomationValuePattern_Release(valuePattern);
 }
 
+static void PeekabooWin11CopyElementTogglePattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TogglePatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTogglePattern *togglePattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTogglePattern,
+        (void **)&togglePattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || togglePattern == NULL) {
+        return;
+    }
+
+    ToggleState toggleState = ToggleState_Off;
+    HRESULT stateResult = IUIAutomationTogglePattern_get_CurrentToggleState(
+        togglePattern,
+        &toggleState);
+    if (PeekabooWin11Succeeded(stateResult)) {
+        snapshot->hasToggleState = 1;
+        snapshot->toggleState = (int32_t)toggleState;
+    }
+
+    IUIAutomationTogglePattern_Release(togglePattern);
+}
+
 static void PeekabooWin11InvokeElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -485,6 +521,7 @@ static void PeekabooWin11CopyElementProperties(
 
     PeekabooWin11CopyElementPatterns(element, snapshot);
     PeekabooWin11CopyElementValuePattern(element, snapshot);
+    PeekabooWin11CopyElementTogglePattern(element, snapshot);
 }
 
 static int32_t PeekabooWin11AppendElementSnapshot(

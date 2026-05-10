@@ -44,6 +44,8 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasValue;
     int32_t hasIsValueReadOnly;
     int32_t isValueReadOnly;
+    int32_t hasToggleState;
+    int32_t toggleState;
     int32_t childCount;
     char name[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char automationIdentifier[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
