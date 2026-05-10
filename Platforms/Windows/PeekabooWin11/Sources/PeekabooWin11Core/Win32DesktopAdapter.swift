@@ -1631,6 +1631,15 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 gridItemColumnSpan: Self.optionalInt(
                     hasValue: nativeElement.hasGridItemColumnSpan,
                     value: nativeElement.gridItemColumnSpan),
+                canMove: Self.optionalBool(
+                    hasValue: nativeElement.hasCanMove,
+                    value: nativeElement.canMove),
+                canResize: Self.optionalBool(
+                    hasValue: nativeElement.hasCanResize,
+                    value: nativeElement.canResize),
+                canRotate: Self.optionalBool(
+                    hasValue: nativeElement.hasCanRotate,
+                    value: nativeElement.canRotate),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }
@@ -1833,6 +1842,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 11) {
             patterns.append(.gridItem)
+        }
+        if Self.hasPatternBit(mask, 12) {
+            patterns.append(.transform)
         }
         return patterns
     }

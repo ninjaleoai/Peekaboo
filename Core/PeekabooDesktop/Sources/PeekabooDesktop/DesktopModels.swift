@@ -340,6 +340,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case legacyIAccessible
     case grid
     case gridItem
+    case transform
 }
 
 public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
@@ -436,6 +437,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let gridItemColumn: Int?
     public let gridItemRowSpan: Int?
     public let gridItemColumnSpan: Int?
+    public let canMove: Bool?
+    public let canResize: Bool?
+    public let canRotate: Bool?
     public let isSelected: Bool?
     public let childCount: Int
 
@@ -488,6 +492,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         gridItemColumn: Int? = nil,
         gridItemRowSpan: Int? = nil,
         gridItemColumnSpan: Int? = nil,
+        canMove: Bool? = nil,
+        canResize: Bool? = nil,
+        canRotate: Bool? = nil,
         isSelected: Bool? = nil,
         childCount: Int = 0)
     {
@@ -539,6 +546,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.gridItemColumn = gridItemColumn
         self.gridItemRowSpan = gridItemRowSpan
         self.gridItemColumnSpan = gridItemColumnSpan
+        self.canMove = canMove
+        self.canResize = canResize
+        self.canRotate = canRotate
         self.isSelected = isSelected
         self.childCount = childCount
     }

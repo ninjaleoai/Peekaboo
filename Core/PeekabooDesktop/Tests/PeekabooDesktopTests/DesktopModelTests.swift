@@ -190,6 +190,7 @@ final class DesktopModelTests: XCTestCase {
                 .toggle,
                 .grid,
                 .gridItem,
+                .transform,
             ])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
@@ -233,6 +234,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.gridItemColumn, 0)
         XCTAssertEqual(snapshot.elements.first?.gridItemRowSpan, 1)
         XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
+        XCTAssertEqual(snapshot.elements.first?.canMove, true)
+        XCTAssertEqual(snapshot.elements.first?.canResize, true)
+        XCTAssertEqual(snapshot.elements.first?.canRotate, false)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -609,6 +613,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
+        XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
@@ -636,6 +641,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumn\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumnSpan\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"canResize\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"canRotate\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -715,6 +723,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"canRotate\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1662,6 +1672,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .toggle,
                         .grid,
                         .gridItem,
+                        .transform,
                     ],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
@@ -1694,6 +1705,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     gridItemColumn: 0,
                     gridItemRowSpan: 1,
                     gridItemColumnSpan: 2,
+                    canMove: true,
+                    canResize: true,
+                    canRotate: false,
                     isSelected: isSelected),
             ])
     }

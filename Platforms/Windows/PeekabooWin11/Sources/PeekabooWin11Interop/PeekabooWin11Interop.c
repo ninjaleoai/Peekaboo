@@ -238,6 +238,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_LegacyIAccessiblePatternId, 1ULL << 9, snapshot);
     PeekabooWin11MarkPattern(element, UIA_GridPatternId, 1ULL << 10, snapshot);
     PeekabooWin11MarkPattern(element, UIA_GridItemPatternId, 1ULL << 11, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TransformPatternId, 1ULL << 12, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -768,6 +769,60 @@ static void PeekabooWin11CopyElementGridItemPattern(
     IUIAutomationGridItemPattern_Release(gridItemPattern);
 }
 
+static void PeekabooWin11CopyElementTransformPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TransformPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTransformPattern *transformPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTransformPattern,
+        (void **)&transformPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || transformPattern == NULL) {
+        return;
+    }
+
+    BOOL canMove = FALSE;
+    HRESULT canMoveResult = IUIAutomationTransformPattern_get_CurrentCanMove(
+        transformPattern,
+        &canMove);
+    if (PeekabooWin11Succeeded(canMoveResult)) {
+        snapshot->hasCanMove = 1;
+        snapshot->canMove = canMove ? 1 : 0;
+    }
+
+    BOOL canResize = FALSE;
+    HRESULT canResizeResult = IUIAutomationTransformPattern_get_CurrentCanResize(
+        transformPattern,
+        &canResize);
+    if (PeekabooWin11Succeeded(canResizeResult)) {
+        snapshot->hasCanResize = 1;
+        snapshot->canResize = canResize ? 1 : 0;
+    }
+
+    BOOL canRotate = FALSE;
+    HRESULT canRotateResult = IUIAutomationTransformPattern_get_CurrentCanRotate(
+        transformPattern,
+        &canRotate);
+    if (PeekabooWin11Succeeded(canRotateResult)) {
+        snapshot->hasCanRotate = 1;
+        snapshot->canRotate = canRotate ? 1 : 0;
+    }
+
+    IUIAutomationTransformPattern_Release(transformPattern);
+}
+
 static void PeekabooWin11CopyElementSelectionItemPattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -1231,6 +1286,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTextPattern(element, snapshot);
     PeekabooWin11CopyElementGridPattern(element, snapshot);
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
+    PeekabooWin11CopyElementTransformPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 

@@ -99,6 +99,12 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t gridItemRowSpan;
     int32_t hasGridItemColumnSpan;
     int32_t gridItemColumnSpan;
+    int32_t hasCanMove;
+    int32_t canMove;
+    int32_t hasCanResize;
+    int32_t canResize;
+    int32_t hasCanRotate;
+    int32_t canRotate;
     int32_t hasIsSelected;
     int32_t isSelected;
     int32_t childCount;

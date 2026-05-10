@@ -42,6 +42,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
   metadata in bounded snapshots
+- Transform-pattern UI Automation movement, resize, and rotation capability
+  metadata in bounded snapshots
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -74,6 +76,8 @@ RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
 as tree items and combo boxes. `automation select --index <n>` covers
 SelectionItem-pattern controls such as list items, menu items, and tabs.
+When an element supports the UIA Transform pattern, snapshots include whether
+UIA reports that it can be moved, resized, or rotated.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
