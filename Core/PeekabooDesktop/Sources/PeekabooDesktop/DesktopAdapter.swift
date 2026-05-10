@@ -21,6 +21,10 @@ public protocol DesktopAdapter: Sendable {
     func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult
     func typeText(_ text: String, delayMilliseconds: Int) throws -> DesktopTypingResult
     func uiAutomationStatus() throws -> DesktopUIAutomationStatus
+    func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) throws -> DesktopUIAutomationSnapshot
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -47,6 +51,10 @@ public protocol DesktopAsyncAdapter: Sendable {
     func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult
     func typeText(_ text: String, delayMilliseconds: Int) async throws -> DesktopTypingResult
     func uiAutomationStatus() async throws -> DesktopUIAutomationStatus
+    func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) async throws -> DesktopUIAutomationSnapshot
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -131,6 +139,17 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
 
     public func uiAutomationStatus() async throws -> DesktopUIAutomationStatus {
         try self.adapter.uiAutomationStatus()
+    }
+
+    public func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) async throws -> DesktopUIAutomationSnapshot
+    {
+        try self.adapter.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
     }
 }
 

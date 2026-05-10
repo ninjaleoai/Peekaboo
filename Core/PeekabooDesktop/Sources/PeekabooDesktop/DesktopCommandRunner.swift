@@ -170,15 +170,35 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status")
+            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status or snapshot")
         }
 
         switch subcommand {
         case "status":
             try stdout(self.success(adapter.uiAutomationStatus()))
+        case "snapshot":
+            try self.runAutomationSnapshot(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown automation subcommand: \(subcommand)")
         }
+    }
+
+    private static func runAutomationSnapshot(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)))
     }
 
     private static func runCapture(
@@ -414,6 +434,29 @@ public enum DesktopCommandRunner {
         return milliseconds
     }
 
+    private static func parseUIAutomationSnapshotScope(
+        _ value: String) throws -> DesktopUIAutomationSnapshotScope
+    {
+        guard let scope = DesktopUIAutomationSnapshotScope(rawValue: value.lowercased()) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation scope must be root or foreground")
+        }
+        return scope
+    }
+
+    private static func parseUIAutomationMaxDepth(_ value: String) throws -> Int {
+        guard let depth = Int(value), (0...8).contains(depth) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation max depth must be between 0 and 8")
+        }
+        return depth
+    }
+
+    private static func parseUIAutomationMaxElements(_ value: String) throws -> Int {
+        guard let elementCount = Int(value), (1...512).contains(elementCount) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation max elements must be between 1 and 512")
+        }
+        return elementCount
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -440,6 +483,7 @@ public enum DesktopCommandRunner {
           input hotkey --keys <key1,key2> [--hold-ms <n>]
           input type --text <text> [--delay-ms <n>]
           automation status
+          automation snapshot [--scope root|foreground] [--max-depth <n>] [--max-elements <n>]
         """
     }
 

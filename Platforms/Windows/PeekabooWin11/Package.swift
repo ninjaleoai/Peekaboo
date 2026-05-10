@@ -21,6 +21,7 @@ let package = Package(
             publicHeadersPath: "include",
             linkerSettings: [
                 .linkedLibrary("Ole32", .when(platforms: [.windows])),
+                .linkedLibrary("OleAut32", .when(platforms: [.windows])),
                 .linkedLibrary("Uuid", .when(platforms: [.windows])),
                 .linkedLibrary("Uiautomationcore", .when(platforms: [.windows])),
             ]),

@@ -32,6 +32,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - focused text typing through Win32 keyboard input APIs
 - native UI Automation availability probing through the Windows UI Automation
   COM API
+- bounded native UI Automation root or foreground-window element snapshots
+  through the UIA control view walker
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -39,7 +41,8 @@ adapter construction; the shared package owns the platform-neutral
 `platform-info`, `list`, `capture screen`, `capture area`, `capture window`,
 `capture frontmost`, `input position`, `input move`, `input click`,
 `input scroll`, `input drag`, `input hotkey`, and `input type` command
-contract, plus the first `automation status` UI Automation probe.
+contract, plus `automation status` and bounded `automation snapshot` UI
+Automation commands.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -105,6 +108,10 @@ public protocol DesktopAdapter: Sendable {
     func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult
     func typeText(_ text: String, delayMilliseconds: Int) throws -> DesktopTypingResult
     func uiAutomationStatus() throws -> DesktopUIAutomationStatus
+    func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) throws -> DesktopUIAutomationSnapshot
 }
 ```
 
@@ -162,6 +169,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   input type --text "hello from Windows" --delay-ms 5
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 automation status
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation snapshot --scope foreground --max-depth 2 --max-elements 64
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -173,15 +182,19 @@ the current focus. It supports characters that `VkKeyScanW` can translate for
 the active keyboard layout, plus return and tab, and rejects unsupported text
 instead of silently dropping characters.
 
-The first Windows UI Automation path is a probe rather than tree traversal: it
-initializes COM, creates a `CUIAutomation` object, and requests the root
-element. This gives the Windows package a native UIA smoke test before adding
-element snapshots, control-type mapping, and actions.
+The first Windows UI Automation path initializes COM, creates a `CUIAutomation`
+object, and requests the root element for status probing. The follow-up
+snapshot path can start at either the desktop root or the foreground window,
+then walks the UIA control view with explicit `--max-depth` and
+`--max-elements` limits. Snapshot elements include the raw control type,
+localized control type, name, automation identifier, class name, process ID,
+native window handle, bounds, depth, parent index, and child count. Root
+snapshots should stay shallow because desktop-wide UIA traversal is expensive.
 
 ## Next Integration Steps
 
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Expand the Windows UI Automation path from status probing into bounded root
-   or foreground-window element snapshots.
+2. Expand the Windows UI Automation path from read-only snapshots into element
+   lookup, invoke/value patterns, and stable control-type/action mapping.

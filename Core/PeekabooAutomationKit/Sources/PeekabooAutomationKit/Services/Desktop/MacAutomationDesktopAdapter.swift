@@ -219,6 +219,14 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("UI Automation status is not implemented by this adapter")
     }
 
+    public func uiAutomationSnapshot(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int) async throws -> DesktopUIAutomationSnapshot
+    {
+        throw DesktopAdapterError.unsupportedPlatform("UI Automation snapshots are not implemented by this adapter")
+    }
+
     private static func write(_ data: Data, to outputPath: String) throws {
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(

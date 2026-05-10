@@ -1,5 +1,9 @@
 #include "PeekabooWin11Interop.h"
 
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
 #ifdef _WIN32
 #define COBJMACROS
 #include <windows.h>
@@ -59,9 +63,368 @@ PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
 
     return result;
 }
+
+static void PeekabooWin11CopyBSTR(BSTR value, char *target, size_t targetSize) {
+    if (target == NULL || targetSize == 0) {
+        return;
+    }
+
+    target[0] = '\0';
+    if (value == NULL) {
+        return;
+    }
+
+    int written = WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        value,
+        -1,
+        target,
+        (int)targetSize,
+        NULL,
+        NULL);
+    if (written == 0) {
+        target[0] = '\0';
+    }
+    target[targetSize - 1] = '\0';
+}
+
+static void PeekabooWin11CopyElementName(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentName(element, &value);
+    if (PeekabooWin11Succeeded(result)) {
+        PeekabooWin11CopyBSTR(value, target, targetSize);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
+static void PeekabooWin11CopyElementAutomationIdentifier(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentAutomationId(element, &value);
+    if (PeekabooWin11Succeeded(result)) {
+        PeekabooWin11CopyBSTR(value, target, targetSize);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
+static void PeekabooWin11CopyElementClassName(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentClassName(element, &value);
+    if (PeekabooWin11Succeeded(result)) {
+        PeekabooWin11CopyBSTR(value, target, targetSize);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
+static void PeekabooWin11CopyElementLocalizedControlType(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentLocalizedControlType(element, &value);
+    if (PeekabooWin11Succeeded(result)) {
+        PeekabooWin11CopyBSTR(value, target, targetSize);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
+static HRESULT PeekabooWin11CopySnapshotRoot(
+    IUIAutomation *automation,
+    int32_t scope,
+    IUIAutomationElement **rootElement)
+{
+    if (scope == 1) {
+        HWND foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == NULL) {
+            return HRESULT_FROM_WIN32(ERROR_INVALID_WINDOW_HANDLE);
+        }
+        return IUIAutomation_ElementFromHandle(automation, foregroundWindow, rootElement);
+    }
+
+    return IUIAutomation_GetRootElement(automation, rootElement);
+}
+
+static void PeekabooWin11CopyElementProperties(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    PeekabooWin11CopyElementName(
+        element,
+        snapshot->name,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementAutomationIdentifier(
+        element,
+        snapshot->automationIdentifier,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementClassName(
+        element,
+        snapshot->className,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementLocalizedControlType(
+        element,
+        snapshot->localizedControlType,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+
+    CONTROLTYPEID controlType = 0;
+    if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentControlType(element, &controlType))) {
+        snapshot->controlType = (int32_t)controlType;
+    }
+
+    int processIdentifier = 0;
+    if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentProcessId(element, &processIdentifier))) {
+        snapshot->processIdentifier = (int32_t)processIdentifier;
+    }
+
+    UIA_HWND nativeWindowHandle = 0;
+    if (PeekabooWin11Succeeded(
+        IUIAutomationElement_get_CurrentNativeWindowHandle(element, &nativeWindowHandle)))
+    {
+        snapshot->nativeWindowHandle = (uint64_t)(uintptr_t)nativeWindowHandle;
+    }
+
+    RECT bounds = {0, 0, 0, 0};
+    if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentBoundingRectangle(element, &bounds))) {
+        snapshot->hasBoundingRectangle = 1;
+        snapshot->boundsX = (int32_t)bounds.left;
+        snapshot->boundsY = (int32_t)bounds.top;
+        snapshot->boundsWidth = (int32_t)(bounds.right - bounds.left);
+        snapshot->boundsHeight = (int32_t)(bounds.bottom - bounds.top);
+    }
+}
+
+static int32_t PeekabooWin11AppendElementSnapshot(
+    IUIAutomationTreeWalker *walker,
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationSnapshotResult *result,
+    int32_t parentIndex,
+    int32_t depth)
+{
+    if (result->elementCount >= result->maxElements) {
+        result->didTruncate = 1;
+        return -1;
+    }
+
+    int32_t index = result->elementCount;
+    result->elementCount += 1;
+
+    PeekabooWin11UIAutomationElementSnapshot *snapshot = &result->elements[index];
+    memset(snapshot, 0, sizeof(*snapshot));
+    snapshot->index = index;
+    snapshot->parentIndex = parentIndex;
+    snapshot->depth = depth;
+
+    PeekabooWin11CopyElementProperties(element, snapshot);
+
+    if (depth >= result->maxDepth) {
+        return index;
+    }
+
+    IUIAutomationElement *child = NULL;
+    HRESULT firstChildResult = IUIAutomationTreeWalker_GetFirstChildElement(walker, element, &child);
+    if (!PeekabooWin11Succeeded(firstChildResult)) {
+        if (result->walkerResult == 0) {
+            result->walkerResult = (int32_t)firstChildResult;
+        }
+        return index;
+    }
+
+    while (child != NULL) {
+        if (result->elementCount >= result->maxElements) {
+            result->didTruncate = 1;
+            IUIAutomationElement_Release(child);
+            break;
+        }
+
+        int32_t childIndex = PeekabooWin11AppendElementSnapshot(
+            walker,
+            child,
+            result,
+            index,
+            depth + 1);
+        if (childIndex >= 0) {
+            snapshot->childCount += 1;
+        }
+
+        IUIAutomationElement *next = NULL;
+        HRESULT nextResult = IUIAutomationTreeWalker_GetNextSiblingElement(walker, child, &next);
+        IUIAutomationElement_Release(child);
+        if (!PeekabooWin11Succeeded(nextResult)) {
+            if (result->walkerResult == 0) {
+                result->walkerResult = (int32_t)nextResult;
+            }
+            break;
+        }
+        child = next;
+    }
+
+    return index;
+}
+
+PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements)
+{
+    PeekabooWin11UIAutomationSnapshotResult result;
+    memset(&result, 0, sizeof(result));
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+
+    if (scope != 0 && scope != 1) {
+        result.errorResult = (int32_t)E_INVALIDARG;
+        return result;
+    }
+    if (maxDepth < 0 || maxElements < 1) {
+        result.errorResult = (int32_t)E_INVALIDARG;
+        return result;
+    }
+
+    result.elements = (PeekabooWin11UIAutomationElementSnapshot *)calloc(
+        (size_t)maxElements,
+        sizeof(PeekabooWin11UIAutomationElementSnapshot));
+    if (result.elements == NULL) {
+        result.errorResult = (int32_t)E_OUTOFMEMORY;
+        return result;
+    }
+
+    HRESULT initializeResult = CoInitialize(NULL);
+    result.initializeResult = (int32_t)initializeResult;
+    result.didInitializeCOM = PeekabooWin11Succeeded(initializeResult) ? 1 : 0;
+
+    if (!result.didInitializeCOM && initializeResult != RPC_E_CHANGED_MODE) {
+        return result;
+    }
+
+    IUIAutomation *automation = NULL;
+    HRESULT createResult = CoCreateInstance(
+        &CLSID_CUIAutomation,
+        NULL,
+        CLSCTX_INPROC_SERVER,
+        &IID_IUIAutomation,
+        (void **)&automation);
+    result.createResult = (int32_t)createResult;
+
+    if (PeekabooWin11Succeeded(createResult) && automation == NULL) {
+        result.createResult = (int32_t)E_POINTER;
+    }
+
+    if (!PeekabooWin11Succeeded(result.createResult) || automation == NULL) {
+        if (result.didInitializeCOM) {
+            CoUninitialize();
+        }
+        return result;
+    }
+
+    IUIAutomationElement *rootElement = NULL;
+    HRESULT rootResult = PeekabooWin11CopySnapshotRoot(automation, scope, &rootElement);
+    result.rootResult = (int32_t)rootResult;
+    if (PeekabooWin11Succeeded(rootResult) && rootElement == NULL) {
+        result.rootResult = (int32_t)E_POINTER;
+    }
+
+    if (!PeekabooWin11Succeeded(result.rootResult) || rootElement == NULL) {
+        IUIAutomation_Release(automation);
+        if (result.didInitializeCOM) {
+            CoUninitialize();
+        }
+        return result;
+    }
+
+    IUIAutomationTreeWalker *walker = NULL;
+    HRESULT walkerResult = IUIAutomation_get_ControlViewWalker(automation, &walker);
+    result.walkerResult = (int32_t)walkerResult;
+    if (PeekabooWin11Succeeded(walkerResult) && walker == NULL) {
+        result.walkerResult = (int32_t)E_POINTER;
+    }
+
+    if (PeekabooWin11Succeeded(result.walkerResult) && walker != NULL) {
+        PeekabooWin11AppendElementSnapshot(walker, rootElement, &result, -1, 0);
+        IUIAutomationTreeWalker_Release(walker);
+    }
+
+    IUIAutomationElement_Release(rootElement);
+    IUIAutomation_Release(automation);
+
+    if (result.didInitializeCOM) {
+        CoUninitialize();
+    }
+
+    return result;
+}
 #else
 PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
     PeekabooWin11UIAutomationProbeResult result = {0, 0, 0, -2147467263, 0, 0};
     return result;
 }
+
+PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements)
+{
+    PeekabooWin11UIAutomationSnapshotResult result;
+    memset(&result, 0, sizeof(result));
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.initializeResult = -2147467263;
+    return result;
+}
 #endif
+
+void PeekabooWin11FreeUIAutomationSnapshot(
+    PeekabooWin11UIAutomationSnapshotResult *result)
+{
+    if (result == NULL) {
+        return;
+    }
+    free(result->elements);
+    result->elements = NULL;
+    result->elementCount = 0;
+}
+
+const char *PeekabooWin11UIAutomationElementName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->name;
+}
+
+const char *PeekabooWin11UIAutomationElementAutomationIdentifier(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->automationIdentifier;
+}
+
+const char *PeekabooWin11UIAutomationElementClassName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->className;
+}
+
+const char *PeekabooWin11UIAutomationElementLocalizedControlType(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->localizedControlType;
+}

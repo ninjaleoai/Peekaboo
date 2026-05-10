@@ -312,6 +312,85 @@ public struct DesktopUIAutomationStatus: Codable, Equatable, Sendable {
     }
 }
 
+public enum DesktopUIAutomationSnapshotScope: String, CaseIterable, Codable, Sendable {
+    case root
+    case foreground
+}
+
+public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
+    public let index: Int
+    public let parentIndex: Int?
+    public let depth: Int
+    public let name: String?
+    public let automationIdentifier: String?
+    public let className: String?
+    public let localizedControlType: String?
+    public let controlType: Int
+    public let processIdentifier: UInt32?
+    public let nativeWindowHandle: UInt64?
+    public let bounds: DesktopRect?
+    public let childCount: Int
+
+    public init(
+        index: Int,
+        parentIndex: Int?,
+        depth: Int,
+        name: String? = nil,
+        automationIdentifier: String? = nil,
+        className: String? = nil,
+        localizedControlType: String? = nil,
+        controlType: Int = 0,
+        processIdentifier: UInt32? = nil,
+        nativeWindowHandle: UInt64? = nil,
+        bounds: DesktopRect? = nil,
+        childCount: Int = 0)
+    {
+        self.index = index
+        self.parentIndex = parentIndex
+        self.depth = depth
+        self.name = name
+        self.automationIdentifier = automationIdentifier
+        self.className = className
+        self.localizedControlType = localizedControlType
+        self.controlType = controlType
+        self.processIdentifier = processIdentifier
+        self.nativeWindowHandle = nativeWindowHandle
+        self.bounds = bounds
+        self.childCount = childCount
+    }
+}
+
+public struct DesktopUIAutomationSnapshot: Codable, Equatable, Sendable {
+    public let nativeBackend: String
+    public let scope: DesktopUIAutomationSnapshotScope
+    public let maxDepth: Int
+    public let maxElements: Int
+    public let elementCount: Int
+    public let didTruncate: Bool
+    public let elements: [DesktopUIAutomationElementSnapshot]
+    public let error: String?
+
+    public init(
+        nativeBackend: String,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementCount: Int,
+        didTruncate: Bool,
+        elements: [DesktopUIAutomationElementSnapshot],
+        error: String? = nil)
+    {
+        self.nativeBackend = nativeBackend
+        self.scope = scope
+        self.maxDepth = maxDepth
+        self.maxElements = maxElements
+        self.elementCount = elementCount
+        self.didTruncate = didTruncate
+        self.elements = elements
+        self.error = error
+    }
+}
+
 public struct DesktopCommandEnvelope<Payload: Encodable>: Encodable {
     public let ok: Bool
     public let data: Payload?

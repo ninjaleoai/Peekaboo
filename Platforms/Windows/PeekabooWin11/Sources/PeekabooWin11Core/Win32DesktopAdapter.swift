@@ -467,6 +467,37 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             error: Self.uiAutomationError(from: probe))
     }
 
+    public func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) throws -> DesktopUIAutomationSnapshot
+    {
+        guard (0...8).contains(maxDepth) else {
+            throw Win11DesktopError.invalidArgument("UI Automation max depth must be between 0 and 8")
+        }
+        guard (1...512).contains(maxElements) else {
+            throw Win11DesktopError.invalidArgument("UI Automation max elements must be between 1 and 512")
+        }
+
+        var nativeSnapshot = PeekabooWin11CopyUIAutomationSnapshot(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements))
+        defer {
+            PeekabooWin11FreeUIAutomationSnapshot(&nativeSnapshot)
+        }
+
+        return DesktopUIAutomationSnapshot(
+            nativeBackend: "UIAutomation",
+            scope: scope,
+            maxDepth: Int(nativeSnapshot.maxDepth),
+            maxElements: Int(nativeSnapshot.maxElements),
+            elementCount: Int(nativeSnapshot.elementCount),
+            didTruncate: nativeSnapshot.didTruncate != 0,
+            elements: Self.uiAutomationElements(from: nativeSnapshot),
+            error: Self.uiAutomationSnapshotError(from: nativeSnapshot))
+    }
+
     private static func uiAutomationError(
         from probe: PeekabooWin11UIAutomationProbeResult) -> String?
     {
@@ -486,6 +517,87 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return "IUIAutomation.GetRootElement did not return a root element"
         }
         return nil
+    }
+
+    private static func uiAutomationSnapshotError(
+        from snapshot: PeekabooWin11UIAutomationSnapshotResult) -> String?
+    {
+        if snapshot.errorResult < 0 {
+            return "UI Automation snapshot failed: \(Self.hresultDescription(snapshot.errorResult))"
+        }
+
+        let didReachAutomation = snapshot.createResult != 0 ||
+            snapshot.rootResult != 0 ||
+            snapshot.walkerResult != 0 ||
+            snapshot.elementCount > 0
+        if snapshot.initializeResult < 0, !didReachAutomation {
+            return "CoInitialize failed: \(Self.hresultDescription(snapshot.initializeResult))"
+        }
+        if !Self.succeeded(snapshot.createResult) {
+            return "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(snapshot.createResult))"
+        }
+        if !Self.succeeded(snapshot.rootResult) {
+            return "UI Automation root lookup failed: \(Self.hresultDescription(snapshot.rootResult))"
+        }
+        if !Self.succeeded(snapshot.walkerResult) {
+            return "UI Automation ControlViewWalker failed: \(Self.hresultDescription(snapshot.walkerResult))"
+        }
+        return nil
+    }
+
+    private static func nativeUIAutomationScope(_ scope: DesktopUIAutomationSnapshotScope) -> Int32 {
+        switch scope {
+        case .root:
+            return 0
+        case .foreground:
+            return 1
+        }
+    }
+
+    private static func uiAutomationElements(
+        from snapshot: PeekabooWin11UIAutomationSnapshotResult) -> [DesktopUIAutomationElementSnapshot]
+    {
+        guard let elementsPointer = snapshot.elements, snapshot.elementCount > 0 else {
+            return []
+        }
+
+        return (0..<Int(snapshot.elementCount)).map { offset in
+            var nativeElement = elementsPointer.advanced(by: offset).pointee
+            let bounds: DesktopRect? = nativeElement.hasBoundingRectangle != 0
+                ? DesktopRect(
+                    x: Int(nativeElement.boundsX),
+                    y: Int(nativeElement.boundsY),
+                    width: Int(nativeElement.boundsWidth),
+                    height: Int(nativeElement.boundsHeight))
+                : nil
+            return DesktopUIAutomationElementSnapshot(
+                index: Int(nativeElement.index),
+                parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
+                depth: Int(nativeElement.depth),
+                name: Self.string(from: PeekabooWin11UIAutomationElementName(&nativeElement)),
+                automationIdentifier: Self.string(
+                    from: PeekabooWin11UIAutomationElementAutomationIdentifier(&nativeElement)),
+                className: Self.string(from: PeekabooWin11UIAutomationElementClassName(&nativeElement)),
+                localizedControlType: Self.string(
+                    from: PeekabooWin11UIAutomationElementLocalizedControlType(&nativeElement)),
+                controlType: Int(nativeElement.controlType),
+                processIdentifier: nativeElement.processIdentifier > 0
+                    ? UInt32(nativeElement.processIdentifier)
+                    : nil,
+                nativeWindowHandle: nativeElement.nativeWindowHandle > 0
+                    ? nativeElement.nativeWindowHandle
+                    : nil,
+                bounds: bounds,
+                childCount: Int(nativeElement.childCount))
+        }
+    }
+
+    private static func string(from pointer: UnsafePointer<CChar>?) -> String? {
+        guard let pointer else {
+            return nil
+        }
+        let value = String(cString: pointer)
+        return value.isEmpty ? nil : value
     }
 
     private static func succeeded(_ result: Int32) -> Bool {

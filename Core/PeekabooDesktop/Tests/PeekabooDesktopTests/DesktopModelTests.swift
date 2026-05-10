@@ -84,6 +84,7 @@ final class DesktopModelTests: XCTestCase {
             holdDurationMilliseconds: 25)
         let typing = try await bridge.typeText("Hello", delayMilliseconds: 3)
         let automation = try await bridge.uiAutomationStatus()
+        let snapshot = try await bridge.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -119,6 +120,9 @@ final class DesktopModelTests: XCTestCase {
             nativeBackend: "StubUIA",
             isAvailable: true,
             rootElementAvailable: true))
+        XCTAssertEqual(snapshot.scope, .root)
+        XCTAssertEqual(snapshot.elementCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.name, "Desktop")
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -429,6 +433,40 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"rootElementAvailable\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSnapshot() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "snapshot",
+            "--scope",
+            "root",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"scope\" : \"root\""))
+        XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "snapshot",
+            "--scope",
+            "everything",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation scope must be root or foreground"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -443,6 +481,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input hotkey --keys"))
         XCTAssertTrue(result.stdout.contains("input type --text"))
         XCTAssertTrue(result.stdout.contains("automation status"))
+        XCTAssertTrue(result.stdout.contains("automation snapshot"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -592,6 +631,30 @@ private struct StubDesktopAdapter: DesktopAdapter {
             nativeBackend: "StubUIA",
             isAvailable: true,
             rootElementAvailable: true)
+    }
+
+    func uiAutomationSnapshot(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int) throws -> DesktopUIAutomationSnapshot
+    {
+        DesktopUIAutomationSnapshot(
+            nativeBackend: "StubUIA",
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementCount: 1,
+            didTruncate: false,
+            elements: [
+                DesktopUIAutomationElementSnapshot(
+                    index: 0,
+                    parentIndex: nil,
+                    depth: 0,
+                    name: "Desktop",
+                    localizedControlType: "pane",
+                    controlType: 50033,
+                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100)),
+            ])
     }
 }
 

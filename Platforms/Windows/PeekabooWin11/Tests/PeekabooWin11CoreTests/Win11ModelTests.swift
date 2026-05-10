@@ -89,6 +89,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.hotkey(keys: ["shift"], holdDurationMilliseconds: 0))
         XCTAssertThrowsError(try adapter.typeText("a", delayMilliseconds: 0))
         XCTAssertThrowsError(try adapter.uiAutomationStatus())
+        XCTAssertThrowsError(try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4))
         #endif
     }
 
@@ -127,6 +128,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input hotkey --keys"))
         XCTAssertTrue(output.contains("input type --text"))
         XCTAssertTrue(output.contains("automation status"))
+        XCTAssertTrue(output.contains("automation snapshot"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -365,6 +367,24 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(status.rootElementAvailable, status.error ?? "UI Automation root element is not available")
         #else
         throw XCTSkip("Native Windows UI Automation smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanSnapshotUIAutomationRoot() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let snapshot = try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 16)
+
+        XCTAssertEqual(snapshot.nativeBackend, "UIAutomation")
+        XCTAssertEqual(snapshot.scope, .root)
+        XCTAssertEqual(snapshot.maxDepth, 1)
+        XCTAssertEqual(snapshot.maxElements, 16)
+        XCTAssertNil(snapshot.error)
+        XCTAssertFalse(snapshot.elements.isEmpty)
+        XCTAssertEqual(snapshot.elements.first?.depth, 0)
+        XCTAssertEqual(snapshot.elements.first?.parentIndex, nil)
+        #else
+        throw XCTSkip("Native Windows UI Automation snapshot smoke test only runs on Windows.")
         #endif
     }
 }
