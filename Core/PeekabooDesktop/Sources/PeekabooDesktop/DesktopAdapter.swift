@@ -42,6 +42,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: Double) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementScrollPercent(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -109,6 +116,13 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: Double) async throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementScrollPercent(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) async throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -267,6 +281,23 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             value: value)
+    }
+
+    public func setUIAutomationElementScrollPercent(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.setUIAutomationElementScrollPercent(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            horizontalPercent: horizontalPercent,
+            verticalPercent: verticalPercent)
     }
 
     public func toggleUIAutomationElement(

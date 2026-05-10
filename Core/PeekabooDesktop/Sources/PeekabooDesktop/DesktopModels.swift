@@ -26,6 +26,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case expandCollapseUIAutomation
     case selectUIAutomationItem
     case setUIAutomationRangeValue
+    case setUIAutomationScrollPercent
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -346,6 +347,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case collapse
     case select
     case setRangeValue
+    case setScrollPercent
 }
 
 public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {
@@ -388,6 +390,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let rangeSmallChange: Double?
     public let rangeLargeChange: Double?
     public let isRangeValueReadOnly: Bool?
+    public let horizontalScrollPercent: Double?
+    public let verticalScrollPercent: Double?
+    public let horizontalScrollViewSize: Double?
+    public let verticalScrollViewSize: Double?
+    public let isHorizontallyScrollable: Bool?
+    public let isVerticallyScrollable: Bool?
     public let toggleState: DesktopUIAutomationToggleState?
     public let expandCollapseState: DesktopUIAutomationExpandCollapseState?
     public let isSelected: Bool?
@@ -420,6 +428,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         rangeSmallChange: Double? = nil,
         rangeLargeChange: Double? = nil,
         isRangeValueReadOnly: Bool? = nil,
+        horizontalScrollPercent: Double? = nil,
+        verticalScrollPercent: Double? = nil,
+        horizontalScrollViewSize: Double? = nil,
+        verticalScrollViewSize: Double? = nil,
+        isHorizontallyScrollable: Bool? = nil,
+        isVerticallyScrollable: Bool? = nil,
         toggleState: DesktopUIAutomationToggleState? = nil,
         expandCollapseState: DesktopUIAutomationExpandCollapseState? = nil,
         isSelected: Bool? = nil,
@@ -451,6 +465,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.rangeSmallChange = rangeSmallChange
         self.rangeLargeChange = rangeLargeChange
         self.isRangeValueReadOnly = isRangeValueReadOnly
+        self.horizontalScrollPercent = horizontalScrollPercent
+        self.verticalScrollPercent = verticalScrollPercent
+        self.horizontalScrollViewSize = horizontalScrollViewSize
+        self.verticalScrollViewSize = verticalScrollViewSize
+        self.isHorizontallyScrollable = isHorizontallyScrollable
+        self.isVerticallyScrollable = isVerticallyScrollable
         self.toggleState = toggleState
         self.expandCollapseState = expandCollapseState
         self.isSelected = isSelected

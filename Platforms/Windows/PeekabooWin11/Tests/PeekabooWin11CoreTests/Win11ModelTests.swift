@@ -40,6 +40,7 @@ final class Win11ModelTests: XCTestCase {
                 .invokeUIAutomation,
                 .setUIAutomationValue,
                 .setUIAutomationRangeValue,
+                .setUIAutomationScrollPercent,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
@@ -64,6 +65,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
+        XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.selectUIAutomationItem))
@@ -119,6 +121,13 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             value: 42.5))
+        XCTAssertThrowsError(try adapter.setUIAutomationElementScrollPercent(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            horizontalPercent: nil,
+            verticalPercent: 75.0))
         XCTAssertThrowsError(try adapter.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -182,6 +191,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation invoke --index"))
         XCTAssertTrue(output.contains("automation set-value --index"))
         XCTAssertTrue(output.contains("automation set-range-value --index"))
+        XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(output.contains("automation toggle --index"))
         XCTAssertTrue(output.contains("automation expand --index"))
         XCTAssertTrue(output.contains("automation collapse --index"))

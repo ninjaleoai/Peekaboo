@@ -56,6 +56,18 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     double rangeLargeChange;
     int32_t hasIsRangeValueReadOnly;
     int32_t isRangeValueReadOnly;
+    int32_t hasHorizontalScrollPercent;
+    double horizontalScrollPercent;
+    int32_t hasVerticalScrollPercent;
+    double verticalScrollPercent;
+    int32_t hasHorizontalScrollViewSize;
+    double horizontalScrollViewSize;
+    int32_t hasVerticalScrollViewSize;
+    double verticalScrollViewSize;
+    int32_t hasIsHorizontallyScrollable;
+    int32_t isHorizontallyScrollable;
+    int32_t hasIsVerticallyScrollable;
+    int32_t isVerticallyScrollable;
     int32_t hasToggleState;
     int32_t toggleState;
     int32_t hasExpandCollapseState;
@@ -131,6 +143,14 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeVa
     int32_t maxElements,
     int32_t elementIndex,
     double value);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollPercent(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double horizontalPercent,
+    double verticalPercent);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,

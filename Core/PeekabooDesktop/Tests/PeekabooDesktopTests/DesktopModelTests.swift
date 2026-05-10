@@ -102,6 +102,13 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             value: 42.5)
+        let setScrollPercent = try await bridge.setUIAutomationElementScrollPercent(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            horizontalPercent: nil,
+            verticalPercent: 75.0)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -165,10 +172,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(
             snapshot.elements.first?.supportedPatterns,
-            [.invoke, .value, .rangeValue, .expandCollapse, .selectionItem, .toggle])
+            [.invoke, .value, .rangeValue, .scroll, .expandCollapse, .selectionItem, .toggle])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
-            [.invoke, .setValue, .setRangeValue, .toggle, .expand, .select])
+            [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .select])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
         XCTAssertEqual(snapshot.elements.first?.rangeValue, 12.5)
@@ -177,6 +184,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.rangeSmallChange, 0.5)
         XCTAssertEqual(snapshot.elements.first?.rangeLargeChange, 10.0)
         XCTAssertEqual(snapshot.elements.first?.isRangeValueReadOnly, false)
+        XCTAssertEqual(snapshot.elements.first?.horizontalScrollPercent, 0.0)
+        XCTAssertEqual(snapshot.elements.first?.verticalScrollPercent, 25.0)
+        XCTAssertEqual(snapshot.elements.first?.horizontalScrollViewSize, 100.0)
+        XCTAssertEqual(snapshot.elements.first?.verticalScrollViewSize, 50.0)
+        XCTAssertEqual(snapshot.elements.first?.isHorizontallyScrollable, false)
+        XCTAssertEqual(snapshot.elements.first?.isVerticallyScrollable, true)
         XCTAssertEqual(snapshot.elements.first?.toggleState, .off)
         XCTAssertEqual(snapshot.elements.first?.expandCollapseState, .collapsed)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
@@ -193,6 +206,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setRangeValue.value, "42.5")
         XCTAssertEqual(setRangeValue.postActionElement?.rangeValue, 42.5)
         XCTAssertEqual(setRangeValue.valueWasVerified, true)
+        XCTAssertEqual(setScrollPercent.action, .setScrollPercent)
+        XCTAssertEqual(setScrollPercent.elementIndex, 0)
+        XCTAssertEqual(setScrollPercent.value, "horizontal=noScroll,vertical=75.0")
+        XCTAssertEqual(setScrollPercent.postActionElement?.verticalScrollPercent, 75.0)
+        XCTAssertEqual(setScrollPercent.valueWasVerified, true)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -542,6 +560,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
+        XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -552,6 +571,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"rangeMinimum\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"rangeMaximum\" : 100"))
         XCTAssertTrue(result.stdout.contains("\"isRangeValueReadOnly\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"horizontalScrollPercent\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 25"))
+        XCTAssertTrue(result.stdout.contains("\"isVerticallyScrollable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"toggleState\" : \"off\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
@@ -624,6 +646,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 12.5"))
         XCTAssertTrue(result.stdout.contains("\"isRangeValueReadOnly\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 25"))
+        XCTAssertTrue(result.stdout.contains("\"isVerticallyScrollable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
@@ -780,6 +804,62 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --value <number> for automation set-range-value"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationSetScrollPercent() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-scroll-percent",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--vertical",
+            "75",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setScrollPercent\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"horizontal=noScroll,vertical=75.0\""))
+        XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 75"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetScrollPercentAxis() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-scroll-percent",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --horizontal <percent> or --vertical <percent>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationSetScrollPercent() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-scroll-percent",
+            "--index",
+            "0",
+            "--vertical",
+            "101",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation scroll percent must be a finite number"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationToggle() {
@@ -951,6 +1031,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
@@ -1210,6 +1291,48 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.rangeValue == value)
     }
 
+    func setUIAutomationElementScrollPercent(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            horizontalScrollPercent: horizontalPercent ?? element.horizontalScrollPercent ?? 0.0,
+            verticalScrollPercent: verticalPercent ?? element.verticalScrollPercent ?? 0.0)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setScrollPercent,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: self.scrollPercentValue(
+                horizontalPercent: horizontalPercent,
+                verticalPercent: verticalPercent),
+            postActionElement: postActionElement,
+            valueWasVerified: self.scrollPercentWasVerified(
+                postActionElement: postActionElement,
+                horizontalPercent: horizontalPercent,
+                verticalPercent: verticalPercent))
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1341,6 +1464,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
         maxElements: Int,
         elementValue: String,
         rangeValue: Double = 12.5,
+        horizontalScrollPercent: Double = 0.0,
+        verticalScrollPercent: Double = 25.0,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
@@ -1366,7 +1491,15 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
                     isOffscreen: false,
-                    supportedPatterns: [.invoke, .value, .rangeValue, .expandCollapse, .selectionItem, .toggle],
+                    supportedPatterns: [
+                        .invoke,
+                        .value,
+                        .rangeValue,
+                        .scroll,
+                        .expandCollapse,
+                        .selectionItem,
+                        .toggle,
+                    ],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
                     isValueReadOnly: false,
@@ -1376,6 +1509,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     rangeSmallChange: 0.5,
                     rangeLargeChange: 10.0,
                     isRangeValueReadOnly: false,
+                    horizontalScrollPercent: horizontalScrollPercent,
+                    verticalScrollPercent: verticalScrollPercent,
+                    horizontalScrollViewSize: 100.0,
+                    verticalScrollViewSize: 50.0,
+                    isHorizontallyScrollable: false,
+                    isVerticallyScrollable: true,
                     toggleState: toggleState,
                     expandCollapseState: expandCollapseState,
                     isSelected: isSelected),
@@ -1387,14 +1526,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
     {
         switch expandCollapseState {
         case .collapsed:
-            return [.invoke, .setValue, .setRangeValue, .toggle, .expand, .select]
+            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .select]
         case .expanded:
-            return [.invoke, .setValue, .setRangeValue, .toggle, .collapse, .select]
+            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .collapse, .select]
         case .partiallyExpanded:
-            return [.invoke, .setValue, .setRangeValue, .toggle, .expand, .collapse, .select]
+            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .collapse, .select]
         case .leafNode:
-            return [.invoke, .setValue, .setRangeValue, .toggle, .select]
+            return [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .select]
         }
+    }
+
+    private func scrollPercentValue(horizontalPercent: Double?, verticalPercent: Double?) -> String {
+        let horizontal = horizontalPercent.map { String($0) } ?? "noScroll"
+        let vertical = verticalPercent.map { String($0) } ?? "noScroll"
+        return "horizontal=\(horizontal),vertical=\(vertical)"
+    }
+
+    private func scrollPercentWasVerified(
+        postActionElement: DesktopUIAutomationElementSnapshot?,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) -> Bool?
+    {
+        guard let postActionElement else {
+            return nil
+        }
+        if let horizontalPercent {
+            guard let actual = postActionElement.horizontalScrollPercent, actual == horizontalPercent else {
+                return false
+            }
+        }
+        if let verticalPercent {
+            guard let actual = postActionElement.verticalScrollPercent, actual == verticalPercent else {
+                return false
+            }
+        }
+        return true
     }
 }
 

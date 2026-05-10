@@ -172,7 +172,7 @@ public enum DesktopCommandRunner {
         guard let subcommand = args.first else {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
-                    "set-value, set-range-value, toggle, expand, collapse, or select")
+                    "set-value, set-range-value, set-scroll-percent, toggle, expand, collapse, or select")
         }
 
         switch subcommand {
@@ -188,6 +188,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetValue(args: args, adapter: adapter, stdout: stdout)
         case "set-range-value", "setRangeValue":
             try self.runAutomationSetRangeValue(args: args, adapter: adapter, stdout: stdout)
+        case "set-scroll-percent", "setScrollPercent":
+            try self.runAutomationSetScrollPercent(args: args, adapter: adapter, stdout: stdout)
         case "toggle":
             try self.runAutomationToggle(args: args, adapter: adapter, stdout: stdout)
         case "expand":
@@ -345,6 +347,43 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             value: self.parseUIAutomationRangeValue(value))))
+    }
+
+    private static func runAutomationSetScrollPercent(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation set-scroll-percent")
+        }
+
+        let horizontalValue = try self.value(after: "--horizontal", in: args) ??
+            self.value(after: "--horizontal-percent", in: args)
+        let verticalValue = try self.value(after: "--vertical", in: args) ??
+            self.value(after: "--vertical-percent", in: args)
+        guard horizontalValue != nil || verticalValue != nil else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --horizontal <percent> or --vertical <percent> for automation set-scroll-percent")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.setUIAutomationElementScrollPercent(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            horizontalPercent: try horizontalValue.map(self.parseUIAutomationScrollPercent),
+            verticalPercent: try verticalValue.map(self.parseUIAutomationScrollPercent))))
     }
 
     private static func runAutomationToggle(
@@ -719,6 +758,14 @@ public enum DesktopCommandRunner {
         return rangeValue
     }
 
+    private static func parseUIAutomationScrollPercent(_ value: String) throws -> Double {
+        guard let percent = Double(value), percent.isFinite, (0.0...100.0).contains(percent) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation scroll percent must be a finite number between 0 and 100")
+        }
+        return percent
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -751,6 +798,8 @@ public enum DesktopCommandRunner {
           automation set-value --index <n> --value <text>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-range-value --index <n> --value <number>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation set-scroll-percent --index <n> [--horizontal <percent>] [--vertical <percent>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation toggle --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation expand --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

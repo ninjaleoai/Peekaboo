@@ -34,6 +34,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
                 .setUIAutomationRangeValue,
+                .setUIAutomationScrollPercent,
             ])
     }
 
@@ -681,6 +682,82 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             })
     }
 
+    public func setUIAutomationElementScrollPercent(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+        guard horizontalPercent != nil || verticalPercent != nil else {
+            throw Win11DesktopError.invalidArgument(
+                "At least one UI Automation scroll percent axis must be provided")
+        }
+        try Self.validateScrollPercent(horizontalPercent, axisName: "horizontal")
+        try Self.validateScrollPercent(verticalPercent, axisName: "vertical")
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.scroll) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support scroll")
+        }
+        if horizontalPercent != nil, element.isHorizontallyScrollable == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll horizontally")
+        }
+        if verticalPercent != nil, element.isVerticallyScrollable == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll vertically")
+        }
+
+        let nativeResult = PeekabooWin11SetUIAutomationElementScrollPercent(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            horizontalPercent ?? Self.noScrollPercent,
+            verticalPercent ?? Self.noScrollPercent)
+        try Self.validateUIAutomationSetScrollPercent(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setScrollPercent,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: Self.scrollPercentString(
+                horizontalPercent: horizontalPercent,
+                verticalPercent: verticalPercent),
+            postActionElement: postActionElement,
+            valueWasVerified: Self.scrollPercentWasVerified(
+                postActionElement: postActionElement,
+                horizontalPercent: horizontalPercent,
+                verticalPercent: verticalPercent))
+    }
+
     public func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1085,6 +1162,53 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSetScrollPercent(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation set-scroll-percent failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support scroll")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationScrollPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationScrollPattern.SetScrollPercent failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -1263,6 +1387,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let isRangeValueReadOnly = Self.optionalBool(
                 hasValue: nativeElement.hasIsRangeValueReadOnly,
                 value: nativeElement.isRangeValueReadOnly)
+            let isHorizontallyScrollable = Self.optionalBool(
+                hasValue: nativeElement.hasIsHorizontallyScrollable,
+                value: nativeElement.isHorizontallyScrollable)
+            let isVerticallyScrollable = Self.optionalBool(
+                hasValue: nativeElement.hasIsVerticallyScrollable,
+                value: nativeElement.isVerticallyScrollable)
             let expandCollapseState = Self.uiAutomationExpandCollapseState(
                 hasValue: nativeElement.hasExpandCollapseState,
                 value: nativeElement.expandCollapseState)
@@ -1305,6 +1435,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     supportedPatterns: supportedPatterns,
                     isValueReadOnly: isValueReadOnly,
                     isRangeValueReadOnly: isRangeValueReadOnly,
+                    isHorizontallyScrollable: isHorizontallyScrollable,
+                    isVerticallyScrollable: isVerticallyScrollable,
                     expandCollapseState: expandCollapseState),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
@@ -1326,6 +1458,20 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     hasValue: nativeElement.hasRangeLargeChange,
                     value: nativeElement.rangeLargeChange),
                 isRangeValueReadOnly: isRangeValueReadOnly,
+                horizontalScrollPercent: Self.optionalDouble(
+                    hasValue: nativeElement.hasHorizontalScrollPercent,
+                    value: nativeElement.horizontalScrollPercent),
+                verticalScrollPercent: Self.optionalDouble(
+                    hasValue: nativeElement.hasVerticalScrollPercent,
+                    value: nativeElement.verticalScrollPercent),
+                horizontalScrollViewSize: Self.optionalDouble(
+                    hasValue: nativeElement.hasHorizontalScrollViewSize,
+                    value: nativeElement.horizontalScrollViewSize),
+                verticalScrollViewSize: Self.optionalDouble(
+                    hasValue: nativeElement.hasVerticalScrollViewSize,
+                    value: nativeElement.verticalScrollViewSize),
+                isHorizontallyScrollable: isHorizontallyScrollable,
+                isVerticallyScrollable: isVerticallyScrollable,
                 toggleState: Self.uiAutomationToggleState(
                     hasValue: nativeElement.hasToggleState,
                     value: nativeElement.toggleState),
@@ -1339,6 +1485,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         supportedPatterns: [DesktopUIAutomationPattern],
         isValueReadOnly: Bool?,
         isRangeValueReadOnly: Bool?,
+        isHorizontallyScrollable: Bool?,
+        isVerticallyScrollable: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
@@ -1350,6 +1498,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.rangeValue), isRangeValueReadOnly == false {
             actions.append(.setRangeValue)
+        }
+        if supportedPatterns.contains(.scroll),
+            isHorizontallyScrollable == true || isVerticallyScrollable == true
+        {
+            actions.append(.setScrollPercent)
         }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
@@ -1570,8 +1723,56 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         return value
     }
 
+    private static let noScrollPercent = -1.0
+
     private static func rangeValueString(_ value: Double) -> String {
         String(value)
+    }
+
+    private static func validateScrollPercent(_ value: Double?, axisName: String) throws {
+        guard let value else {
+            return
+        }
+        guard value.isFinite, (0.0...100.0).contains(value) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation \(axisName) scroll percent must be between 0 and 100")
+        }
+    }
+
+    private static func scrollPercentString(
+        horizontalPercent: Double?,
+        verticalPercent: Double?) -> String
+    {
+        let horizontal = horizontalPercent.map { String($0) } ?? "noScroll"
+        let vertical = verticalPercent.map { String($0) } ?? "noScroll"
+        return "horizontal=\(horizontal),vertical=\(vertical)"
+    }
+
+    private static func scrollPercentWasVerified(
+        postActionElement: DesktopUIAutomationElementSnapshot?,
+        horizontalPercent: Double?,
+        verticalPercent: Double?) -> Bool?
+    {
+        guard let postActionElement else {
+            return nil
+        }
+        if let horizontalPercent {
+            guard let actual = postActionElement.horizontalScrollPercent else {
+                return nil
+            }
+            guard abs(actual - horizontalPercent) <= 0.000_001 else {
+                return false
+            }
+        }
+        if let verticalPercent {
+            guard let actual = postActionElement.verticalScrollPercent else {
+                return nil
+            }
+            guard abs(actual - verticalPercent) <= 0.000_001 else {
+                return false
+            }
+        }
+        return true
     }
 
     private static func succeeded(_ result: Int32) -> Bool {
