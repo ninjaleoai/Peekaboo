@@ -581,6 +581,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 localizedControlType: Self.string(
                     from: PeekabooWin11UIAutomationElementLocalizedControlType(&nativeElement)),
                 controlType: Int(nativeElement.controlType),
+                controlTypeName: Self.uiAutomationControlTypeName(nativeElement.controlType),
                 processIdentifier: nativeElement.processIdentifier > 0
                     ? UInt32(nativeElement.processIdentifier)
                     : nil,
@@ -589,6 +590,95 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     : nil,
                 bounds: bounds,
                 childCount: Int(nativeElement.childCount))
+        }
+    }
+
+    private static func uiAutomationControlTypeName(_ controlType: Int32) -> String? {
+        switch controlType {
+        case 50_000:
+            return "Button"
+        case 50_001:
+            return "Calendar"
+        case 50_002:
+            return "CheckBox"
+        case 50_003:
+            return "ComboBox"
+        case 50_004:
+            return "Edit"
+        case 50_005:
+            return "Hyperlink"
+        case 50_006:
+            return "Image"
+        case 50_007:
+            return "ListItem"
+        case 50_008:
+            return "List"
+        case 50_009:
+            return "Menu"
+        case 50_010:
+            return "MenuBar"
+        case 50_011:
+            return "MenuItem"
+        case 50_012:
+            return "ProgressBar"
+        case 50_013:
+            return "RadioButton"
+        case 50_014:
+            return "ScrollBar"
+        case 50_015:
+            return "Slider"
+        case 50_016:
+            return "Spinner"
+        case 50_017:
+            return "StatusBar"
+        case 50_018:
+            return "Tab"
+        case 50_019:
+            return "TabItem"
+        case 50_020:
+            return "Text"
+        case 50_021:
+            return "ToolBar"
+        case 50_022:
+            return "ToolTip"
+        case 50_023:
+            return "Tree"
+        case 50_024:
+            return "TreeItem"
+        case 50_025:
+            return "Custom"
+        case 50_026:
+            return "Group"
+        case 50_027:
+            return "Thumb"
+        case 50_028:
+            return "DataGrid"
+        case 50_029:
+            return "DataItem"
+        case 50_030:
+            return "Document"
+        case 50_031:
+            return "SplitButton"
+        case 50_032:
+            return "Window"
+        case 50_033:
+            return "Pane"
+        case 50_034:
+            return "Header"
+        case 50_035:
+            return "HeaderItem"
+        case 50_036:
+            return "Table"
+        case 50_037:
+            return "TitleBar"
+        case 50_038:
+            return "Separator"
+        case 50_039:
+            return "SemanticZoom"
+        case 50_040:
+            return "AppBar"
+        default:
+            return nil
         }
     }
 

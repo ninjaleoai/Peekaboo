@@ -326,6 +326,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let className: String?
     public let localizedControlType: String?
     public let controlType: Int
+    public let controlTypeName: String?
     public let processIdentifier: UInt32?
     public let nativeWindowHandle: UInt64?
     public let bounds: DesktopRect?
@@ -340,6 +341,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         className: String? = nil,
         localizedControlType: String? = nil,
         controlType: Int = 0,
+        controlTypeName: String? = nil,
         processIdentifier: UInt32? = nil,
         nativeWindowHandle: UInt64? = nil,
         bounds: DesktopRect? = nil,
@@ -353,6 +355,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.className = className
         self.localizedControlType = localizedControlType
         self.controlType = controlType
+        self.controlTypeName = controlTypeName
         self.processIdentifier = processIdentifier
         self.nativeWindowHandle = nativeWindowHandle
         self.bounds = bounds

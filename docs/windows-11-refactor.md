@@ -186,10 +186,11 @@ The first Windows UI Automation path initializes COM, creates a `CUIAutomation`
 object, and requests the root element for status probing. The follow-up
 snapshot path can start at either the desktop root or the foreground window,
 then walks the UIA control view with explicit `--max-depth` and
-`--max-elements` limits. Snapshot elements include the raw control type,
-localized control type, name, automation identifier, class name, process ID,
-native window handle, bounds, depth, parent index, and child count. Root
-snapshots should stay shallow because desktop-wide UIA traversal is expensive.
+`--max-elements` limits. Snapshot elements include the raw control type, stable
+non-localized control type name, localized control type, name, automation
+identifier, class name, process ID, native window handle, bounds, depth, parent
+index, and child count. Root snapshots should stay shallow because desktop-wide
+UIA traversal is expensive.
 
 ## Next Integration Steps
 

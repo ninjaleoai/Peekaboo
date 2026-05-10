@@ -123,6 +123,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.scope, .root)
         XCTAssertEqual(snapshot.elementCount, 1)
         XCTAssertEqual(snapshot.elements.first?.name, "Desktop")
+        XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -451,6 +452,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"scope\" : \"root\""))
         XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
+        XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
     }
 
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
@@ -653,6 +655,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     name: "Desktop",
                     localizedControlType: "pane",
                     controlType: 50033,
+                    controlTypeName: "Pane",
                     bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100)),
             ])
     }

@@ -383,6 +383,9 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertFalse(snapshot.elements.isEmpty)
         XCTAssertEqual(snapshot.elements.first?.depth, 0)
         XCTAssertEqual(snapshot.elements.first?.parentIndex, nil)
+        XCTAssertTrue(snapshot.elements.contains { element in
+            element.controlTypeName != nil
+        })
         #else
         throw XCTSkip("Native Windows UI Automation snapshot smoke test only runs on Windows.")
         #endif
