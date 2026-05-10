@@ -150,7 +150,8 @@ This fork includes an initial native Windows 11 refactor slice in
 standalone Swift package with a Win32-backed adapter for display/window/app
 enumeration and BMP screen capture, built on the shared desktop model seam in
 [`Core/PeekabooDesktop`](Core/PeekabooDesktop). `PeekabooAutomationKit` now maps
-its existing macOS service models into that shared seam. See
+its existing macOS service models into that shared seam and exposes an async
+macOS desktop adapter for the same contract. See
 [`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the seam and
 next integration steps.
 

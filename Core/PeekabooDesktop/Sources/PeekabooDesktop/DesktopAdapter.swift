@@ -8,6 +8,42 @@ public protocol DesktopAdapter: Sendable {
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
 }
 
+public protocol DesktopAsyncAdapter: Sendable {
+    func platformInfo() async -> DesktopPlatformInfo
+    func listDisplays() async throws -> [DesktopDisplay]
+    func listWindows(includeInvisible: Bool) async throws -> [DesktopWindow]
+    func listApplications() async throws -> [DesktopApplication]
+    func captureScreen(displayIndex: Int?, outputPath: String) async throws -> DesktopCaptureResult
+}
+
+public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
+    public let adapter: Adapter
+
+    public init(_ adapter: Adapter) {
+        self.adapter = adapter
+    }
+
+    public func platformInfo() async -> DesktopPlatformInfo {
+        self.adapter.platformInfo()
+    }
+
+    public func listDisplays() async throws -> [DesktopDisplay] {
+        try self.adapter.listDisplays()
+    }
+
+    public func listWindows(includeInvisible: Bool) async throws -> [DesktopWindow] {
+        try self.adapter.listWindows(includeInvisible: includeInvisible)
+    }
+
+    public func listApplications() async throws -> [DesktopApplication] {
+        try self.adapter.listApplications()
+    }
+
+    public func captureScreen(displayIndex: Int?, outputPath: String) async throws -> DesktopCaptureResult {
+        try self.adapter.captureScreen(displayIndex: displayIndex, outputPath: outputPath)
+    }
+}
+
 public enum DesktopAdapterError: Error, Equatable, Sendable {
     case unsupportedPlatform(String)
     case invalidArgument(String)
@@ -35,4 +71,3 @@ extension DesktopAdapterError: LocalizedError {
         }
     }
 }
-

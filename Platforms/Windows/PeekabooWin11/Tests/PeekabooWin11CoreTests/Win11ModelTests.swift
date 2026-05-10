@@ -20,13 +20,19 @@ final class Win11ModelTests: XCTestCase {
             name: "Windows",
             minimumSystemVersion: "Windows 11",
             nativeBackend: "Win32",
-            capabilities: Win11PlatformCapability.allCases)
+            capabilities: [
+                .enumerateApplications,
+                .enumerateDisplays,
+                .enumerateWindows,
+                .captureScreenBMP,
+            ])
         #endif
 
         XCTAssertEqual(info.minimumSystemVersion, "Windows 11")
         XCTAssertEqual(info.nativeBackend, "Win32")
         XCTAssertTrue(info.capabilities.contains(.enumerateWindows))
         XCTAssertTrue(info.capabilities.contains(.captureScreenBMP))
+        XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
     func testUnsupportedAdapterFailsOffWindows() throws {

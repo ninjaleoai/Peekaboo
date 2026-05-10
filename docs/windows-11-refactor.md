@@ -28,10 +28,11 @@ The production adapter is compiled only behind `#if os(Windows)` and imports
 tests and documentation tooling from accidentally pretending the native backend
 is available.
 
-`PeekabooAutomationKit` also depends on `Core/PeekabooDesktop` and maps the
-existing macOS service models into the neutral desktop models. That gives the
-main automation package a shared contract to target without changing existing
-macOS runtime behavior.
+`PeekabooAutomationKit` also depends on `Core/PeekabooDesktop`, maps the
+existing macOS service models into the neutral desktop models, and exposes
+`MacAutomationDesktopAdapter` for async/main-actor macOS automation services.
+That gives the main automation package a shared contract to target without
+changing existing macOS runtime behavior.
 
 ## Why This Seam
 
@@ -53,9 +54,13 @@ public protocol DesktopAdapter: Sendable {
 }
 ```
 
+It also exposes `DesktopAsyncAdapter` for platform services that are naturally
+async or actor-isolated. A sync-to-async bridge keeps the Win32 adapter usable
+from async call sites without forcing the Windows CLI path to change.
+
 That module is deliberately deep: callers get app/window/display/capture
 behavior without learning HWND lifetimes, GDI device contexts, UTF-16 buffers,
-or BMP header writing.
+BMP/PNG file details, or platform-specific actor isolation.
 
 ## Build
 
@@ -84,9 +89,7 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Promote the `PeekabooAutomationKit` model mappings into a macOS desktop
-   adapter, preserving current async/main-actor behavior.
-2. Make CLI commands depend on the platform-neutral interface instead of
+1. Make CLI commands depend on the platform-neutral interface instead of
    directly importing Darwin/CoreGraphics/AppKit at the command layer.
-3. Add Windows implementations for input and UI Automation after capture and
+2. Add Windows implementations for input and UI Automation after capture and
    enumeration have stable test coverage.

@@ -5,6 +5,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case enumerateDisplays
     case enumerateWindows
     case captureScreenBMP
+    case captureScreenPNG
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -97,6 +98,7 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
 
 public enum DesktopCaptureFormat: String, Codable, Sendable {
     case bmp
+    case png
 }
 
 public struct DesktopCaptureResult: Codable, Equatable, Sendable {
@@ -124,4 +126,3 @@ public struct DesktopCommandEnvelope<Payload: Encodable>: Encodable {
         self.error = error
     }
 }
-

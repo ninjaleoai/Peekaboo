@@ -10,7 +10,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             name: "Windows",
             minimumSystemVersion: "Windows 11",
             nativeBackend: "Win32",
-            capabilities: Win11PlatformCapability.allCases)
+            capabilities: [
+                .enumerateApplications,
+                .enumerateDisplays,
+                .enumerateWindows,
+                .captureScreenBMP,
+            ])
     }
 
     public func listDisplays() throws -> [Win11Display] {
