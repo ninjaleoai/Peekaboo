@@ -258,6 +258,12 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
     int32_t maxElements,
     int32_t elementIndex);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElementIntoView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex);
+
 void PeekabooWin11FreeUIAutomationSnapshot(
     PeekabooWin11UIAutomationSnapshotResult *result);
 

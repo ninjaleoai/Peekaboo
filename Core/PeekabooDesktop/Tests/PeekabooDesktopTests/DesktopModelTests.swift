@@ -155,6 +155,11 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let scrollIntoView = try await bridge.scrollUIAutomationElementIntoView(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -212,6 +217,7 @@ final class DesktopModelTests: XCTestCase {
                 .grid,
                 .gridItem,
                 .transform,
+                .scrollItem,
             ])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
@@ -227,6 +233,7 @@ final class DesktopModelTests: XCTestCase {
                 .toggle,
                 .expand,
                 .select,
+                .scrollIntoView,
             ])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
@@ -331,6 +338,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(select.value, "selected=true")
         XCTAssertEqual(select.postActionElement?.isSelected, true)
         XCTAssertEqual(select.valueWasVerified, true)
+        XCTAssertEqual(scrollIntoView.action, .scrollIntoView)
+        XCTAssertEqual(scrollIntoView.elementIndex, 0)
+        XCTAssertEqual(scrollIntoView.value, "visible=true")
+        XCTAssertEqual(scrollIntoView.postActionElement?.isOffscreen, false)
+        XCTAssertEqual(scrollIntoView.valueWasVerified, true)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -673,8 +685,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
+        XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
+        XCTAssertTrue(result.stdout.contains("\"scrollIntoView\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
@@ -1277,6 +1291,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationScrollIntoView() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll-into-view",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"scrollIntoView\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"visible=true\""))
+        XCTAssertTrue(result.stdout.contains("\"isOffscreen\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationToggleIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1325,6 +1363,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation select"))
     }
 
+    func testDesktopCommandRunnerRejectsMissingAutomationScrollIntoViewIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll-into-view",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation scroll-into-view"))
+    }
+
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1367,6 +1417,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
         XCTAssertTrue(result.stdout.contains("automation select --index"))
+        XCTAssertTrue(result.stdout.contains("automation scroll-into-view --index"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -1798,6 +1849,40 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.isSelected)
     }
 
+    func scrollUIAutomationElementIntoView(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            isOffscreen: false)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .scrollIntoView,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "visible=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isOffscreen == false)
+    }
+
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1961,6 +2046,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
         bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
+        isOffscreen: Bool = false,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
@@ -1983,7 +2069,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isEnabled: true,
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
-                    isOffscreen: false,
+                    isOffscreen: isOffscreen,
                     supportedPatterns: [
                         .invoke,
                         .value,
@@ -1998,6 +2084,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .grid,
                         .gridItem,
                         .transform,
+                        .scrollItem,
                     ],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
@@ -2063,6 +2150,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .toggle,
                 .expand,
                 .select,
+                .scrollIntoView,
             ]
         case .expanded:
             return [
@@ -2077,6 +2165,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .toggle,
                 .collapse,
                 .select,
+                .scrollIntoView,
             ]
         case .partiallyExpanded:
             return [
@@ -2092,6 +2181,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .expand,
                 .collapse,
                 .select,
+                .scrollIntoView,
             ]
         case .leafNode:
             return [
@@ -2105,6 +2195,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .rotate,
                 .toggle,
                 .select,
+                .scrollIntoView,
             ]
         }
     }

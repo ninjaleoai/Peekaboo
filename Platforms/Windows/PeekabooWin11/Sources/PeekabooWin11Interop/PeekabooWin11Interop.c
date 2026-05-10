@@ -21,6 +21,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_MOVE 10
 #define PEEKABOO_WIN11_UIA_ACTION_RESIZE 11
 #define PEEKABOO_WIN11_UIA_ACTION_ROTATE 12
+#define PEEKABOO_WIN11_UIA_ACTION_SCROLL_INTO_VIEW 13
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -242,6 +243,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_GridPatternId, 1ULL << 10, snapshot);
     PeekabooWin11MarkPattern(element, UIA_GridItemPatternId, 1ULL << 11, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TransformPatternId, 1ULL << 12, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ScrollItemPatternId, 1ULL << 13, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1370,6 +1372,43 @@ static void PeekabooWin11SelectElement(
     IUIAutomationSelectionItemPattern_Release(selectionItemPattern);
 }
 
+static void PeekabooWin11ScrollElementIntoView(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ScrollItemPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationScrollItemPattern *scrollItemPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationScrollItemPattern,
+        (void **)&scrollItemPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || scrollItemPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationScrollItemPattern_ScrollIntoView(
+        scrollItemPattern);
+    IUIAutomationScrollItemPattern_Release(scrollItemPattern);
+}
+
 static void PeekabooWin11CopyElementProperties(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -1559,6 +1598,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11ExpandCollapseElement(element, 0, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SELECT) {
             PeekabooWin11SelectElement(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SCROLL_INTO_VIEW) {
+            PeekabooWin11ScrollElementIntoView(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_RANGE_VALUE) {
             PeekabooWin11SetElementRangeValue(element, rangeValue, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_SCROLL_PERCENT) {
@@ -2100,6 +2141,27 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
         0.0,
         0.0);
 }
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElementIntoView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_SCROLL_INTO_VIEW,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0.0,
+        0.0);
+}
 #else
 PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
     PeekabooWin11UIAutomationProbeResult result = {0, 0, 0, -2147467263, 0, 0};
@@ -2336,6 +2398,23 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SelectUIAutomationElement(
     PeekabooWin11UIAutomationActionResult result;
     memset(&result, 0, sizeof(result));
     result.action = 6;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElementIntoView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 13;
     result.scope = scope;
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;

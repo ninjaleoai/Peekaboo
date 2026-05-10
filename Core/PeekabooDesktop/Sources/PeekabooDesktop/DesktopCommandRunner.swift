@@ -173,7 +173,7 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "move, resize, rotate, toggle, expand, collapse, or select")
+                    "move, resize, rotate, toggle, expand, collapse, select, or scroll-into-view")
         }
 
         switch subcommand {
@@ -207,6 +207,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationCollapse(args: args, adapter: adapter, stdout: stdout)
         case "select":
             try self.runAutomationSelect(args: args, adapter: adapter, stdout: stdout)
+        case "scroll-into-view", "scrollIntoView":
+            try self.runAutomationScrollIntoView(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown automation subcommand: \(subcommand)")
         }
@@ -605,6 +607,32 @@ public enum DesktopCommandRunner {
             .map(self.parseUIAutomationMaxElements) ?? 64
 
         try stdout(self.success(adapter.selectUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
+    private static func runAutomationScrollIntoView(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation scroll-into-view")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.scrollUIAutomationElementIntoView(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,
@@ -1029,6 +1057,8 @@ public enum DesktopCommandRunner {
           automation collapse --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation select --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation scroll-into-view --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
         """
     }
 

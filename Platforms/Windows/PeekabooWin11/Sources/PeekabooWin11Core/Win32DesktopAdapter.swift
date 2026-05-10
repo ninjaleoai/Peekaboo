@@ -39,6 +39,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
+                .scrollUIAutomationItemIntoView,
             ])
     }
 
@@ -1185,6 +1186,59 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             valueWasVerified: postActionElement?.isSelected.map { $0 })
     }
 
+    public func scrollUIAutomationElementIntoView(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.scrollItem) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support scroll item")
+        }
+
+        let nativeResult = PeekabooWin11ScrollUIAutomationElementIntoView(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex))
+        try Self.validateUIAutomationScrollIntoView(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .scrollIntoView,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "visible=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.isOffscreen.map { !$0 })
+    }
+
     private func refreshedUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1630,6 +1684,53 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationScrollIntoView(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation scroll-into-view failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support scroll item")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationScrollItemPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationScrollItemPattern.ScrollIntoView failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationTransform(
         _ actionResult: PeekabooWin11UIAutomationActionResult,
         action: DesktopUIAutomationAction) throws
@@ -1973,6 +2074,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.selectionItem) {
             actions.append(.select)
         }
+        if supportedPatterns.contains(.scrollItem) {
+            actions.append(.scrollIntoView)
+        }
         return actions
     }
 
@@ -2128,6 +2232,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 12) {
             patterns.append(.transform)
+        }
+        if Self.hasPatternBit(mask, 13) {
+            patterns.append(.scrollItem)
         }
         return patterns
     }

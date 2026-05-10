@@ -57,6 +57,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - Scroll-pattern UI Automation set-scroll-percent actions against a bounded
   snapshot element index
+- ScrollItem-pattern UI Automation scroll-into-view actions against a bounded
+  snapshot element index
 - Toggle-pattern UI Automation actions against a bounded snapshot element index
 - ExpandCollapse-pattern UI Automation expand/collapse actions against a
   bounded snapshot element index
@@ -77,6 +79,8 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-scroll-percent --index <n>`, and
 `automation set-window-state --index <n>` for Invoke-pattern, Value-pattern,
 RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
+`automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
+that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
 `automation expand --index <n>` and
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
@@ -228,6 +232,11 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func scrollUIAutomationElementIntoView(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 ```
 
@@ -304,6 +313,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation resize --scope foreground --index 0 --size 640,480 --max-depth 2 --max-elements 64
@@ -339,9 +350,10 @@ identifier, class name, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
 and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
-selection item, text, toggle, grid, grid item, and legacy IAccessible. When an
-element supports the UIA Value pattern, snapshots also include its current
-string value and whether that value is read-only. When an element supports the
+selection item, text, toggle, grid, grid item, scroll item, and legacy
+IAccessible. When an element supports the UIA Value pattern, snapshots also
+include its current string value and whether that value is read-only. When an
+element supports the
 UIA RangeValue pattern, snapshots include the current numeric value, minimum,
 maximum, small change, large change, and read-only status when UIA reports
 them. When an element supports the UIA Scroll pattern, snapshots include
@@ -375,8 +387,9 @@ available when the Transform pattern is present and UIA reports the matching
 capability, toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
-partially expanded ExpandCollapse elements, and select is available when the
-SelectionItem pattern is present.
+partially expanded ExpandCollapse elements, select is available when the
+SelectionItem pattern is present, and scrollIntoView is available when the
+ScrollItem pattern is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
@@ -396,7 +409,10 @@ rejecting known unscrollable requested axes before calling UIA
 axes when UIA reports them. `automation set-window-state` performs the UIA
 Window pattern visual-state action, rejects known unsupported maximize or
 minimize requests before calling UIA `SetWindowVisualState`, then verifies the
-refreshed visual state when UIA reports it. `automation move --index <n>` and
+refreshed visual state when UIA reports it. `automation scroll-into-view`
+performs the UIA ScrollItem pattern action and verifies that the refreshed
+element is no longer off-screen when UIA reports that state.
+`automation move --index <n>` and
 `automation resize --index <n>` perform the UIA Transform pattern move and
 resize actions after rejecting known unsupported elements, then verify the
 refreshed bounds when the bounded lookup can observe them.
