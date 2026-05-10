@@ -96,6 +96,11 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             value: "Updated value")
+        let toggle = try await bridge.toggleUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -137,8 +142,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
-        XCTAssertEqual(snapshot.elements.first?.supportedPatterns, [.invoke, .value])
-        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue])
+        XCTAssertEqual(snapshot.elements.first?.supportedPatterns, [.invoke, .value, .toggle])
+        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue, .toggle])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
         XCTAssertEqual(invoke.action, .invoke)
@@ -149,6 +154,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setValue.value, "Updated value")
         XCTAssertEqual(setValue.postActionElement?.value, "Updated value")
         XCTAssertEqual(setValue.valueWasVerified, true)
+        XCTAssertEqual(toggle.action, .toggle)
+        XCTAssertEqual(toggle.elementIndex, 0)
+        XCTAssertEqual(toggle.element.name, "Desktop")
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -484,6 +492,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
+        XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
@@ -670,6 +679,40 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-value"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationToggle() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "toggle",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"toggle\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationToggleIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "toggle",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation toggle"))
+    }
+
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -702,6 +745,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation element --index"))
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
+        XCTAssertTrue(result.stdout.contains("automation toggle --index"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -922,6 +966,30 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.value == value)
     }
 
+    func toggleUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .toggle,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            postActionElement: element)
+    }
+
     private func stubUIAutomationSnapshot(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -949,8 +1017,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
                     isOffscreen: false,
-                    supportedPatterns: [.invoke, .value],
-                    availableActions: [.invoke, .setValue],
+                    supportedPatterns: [.invoke, .value, .toggle],
+                    availableActions: [.invoke, .setValue, .toggle],
                     value: elementValue,
                     isValueReadOnly: false),
             ])

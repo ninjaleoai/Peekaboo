@@ -38,6 +38,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
+- Toggle-pattern UI Automation actions against a bounded snapshot element index
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -48,8 +49,9 @@ adapter construction; the shared package owns the platform-neutral
 contract, plus `automation status` and bounded `automation snapshot` UI
 Automation commands. It also exposes `automation element --index <n>` as a
 bounded element lookup over the same snapshot traversal, and
-`automation invoke --index <n>` / `automation set-value --index <n>` for
-Invoke-pattern and Value-pattern UIA actions.
+`automation invoke --index <n>`, `automation set-value --index <n>`, and
+`automation toggle --index <n>` for Invoke-pattern, Value-pattern, and
+Toggle-pattern UIA actions.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -130,6 +132,11 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: String) throws -> DesktopUIAutomationActionResult
+    func toggleUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 ```
 
@@ -199,6 +206,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation invoke --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation toggle --scope foreground --index 0 --max-depth 2 --max-elements 64
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -226,8 +235,9 @@ the UIA Value pattern, snapshots also include its current string value and
 whether that value is read-only. Elements also expose stable available actions
 derived from those patterns: invoke is available when the Invoke pattern is
 present, and setValue is available only when the Value pattern is present and
-known writable. Root snapshots should stay shallow because desktop-wide UIA
-traversal is expensive. `automation element --index <n>`
+known writable, and toggle is available when the Toggle pattern is present.
+Root snapshots should stay shallow because desktop-wide UIA traversal is
+expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
 invoke and value actions a concrete element lookup surface without introducing
 persistent UIA element handles yet. `automation invoke --index <n>` performs
@@ -236,12 +246,13 @@ the pre-action element metadata used for the invocation. `automation set-value`
 does the same for Value-pattern elements, rejecting known read-only values
 before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
 result can include post-action element metadata and whether the requested value
-was observed.
+was observed. `automation toggle --index <n>` performs the UIA Toggle pattern
+and returns pre-action metadata plus any refreshed post-action element.
 
 ## Next Integration Steps
 
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Expand the Windows UI Automation path from stable action mapping and
-   set-value verification into richer control-specific actions.
+2. Expand the Windows UI Automation path from basic control-specific actions
+   into richer action result verification.

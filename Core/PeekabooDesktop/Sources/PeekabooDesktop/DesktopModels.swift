@@ -22,6 +22,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case inspectUIAutomation
     case invokeUIAutomation
     case setUIAutomationValue
+    case toggleUIAutomation
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -337,6 +338,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
 public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case invoke
     case setValue
+    case toggle
 }
 
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {

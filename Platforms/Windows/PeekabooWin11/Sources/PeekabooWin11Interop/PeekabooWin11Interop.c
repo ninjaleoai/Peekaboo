@@ -11,6 +11,7 @@
 
 #define PEEKABOO_WIN11_UIA_ACTION_INVOKE 1
 #define PEEKABOO_WIN11_UIA_ACTION_SET_VALUE 2
+#define PEEKABOO_WIN11_UIA_ACTION_TOGGLE 3
 
 static int PeekabooWin11Succeeded(HRESULT result) {
     return result >= 0;
@@ -371,6 +372,42 @@ static void PeekabooWin11SetElementValue(
     IUIAutomationValuePattern_Release(valuePattern);
 }
 
+static void PeekabooWin11ToggleElement(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TogglePatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationTogglePattern *togglePattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTogglePattern,
+        (void **)&togglePattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || togglePattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationTogglePattern_Toggle(togglePattern);
+    IUIAutomationTogglePattern_Release(togglePattern);
+}
+
 static void PeekabooWin11CopyElementProperties(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -535,7 +572,9 @@ static int32_t PeekabooWin11VisitElementForAction(
 
     if (index == result->elementIndex) {
         result->foundElement = 1;
-        if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
+        if (result->action == PEEKABOO_WIN11_UIA_ACTION_TOGGLE) {
+            PeekabooWin11ToggleElement(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
             PeekabooWin11SetElementValue(element, value, result);
         } else {
             PeekabooWin11InvokeElement(element, result);
@@ -797,6 +836,21 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
         PEEKABOO_WIN11_UIA_ACTION_SET_VALUE,
         value);
 }
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_TOGGLE,
+        NULL);
+}
 #else
 PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
     PeekabooWin11UIAutomationProbeResult result = {0, 0, 0, -2147467263, 0, 0};
@@ -849,6 +903,23 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)value;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 3;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
     result.initializeResult = -2147467263;
     return result;
 }

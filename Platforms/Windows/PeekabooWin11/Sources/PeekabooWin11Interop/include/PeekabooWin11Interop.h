@@ -107,6 +107,12 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     int32_t elementIndex,
     const char *value);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex);
+
 void PeekabooWin11FreeUIAutomationSnapshot(
     PeekabooWin11UIAutomationSnapshotResult *result);
 
