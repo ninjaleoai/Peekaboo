@@ -25,6 +25,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case toggleUIAutomation
     case expandCollapseUIAutomation
     case selectUIAutomationItem
+    case setUIAutomationRangeValue
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -344,6 +345,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case expand
     case collapse
     case select
+    case setRangeValue
 }
 
 public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {
@@ -380,6 +382,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let availableActions: [DesktopUIAutomationAction]
     public let value: String?
     public let isValueReadOnly: Bool?
+    public let rangeValue: Double?
+    public let rangeMinimum: Double?
+    public let rangeMaximum: Double?
+    public let rangeSmallChange: Double?
+    public let rangeLargeChange: Double?
+    public let isRangeValueReadOnly: Bool?
     public let toggleState: DesktopUIAutomationToggleState?
     public let expandCollapseState: DesktopUIAutomationExpandCollapseState?
     public let isSelected: Bool?
@@ -406,6 +414,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         availableActions: [DesktopUIAutomationAction] = [],
         value: String? = nil,
         isValueReadOnly: Bool? = nil,
+        rangeValue: Double? = nil,
+        rangeMinimum: Double? = nil,
+        rangeMaximum: Double? = nil,
+        rangeSmallChange: Double? = nil,
+        rangeLargeChange: Double? = nil,
+        isRangeValueReadOnly: Bool? = nil,
         toggleState: DesktopUIAutomationToggleState? = nil,
         expandCollapseState: DesktopUIAutomationExpandCollapseState? = nil,
         isSelected: Bool? = nil,
@@ -431,6 +445,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.availableActions = availableActions
         self.value = value
         self.isValueReadOnly = isValueReadOnly
+        self.rangeValue = rangeValue
+        self.rangeMinimum = rangeMinimum
+        self.rangeMaximum = rangeMaximum
+        self.rangeSmallChange = rangeSmallChange
+        self.rangeLargeChange = rangeLargeChange
+        self.isRangeValueReadOnly = isRangeValueReadOnly
         self.toggleState = toggleState
         self.expandCollapseState = expandCollapseState
         self.isSelected = isSelected

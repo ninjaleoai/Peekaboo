@@ -96,6 +96,12 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             value: "Updated value")
+        let setRangeValue = try await bridge.setUIAutomationElementRangeValue(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            value: 42.5)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -159,10 +165,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(
             snapshot.elements.first?.supportedPatterns,
-            [.invoke, .value, .expandCollapse, .selectionItem, .toggle])
-        XCTAssertEqual(snapshot.elements.first?.availableActions, [.invoke, .setValue, .toggle, .expand, .select])
+            [.invoke, .value, .rangeValue, .expandCollapse, .selectionItem, .toggle])
+        XCTAssertEqual(
+            snapshot.elements.first?.availableActions,
+            [.invoke, .setValue, .setRangeValue, .toggle, .expand, .select])
         XCTAssertEqual(snapshot.elements.first?.value, "Example value")
         XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
+        XCTAssertEqual(snapshot.elements.first?.rangeValue, 12.5)
+        XCTAssertEqual(snapshot.elements.first?.rangeMinimum, 0.0)
+        XCTAssertEqual(snapshot.elements.first?.rangeMaximum, 100.0)
+        XCTAssertEqual(snapshot.elements.first?.rangeSmallChange, 0.5)
+        XCTAssertEqual(snapshot.elements.first?.rangeLargeChange, 10.0)
+        XCTAssertEqual(snapshot.elements.first?.isRangeValueReadOnly, false)
         XCTAssertEqual(snapshot.elements.first?.toggleState, .off)
         XCTAssertEqual(snapshot.elements.first?.expandCollapseState, .collapsed)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
@@ -174,6 +188,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setValue.value, "Updated value")
         XCTAssertEqual(setValue.postActionElement?.value, "Updated value")
         XCTAssertEqual(setValue.valueWasVerified, true)
+        XCTAssertEqual(setRangeValue.action, .setRangeValue)
+        XCTAssertEqual(setRangeValue.elementIndex, 0)
+        XCTAssertEqual(setRangeValue.value, "42.5")
+        XCTAssertEqual(setRangeValue.postActionElement?.rangeValue, 42.5)
+        XCTAssertEqual(setRangeValue.valueWasVerified, true)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -522,12 +541,17 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
+        XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 12.5"))
+        XCTAssertTrue(result.stdout.contains("\"rangeMinimum\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"rangeMaximum\" : 100"))
+        XCTAssertTrue(result.stdout.contains("\"isRangeValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"toggleState\" : \"off\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
@@ -598,6 +622,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 12.5"))
+        XCTAssertTrue(result.stdout.contains("\"isRangeValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
@@ -714,6 +740,46 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-value"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationSetRangeValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-range-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "42.5",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setRangeValue\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"42.5\""))
+        XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 42.5"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetRangeValueNumber() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-range-value",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --value <number> for automation set-range-value"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationToggle() {
@@ -884,6 +950,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation element --index"))
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation toggle --index"))
         XCTAssertTrue(result.stdout.contains("automation expand --index"))
         XCTAssertTrue(result.stdout.contains("automation collapse --index"))
@@ -1108,6 +1175,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.value == value)
     }
 
+    func setUIAutomationElementRangeValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: Double) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            rangeValue: value)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setRangeValue,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: String(value),
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.rangeValue == value)
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -1238,6 +1340,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         maxDepth: Int,
         maxElements: Int,
         elementValue: String,
+        rangeValue: Double = 12.5,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
@@ -1263,10 +1366,16 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
                     isOffscreen: false,
-                    supportedPatterns: [.invoke, .value, .expandCollapse, .selectionItem, .toggle],
+                    supportedPatterns: [.invoke, .value, .rangeValue, .expandCollapse, .selectionItem, .toggle],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
                     isValueReadOnly: false,
+                    rangeValue: rangeValue,
+                    rangeMinimum: 0.0,
+                    rangeMaximum: 100.0,
+                    rangeSmallChange: 0.5,
+                    rangeLargeChange: 10.0,
+                    isRangeValueReadOnly: false,
                     toggleState: toggleState,
                     expandCollapseState: expandCollapseState,
                     isSelected: isSelected),
@@ -1278,13 +1387,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
     {
         switch expandCollapseState {
         case .collapsed:
-            return [.invoke, .setValue, .toggle, .expand, .select]
+            return [.invoke, .setValue, .setRangeValue, .toggle, .expand, .select]
         case .expanded:
-            return [.invoke, .setValue, .toggle, .collapse, .select]
+            return [.invoke, .setValue, .setRangeValue, .toggle, .collapse, .select]
         case .partiallyExpanded:
-            return [.invoke, .setValue, .toggle, .expand, .collapse, .select]
+            return [.invoke, .setValue, .setRangeValue, .toggle, .expand, .collapse, .select]
         case .leafNode:
-            return [.invoke, .setValue, .toggle, .select]
+            return [.invoke, .setValue, .setRangeValue, .toggle, .select]
         }
     }
 }

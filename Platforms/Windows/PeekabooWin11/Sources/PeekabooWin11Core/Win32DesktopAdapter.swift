@@ -33,6 +33,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
                 .selectUIAutomationItem,
+                .setUIAutomationRangeValue,
             ])
     }
 
@@ -608,6 +609,78 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             valueWasVerified: postActionElement?.value.map { $0 == value })
     }
 
+    public func setUIAutomationElementRangeValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+        guard value.isFinite else {
+            throw Win11DesktopError.invalidArgument("UI Automation range value must be a finite number")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.rangeValue) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support range value")
+        }
+        if element.isRangeValueReadOnly == true {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) range value is read-only")
+        }
+        if let minimum = element.rangeMinimum, value < minimum {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation range value \(value) is below minimum \(minimum)")
+        }
+        if let maximum = element.rangeMaximum, value > maximum {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation range value \(value) is above maximum \(maximum)")
+        }
+
+        let nativeResult = PeekabooWin11SetUIAutomationElementRangeValue(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            value)
+        try Self.validateUIAutomationSetRangeValue(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setRangeValue,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: Self.rangeValueString(value),
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.rangeValue.map {
+                abs($0 - value) <= 0.000_001
+            })
+    }
+
     public func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -962,6 +1035,56 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSetRangeValue(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation set-range-value failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support range value")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationRangeValuePattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if Self.succeeded(action.readOnlyResult), action.isReadOnly != 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) range value is read-only")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationRangeValuePattern.SetValue failed: \(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -1137,6 +1260,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let isValueReadOnly = Self.optionalBool(
                 hasValue: nativeElement.hasIsValueReadOnly,
                 value: nativeElement.isValueReadOnly)
+            let isRangeValueReadOnly = Self.optionalBool(
+                hasValue: nativeElement.hasIsRangeValueReadOnly,
+                value: nativeElement.isRangeValueReadOnly)
             let expandCollapseState = Self.uiAutomationExpandCollapseState(
                 hasValue: nativeElement.hasExpandCollapseState,
                 value: nativeElement.expandCollapseState)
@@ -1178,11 +1304,28 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 availableActions: Self.uiAutomationActions(
                     supportedPatterns: supportedPatterns,
                     isValueReadOnly: isValueReadOnly,
+                    isRangeValueReadOnly: isRangeValueReadOnly,
                     expandCollapseState: expandCollapseState),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
                 isValueReadOnly: isValueReadOnly,
+                rangeValue: Self.optionalDouble(
+                    hasValue: nativeElement.hasRangeValue,
+                    value: nativeElement.rangeValue),
+                rangeMinimum: Self.optionalDouble(
+                    hasValue: nativeElement.hasRangeMinimum,
+                    value: nativeElement.rangeMinimum),
+                rangeMaximum: Self.optionalDouble(
+                    hasValue: nativeElement.hasRangeMaximum,
+                    value: nativeElement.rangeMaximum),
+                rangeSmallChange: Self.optionalDouble(
+                    hasValue: nativeElement.hasRangeSmallChange,
+                    value: nativeElement.rangeSmallChange),
+                rangeLargeChange: Self.optionalDouble(
+                    hasValue: nativeElement.hasRangeLargeChange,
+                    value: nativeElement.rangeLargeChange),
+                isRangeValueReadOnly: isRangeValueReadOnly,
                 toggleState: Self.uiAutomationToggleState(
                     hasValue: nativeElement.hasToggleState,
                     value: nativeElement.toggleState),
@@ -1195,6 +1338,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     private static func uiAutomationActions(
         supportedPatterns: [DesktopUIAutomationPattern],
         isValueReadOnly: Bool?,
+        isRangeValueReadOnly: Bool?,
         expandCollapseState: DesktopUIAutomationExpandCollapseState?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
@@ -1203,6 +1347,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.value), isValueReadOnly == false {
             actions.append(.setValue)
+        }
+        if supportedPatterns.contains(.rangeValue), isRangeValueReadOnly == false {
+            actions.append(.setRangeValue)
         }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
@@ -1414,6 +1561,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return nil
         }
         return value != 0
+    }
+
+    private static func optionalDouble(hasValue: Int32, value: Double) -> Double? {
+        guard hasValue != 0 else {
+            return nil
+        }
+        return value
+    }
+
+    private static func rangeValueString(_ value: Double) -> String {
+        String(value)
     }
 
     private static func succeeded(_ result: Int32) -> Bool {

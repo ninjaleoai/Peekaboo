@@ -44,6 +44,18 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasValue;
     int32_t hasIsValueReadOnly;
     int32_t isValueReadOnly;
+    int32_t hasRangeValue;
+    double rangeValue;
+    int32_t hasRangeMinimum;
+    double rangeMinimum;
+    int32_t hasRangeMaximum;
+    double rangeMaximum;
+    int32_t hasRangeSmallChange;
+    double rangeSmallChange;
+    int32_t hasRangeLargeChange;
+    double rangeLargeChange;
+    int32_t hasIsRangeValueReadOnly;
+    int32_t isRangeValueReadOnly;
     int32_t hasToggleState;
     int32_t toggleState;
     int32_t hasExpandCollapseState;
@@ -112,6 +124,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     int32_t maxElements,
     int32_t elementIndex,
     const char *value);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeValue(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    double value);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,

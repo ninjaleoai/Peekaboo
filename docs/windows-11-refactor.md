@@ -38,6 +38,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
+- RangeValue-pattern UI Automation set-range-value actions against a bounded
+  snapshot element index
 - Toggle-pattern UI Automation actions against a bounded snapshot element index
 - ExpandCollapse-pattern UI Automation expand/collapse actions against a
   bounded snapshot element index
@@ -53,9 +55,10 @@ adapter construction; the shared package owns the platform-neutral
 contract, plus `automation status` and bounded `automation snapshot` UI
 Automation commands. It also exposes `automation element --index <n>` as a
 bounded element lookup over the same snapshot traversal, and
-`automation invoke --index <n>`, `automation set-value --index <n>`, and
-`automation toggle --index <n>` for Invoke-pattern, Value-pattern, and
-Toggle-pattern UIA actions. `automation expand --index <n>` and
+`automation invoke --index <n>`, `automation set-value --index <n>`,
+`automation set-range-value --index <n>`, and `automation toggle --index <n>`
+for Invoke-pattern, Value-pattern, RangeValue-pattern, and Toggle-pattern UIA
+actions. `automation expand --index <n>` and
 `automation collapse --index <n>` cover ExpandCollapse-pattern controls such
 as tree items and combo boxes. `automation select --index <n>` covers
 SelectionItem-pattern controls such as list items, menu items, and tabs.
@@ -139,6 +142,12 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: String) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementRangeValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: Double) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -229,6 +238,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-range-value --scope foreground --index 0 --value 42.5 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation toggle --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation expand --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -260,19 +271,23 @@ and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
 selection item, text, toggle, and legacy IAccessible. When an element supports
 the UIA Value pattern, snapshots also include its current string value and
-whether that value is read-only. When an element supports the UIA Toggle
-pattern, snapshots also include the current toggle state: off, on, or
-indeterminate. When an element supports the UIA ExpandCollapse pattern,
+whether that value is read-only. When an element supports the UIA RangeValue
+pattern, snapshots include the current numeric value, minimum, maximum, small
+change, large change, and read-only status when UIA reports them. When an
+element supports the UIA Toggle pattern, snapshots also include the current
+toggle state: off, on, or indeterminate. When an element supports the UIA
+ExpandCollapse pattern,
 snapshots also include the current expand/collapse state: collapsed, expanded,
 partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently
 selected. Elements also expose stable available actions derived from those
 patterns: invoke is available when the Invoke pattern is present, setValue is
-available only when the Value pattern is present and known writable, toggle is
-available when the Toggle pattern is present, expand is available for collapsed
-or partially expanded ExpandCollapse elements, collapse is available for
-expanded or partially expanded ExpandCollapse elements, and select is available
-when the SelectionItem pattern is present.
+available only when the Value pattern is present and known writable,
+setRangeValue is available only when the RangeValue pattern is present and
+known writable, toggle is available when the Toggle pattern is present, expand
+is available for collapsed or partially expanded ExpandCollapse elements,
+collapse is available for expanded or partially expanded ExpandCollapse
+elements, and select is available when the SelectionItem pattern is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
@@ -283,9 +298,12 @@ the pre-action element metadata used for the invocation. `automation set-value`
 does the same for Value-pattern elements, rejecting known read-only values
 before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
 result can include post-action element metadata and whether the requested value
-was observed. `automation toggle --index <n>` performs the UIA Toggle pattern
-and returns pre-action metadata plus any refreshed post-action element,
-including the refreshed toggle state when UIA reports one. `automation expand`
+was observed. `automation set-range-value` does the same for RangeValue-pattern
+elements, rejecting known read-only and out-of-range values before calling UIA
+`SetValue`, then verifies the refreshed numeric value when UIA reports one.
+`automation toggle --index <n>` performs the UIA Toggle pattern and returns
+pre-action metadata plus any refreshed post-action element, including the
+refreshed toggle state when UIA reports one. `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 leaf nodes before calling UIA, and return refreshed post-action element
 metadata with the latest expand/collapse state when UIA reports one.

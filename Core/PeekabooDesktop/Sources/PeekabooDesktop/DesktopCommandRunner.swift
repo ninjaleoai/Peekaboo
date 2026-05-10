@@ -172,7 +172,7 @@ public enum DesktopCommandRunner {
         guard let subcommand = args.first else {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
-                    "set-value, toggle, expand, collapse, or select")
+                    "set-value, set-range-value, toggle, expand, collapse, or select")
         }
 
         switch subcommand {
@@ -186,6 +186,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationInvoke(args: args, adapter: adapter, stdout: stdout)
         case "set-value", "setValue":
             try self.runAutomationSetValue(args: args, adapter: adapter, stdout: stdout)
+        case "set-range-value", "setRangeValue":
+            try self.runAutomationSetRangeValue(args: args, adapter: adapter, stdout: stdout)
         case "toggle":
             try self.runAutomationToggle(args: args, adapter: adapter, stdout: stdout)
         case "expand":
@@ -311,6 +313,38 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             value: value)))
+    }
+
+    private static func runAutomationSetRangeValue(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation set-range-value")
+        }
+
+        let value = try self.value(after: "--value", in: args)
+        guard let value else {
+            throw DesktopAdapterError.invalidArgument("Missing --value <number> for automation set-range-value")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.setUIAutomationElementRangeValue(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            value: self.parseUIAutomationRangeValue(value))))
     }
 
     private static func runAutomationToggle(
@@ -678,6 +712,13 @@ public enum DesktopCommandRunner {
         return elementIndex
     }
 
+    private static func parseUIAutomationRangeValue(_ value: String) throws -> Double {
+        guard let rangeValue = Double(value), rangeValue.isFinite else {
+            throw DesktopAdapterError.invalidArgument("UI Automation range value must be a finite number")
+        }
+        return rangeValue
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -708,6 +749,8 @@ public enum DesktopCommandRunner {
           automation element --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation invoke --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-value --index <n> --value <text>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation set-range-value --index <n> --value <number>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation toggle --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation expand --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
