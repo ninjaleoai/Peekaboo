@@ -169,6 +169,36 @@ static HRESULT PeekabooWin11CopySnapshotRoot(
     return IUIAutomation_GetRootElement(automation, rootElement);
 }
 
+static void PeekabooWin11MarkPattern(
+    IUIAutomationElement *element,
+    PATTERNID patternId,
+    uint64_t patternBit,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *pattern = NULL;
+    HRESULT result = IUIAutomationElement_GetCurrentPattern(element, patternId, &pattern);
+    if (PeekabooWin11Succeeded(result) && pattern != NULL) {
+        snapshot->supportedPatternMask |= patternBit;
+        IUnknown_Release(pattern);
+    }
+}
+
+static void PeekabooWin11CopyElementPatterns(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    PeekabooWin11MarkPattern(element, UIA_InvokePatternId, 1ULL << 0, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ValuePatternId, 1ULL << 1, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_RangeValuePatternId, 1ULL << 2, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ScrollPatternId, 1ULL << 3, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ExpandCollapsePatternId, 1ULL << 4, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_WindowPatternId, 1ULL << 5, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_SelectionItemPatternId, 1ULL << 6, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TextPatternId, 1ULL << 7, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TogglePatternId, 1ULL << 8, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_LegacyIAccessiblePatternId, 1ULL << 9, snapshot);
+}
+
 static void PeekabooWin11CopyElementProperties(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -243,6 +273,8 @@ static void PeekabooWin11CopyElementProperties(
         snapshot->hasIsOffscreen = 1;
         snapshot->isOffscreen = isOffscreen ? 1 : 0;
     }
+
+    PeekabooWin11CopyElementPatterns(element, snapshot);
 }
 
 static int32_t PeekabooWin11AppendElementSnapshot(

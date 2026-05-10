@@ -318,6 +318,19 @@ public enum DesktopUIAutomationSnapshotScope: String, CaseIterable, Codable, Sen
     case focused
 }
 
+public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable {
+    case invoke
+    case value
+    case rangeValue
+    case scroll
+    case expandCollapse
+    case window
+    case selectionItem
+    case text
+    case toggle
+    case legacyIAccessible
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -335,6 +348,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isKeyboardFocusable: Bool?
     public let hasKeyboardFocus: Bool?
     public let isOffscreen: Bool?
+    public let supportedPatterns: [DesktopUIAutomationPattern]
     public let childCount: Int
 
     public init(
@@ -354,6 +368,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isKeyboardFocusable: Bool? = nil,
         hasKeyboardFocus: Bool? = nil,
         isOffscreen: Bool? = nil,
+        supportedPatterns: [DesktopUIAutomationPattern] = [],
         childCount: Int = 0)
     {
         self.index = index
@@ -372,6 +387,7 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isKeyboardFocusable = isKeyboardFocusable
         self.hasKeyboardFocus = hasKeyboardFocus
         self.isOffscreen = isOffscreen
+        self.supportedPatterns = supportedPatterns
         self.childCount = childCount
     }
 }

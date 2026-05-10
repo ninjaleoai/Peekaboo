@@ -603,7 +603,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isOffscreen: Self.optionalBool(
                     hasValue: nativeElement.hasIsOffscreen,
                     value: nativeElement.isOffscreen),
+                supportedPatterns: Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask),
                 childCount: Int(nativeElement.childCount))
+        }
+    }
+
+    private static func uiAutomationPatterns(from mask: UInt64) -> [DesktopUIAutomationPattern] {
+        [
+            (1 << 0, .invoke),
+            (1 << 1, .value),
+            (1 << 2, .rangeValue),
+            (1 << 3, .scroll),
+            (1 << 4, .expandCollapse),
+            (1 << 5, .window),
+            (1 << 6, .selectionItem),
+            (1 << 7, .text),
+            (1 << 8, .toggle),
+            (1 << 9, .legacyIAccessible),
+        ].compactMap { bit, pattern in
+            (mask & UInt64(bit)) != 0 ? pattern : nil
         }
     }
 

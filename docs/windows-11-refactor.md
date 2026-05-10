@@ -192,8 +192,10 @@ element, then walks the UIA control view with explicit `--max-depth` and
 non-localized control type name, localized control type, name, automation
 identifier, class name, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
-and off-screen status. Root snapshots should stay shallow because desktop-wide
-UIA traversal is expensive.
+and off-screen status. Elements also report common supported UIA patterns,
+including invoke, value, range value, scroll, expand/collapse, window,
+selection item, text, toggle, and legacy IAccessible. Root snapshots should
+stay shallow because desktop-wide UIA traversal is expensive.
 
 ## Next Integration Steps
 
