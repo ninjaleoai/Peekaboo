@@ -316,6 +316,7 @@ public enum DesktopUIAutomationSnapshotScope: String, CaseIterable, Codable, Sen
     case root
     case foreground
     case focused
+    case cursor
 }
 
 public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable {

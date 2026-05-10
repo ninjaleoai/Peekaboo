@@ -32,8 +32,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - focused text typing through Win32 keyboard input APIs
 - native UI Automation availability probing through the Windows UI Automation
   COM API
-- bounded native UI Automation root, foreground-window, or focused-element
-  snapshots through the UIA control view walker
+- bounded native UI Automation root, foreground-window, focused-element, or
+  cursor-hit element snapshots through the UIA control view walker
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -173,6 +173,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation snapshot --scope foreground --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation snapshot --scope focused --max-depth 0 --max-elements 1
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation snapshot --scope cursor --max-depth 0 --max-elements 1
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -186,8 +188,9 @@ instead of silently dropping characters.
 
 The first Windows UI Automation path initializes COM, creates a `CUIAutomation`
 object, and requests the root element for status probing. The follow-up
-snapshot path can start at the desktop root, foreground window, or focused
-element, then walks the UIA control view with explicit `--max-depth` and
+snapshot path can start at the desktop root, foreground window, focused
+element, or element under the current cursor, then walks the UIA control view
+with explicit `--max-depth` and
 `--max-elements` limits. Snapshot elements include the raw control type, stable
 non-localized control type name, localized control type, name, automation
 identifier, class name, process ID, native window handle, bounds, depth, parent

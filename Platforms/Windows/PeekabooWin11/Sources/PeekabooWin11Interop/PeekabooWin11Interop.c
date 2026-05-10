@@ -154,6 +154,14 @@ static HRESULT PeekabooWin11CopySnapshotRoot(
     int32_t scope,
     IUIAutomationElement **rootElement)
 {
+    if (scope == 3) {
+        POINT point = {0, 0};
+        if (!GetCursorPos(&point)) {
+            return HRESULT_FROM_WIN32(GetLastError());
+        }
+        return IUIAutomation_ElementFromPoint(automation, point, rootElement);
+    }
+
     if (scope == 2) {
         return IUIAutomation_GetFocusedElement(automation, rootElement);
     }
@@ -356,7 +364,7 @@ PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;
 
-    if (scope != 0 && scope != 1 && scope != 2) {
+    if (scope != 0 && scope != 1 && scope != 2 && scope != 3) {
         result.errorResult = (int32_t)E_INVALIDARG;
         return result;
     }

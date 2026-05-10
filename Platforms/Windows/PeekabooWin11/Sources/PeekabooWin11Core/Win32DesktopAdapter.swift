@@ -553,6 +553,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return 1
         case .focused:
             return 2
+        case .cursor:
+            return 3
         }
     }
 

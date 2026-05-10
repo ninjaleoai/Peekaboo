@@ -393,4 +393,22 @@ final class Win11ModelTests: XCTestCase {
         throw XCTSkip("Native Windows UI Automation snapshot smoke test only runs on Windows.")
         #endif
     }
+
+    func testNativeWindowsAdapterCanSnapshotUIAutomationCursorElement() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let snapshot = try adapter.uiAutomationSnapshot(scope: .cursor, maxDepth: 0, maxElements: 1)
+
+        XCTAssertEqual(snapshot.nativeBackend, "UIAutomation")
+        XCTAssertEqual(snapshot.scope, .cursor)
+        XCTAssertEqual(snapshot.maxDepth, 0)
+        XCTAssertEqual(snapshot.maxElements, 1)
+        XCTAssertNil(snapshot.error)
+        XCTAssertEqual(snapshot.elementCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.depth, 0)
+        XCTAssertEqual(snapshot.elements.first?.parentIndex, nil)
+        #else
+        throw XCTSkip("Native Windows cursor UI Automation snapshot smoke test only runs on Windows.")
+        #endif
+    }
 }
