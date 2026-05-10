@@ -154,6 +154,10 @@ static HRESULT PeekabooWin11CopySnapshotRoot(
     int32_t scope,
     IUIAutomationElement **rootElement)
 {
+    if (scope == 2) {
+        return IUIAutomation_GetFocusedElement(automation, rootElement);
+    }
+
     if (scope == 1) {
         HWND foregroundWindow = GetForegroundWindow();
         if (foregroundWindow == NULL) {
@@ -292,7 +296,7 @@ PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;
 
-    if (scope != 0 && scope != 1) {
+    if (scope != 0 && scope != 1 && scope != 2) {
         result.errorResult = (int32_t)E_INVALIDARG;
         return result;
     }

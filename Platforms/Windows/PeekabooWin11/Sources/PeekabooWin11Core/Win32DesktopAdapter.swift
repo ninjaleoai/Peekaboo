@@ -551,6 +551,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return 0
         case .foreground:
             return 1
+        case .focused:
+            return 2
         }
     }
 

@@ -438,7 +438,7 @@ public enum DesktopCommandRunner {
         _ value: String) throws -> DesktopUIAutomationSnapshotScope
     {
         guard let scope = DesktopUIAutomationSnapshotScope(rawValue: value.lowercased()) else {
-            throw DesktopAdapterError.invalidArgument("UI Automation scope must be root or foreground")
+            throw DesktopAdapterError.invalidArgument("UI Automation scope must be root, foreground, or focused")
         }
         return scope
     }
@@ -483,7 +483,7 @@ public enum DesktopCommandRunner {
           input hotkey --keys <key1,key2> [--hold-ms <n>]
           input type --text <text> [--delay-ms <n>]
           automation status
-          automation snapshot [--scope root|foreground] [--max-depth <n>] [--max-elements <n>]
+          automation snapshot [--scope root|foreground|focused] [--max-depth <n>] [--max-elements <n>]
         """
     }
 

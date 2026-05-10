@@ -315,6 +315,7 @@ public struct DesktopUIAutomationStatus: Codable, Equatable, Sendable {
 public enum DesktopUIAutomationSnapshotScope: String, CaseIterable, Codable, Sendable {
     case root
     case foreground
+    case focused
 }
 
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {

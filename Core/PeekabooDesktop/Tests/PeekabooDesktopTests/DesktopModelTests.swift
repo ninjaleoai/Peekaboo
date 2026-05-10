@@ -455,6 +455,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
     }
 
+    func testDesktopCommandRunnerRoutesFocusedAutomationSnapshot() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "snapshot",
+            "--scope",
+            "focused",
+            "--max-depth",
+            "0",
+            "--max-elements",
+            "1",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"scope\" : \"focused\""))
+        XCTAssertTrue(result.stdout.contains("\"maxDepth\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"maxElements\" : 1"))
+    }
+
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -466,7 +486,7 @@ final class DesktopModelTests: XCTestCase {
 
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
-        XCTAssertTrue(result.stderr.contains("UI Automation scope must be root or foreground"))
+        XCTAssertTrue(result.stderr.contains("UI Automation scope must be root, foreground, or focused"))
     }
 
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
