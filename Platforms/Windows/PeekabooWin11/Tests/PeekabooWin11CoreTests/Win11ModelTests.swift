@@ -42,4 +42,39 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(status, 1)
         XCTAssertTrue(errorOutput.contains("Unknown command"))
     }
+
+    func testNativeWindowsAdapterCanReadDesktopState() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let displays = try adapter.listDisplays()
+        let windows = try adapter.listWindows(includeInvisible: true)
+
+        XCTAssertFalse(displays.isEmpty)
+        XCTAssertNotNil(windows)
+        #else
+        throw XCTSkip("Native Windows adapter smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanCaptureBMP() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let outputPath = FileManager.default
+            .temporaryDirectory
+            .appendingPathComponent("peekaboo-win11-smoke.bmp")
+            .path
+
+        defer {
+            try? FileManager.default.removeItem(atPath: outputPath)
+        }
+
+        let result = try adapter.captureScreen(displayIndex: nil, outputPath: outputPath)
+
+        XCTAssertEqual(result.format, .bmp)
+        XCTAssertGreaterThan(result.byteCount, 54)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
+        #else
+        throw XCTSkip("Native Windows capture smoke test only runs on Windows.")
+        #endif
+    }
 }
