@@ -411,34 +411,37 @@ extension ImageCommand {
         _ target: ImageWindowObservationTarget,
         adapter: any DesktopAsyncAdapter
     ) async throws -> (application: DesktopApplication, window: DesktopWindow) {
-        let applications = try await adapter.listApplications()
-        let windows = try await adapter.listWindows(includeInvisible: true)
-
         let application: DesktopApplication
         let selection: WindowSelection
         switch target.target {
         case let .pid(pid, windowSelection):
-            guard let match = applications.first(where: { $0.processIdentifier == UInt32(clamping: pid) }) else {
-                throw DesktopObservationError.targetNotFound("pid \(pid)")
-            }
-            application = match
+            application = try await self.resolveDesktopApplication(identifier: "PID:\(pid)", adapter: adapter)
             selection = windowSelection ?? .automatic
         case let .app(identifier, windowSelection):
-            guard let match = Self.desktopApplication(matching: identifier, in: applications) else {
-                throw DesktopObservationError.targetNotFound(identifier)
-            }
-            application = match
+            application = try await self.resolveDesktopApplication(identifier: identifier, adapter: adapter)
             selection = windowSelection ?? .automatic
         default:
             throw DesktopObservationError.targetNotFound("application window")
         }
 
+        let windows = try await adapter.listWindows(includeInvisible: true)
         let applicationWindows = windows.filter { $0.processIdentifier == application.processIdentifier }
         let selectedWindow = try Self.selectDesktopWindow(
             from: applicationWindows,
             selection: selection,
             applicationName: application.executableName)
         return (application, selectedWindow)
+    }
+
+    private func resolveDesktopApplication(
+        identifier: String,
+        adapter: any DesktopAsyncAdapter
+    ) async throws -> DesktopApplication {
+        let applications = try await adapter.listApplications()
+        guard let application = Self.desktopApplication(matching: identifier, in: applications) else {
+            throw DesktopObservationError.targetNotFound(identifier)
+        }
+        return application
     }
 
     private static func desktopApplication(
@@ -563,6 +566,11 @@ extension ImageCommand {
     private func captureAllApplicationWindows(_ identifier: String) async throws -> [ImageCapturedFile] {
         try await self.focusIfNeeded(appIdentifier: identifier)
 
+        let desktop = self.services.desktop
+        if await self.canUseDesktopApplicationWindowCapture(adapter: desktop) {
+            return try await self.captureDesktopApplicationWindows(identifier, adapter: desktop)
+        }
+
         let windows = try await WindowServiceBridge.listWindows(
             windows: self.services.windows,
             target: .application(identifier)
@@ -588,6 +596,58 @@ extension ImageCommand {
                 windowIndex: window.index
             )
             savedFiles.append(saved)
+        }
+
+        return savedFiles
+    }
+
+    private func captureDesktopApplicationWindows(
+        _ identifier: String,
+        adapter: any DesktopAsyncAdapter
+    ) async throws -> [ImageCapturedFile] {
+        let application = try await self.resolveDesktopApplication(identifier: identifier, adapter: adapter)
+        let windows = try await adapter.listWindows(includeInvisible: true)
+        let filtered = Self.desktopCaptureCandidates(from: windows.filter {
+            $0.processIdentifier == application.processIdentifier
+        })
+
+        guard !filtered.isEmpty else {
+            throw PeekabooError.windowNotFound(criteria: "No shareable windows for \(identifier)")
+        }
+
+        let snapshot = await self.desktopSnapshot(adapter: adapter)
+        var savedFiles: [ImageCapturedFile] = []
+        savedFiles.reserveCapacity(filtered.count)
+
+        for (ordinal, window) in filtered.indexed() {
+            let windowTitle = window.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let outputURL = self.makeOutputURL(preferredName: window.title, index: ordinal)
+            try FileManager.default.createDirectory(
+                at: outputURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true)
+
+            let start = ContinuousClock.now
+            let result = try await adapter.captureWindow(
+                windowIdentifier: window.windowIdentifier,
+                outputPath: outputURL.path)
+            let span = Self.desktopCaptureSpan(name: "capture.window", start: start, result: result)
+
+            savedFiles.append(ImageCapturedFile(
+                file: SavedFile(
+                    path: result.path,
+                    item_label: window.title,
+                    window_title: windowTitle.isEmpty ? nil : windowTitle,
+                    window_id: UInt32(clamping: window.windowIdentifier),
+                    window_index: window.index,
+                    mime_type: result.format.mimeType),
+                observation: ImageObservationDiagnostics(
+                    spans: [span],
+                    stateSnapshot: snapshot,
+                    target: DesktopObservationTargetDiagnostics(
+                        requestedKind: "window",
+                        resolvedKind: "window",
+                        source: "desktop-adapter",
+                        bounds: result.bounds.cgRect))))
         }
 
         return savedFiles

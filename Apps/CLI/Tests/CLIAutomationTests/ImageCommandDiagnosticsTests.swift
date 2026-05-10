@@ -278,6 +278,109 @@ extension ImageCommandTests {
     }
 
     @Test(.tags(.imageCapture))
+    func `Compatible app multi-window captures route through desktop adapter`() async throws {
+        let helper = ServiceWindowInfo(
+            windowID: 40,
+            title: "",
+            bounds: CGRect(x: -10000, y: -10000, width: 80, height: 80),
+            index: 0,
+            isOffScreen: true,
+            isOnScreen: false
+        )
+        let firstWindow = ServiceWindowInfo(
+            windowID: 42,
+            title: "Adapter Primary",
+            bounds: CGRect(x: 10, y: 20, width: 640, height: 480),
+            isMainWindow: true,
+            index: 1
+        )
+        let secondWindow = ServiceWindowInfo(
+            windowID: 43,
+            title: "Adapter Secondary",
+            bounds: CGRect(x: 700, y: 80, width: 500, height: 360),
+            index: 2
+        )
+        let app = ServiceApplicationInfo(
+            processIdentifier: 4242,
+            bundleIdentifier: "dev.peekaboo.adapter",
+            name: "AdapterApp",
+            windowCount: 3
+        )
+        let captureService = StubScreenCaptureService(permissionGranted: true)
+        var requestedWindowIDs: [CGWindowID] = []
+        var requestedScales: [CaptureScalePreference] = []
+        captureService.captureWindowByIdHandler = { windowID, scale in
+            requestedWindowIDs.append(windowID)
+            requestedScales.append(scale)
+            let capturedWindow = windowID == CGWindowID(firstWindow.windowID) ? firstWindow : secondWindow
+            return Self.makeCaptureResult(app: app, window: capturedWindow)
+        }
+
+        let applications = StubApplicationService(
+            applications: [app],
+            windowsByApp: [app.name: [helper, firstWindow, secondWindow]]
+        )
+        let services = TestServicesFactory.makePeekabooServices(
+            applications: applications,
+            screenCapture: captureService
+        )
+        let path = Self.makeTempCapturePath("desktop-adapter-multi.png")
+        let outputURL = URL(fileURLWithPath: path)
+        let secondPath = outputURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("\(outputURL.deletingPathExtension().lastPathComponent)_1")
+            .appendingPathExtension(outputURL.pathExtension)
+            .path
+
+        let result = try await InProcessCommandRunner.run(
+            [
+                "image",
+                "--mode", "multi",
+                "--app", app.name,
+                "--path", path,
+                "--json",
+            ],
+            services: services
+        )
+
+        #expect(result.exitStatus == 0)
+        #expect(requestedWindowIDs == [
+            CGWindowID(firstWindow.windowID),
+            CGWindowID(secondWindow.windowID),
+        ])
+        #expect(requestedScales.allSatisfy { $0 == .logical1x })
+
+        let response = try JSONDecoder().decode(
+            CodableJSONResponse<ImageCaptureResult>.self,
+            from: Data(result.combinedOutput.utf8)
+        )
+        #expect(response.data.files.count == 2)
+        #expect(response.data.observations.count == 2)
+        #expect(response.data.files[0].path == path)
+        #expect(response.data.files[0].item_label == "Adapter Primary")
+        #expect(response.data.files[0].window_title == "Adapter Primary")
+        #expect(response.data.files[0].window_id == UInt32(firstWindow.windowID))
+        #expect(response.data.files[0].window_index == 1)
+        #expect(response.data.files[0].mime_type == "image/png")
+        #expect(response.data.files[1].path == secondPath)
+        #expect(response.data.files[1].item_label == "Adapter Secondary")
+        #expect(response.data.files[1].window_title == "Adapter Secondary")
+        #expect(response.data.files[1].window_id == UInt32(secondWindow.windowID))
+        #expect(response.data.files[1].window_index == 2)
+        #expect(response.data.files[1].mime_type == "image/png")
+        #expect(response.data.observations.allSatisfy { observation in
+            observation.spans.contains { span in
+                span.name == "capture.window" && span.metadata["source"] == "desktop-adapter"
+            }
+        })
+        #expect(response.data.observations.allSatisfy { $0.target?.source == "desktop-adapter" })
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == Data(repeating: 0xAB, count: 32))
+        #expect(try Data(contentsOf: URL(fileURLWithPath: secondPath)) == Data(repeating: 0xAB, count: 32))
+        try? FileManager.default.removeItem(atPath: path)
+        try? FileManager.default.removeItem(atPath: secondPath)
+    }
+
+    @Test(.tags(.imageCapture))
     func `Compatible frontmost captures route through desktop adapter`() async throws {
         let window = ServiceWindowInfo(
             windowID: 84,
