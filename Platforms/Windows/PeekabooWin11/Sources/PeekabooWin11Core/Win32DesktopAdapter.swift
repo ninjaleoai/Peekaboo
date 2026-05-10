@@ -21,6 +21,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .captureFrontmostBMP,
                 .readCursorPosition,
                 .moveCursor,
+                .clickMouse,
             ])
     }
 
@@ -141,6 +142,40 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         return try self.cursorPosition()
+    }
+
+    public func click(
+        at point: DesktopPoint,
+        button: DesktopMouseButton,
+        clickCount: Int) throws -> DesktopClickResult
+    {
+        guard clickCount > 0 else {
+            throw Win11DesktopError.invalidArgument("Click count must be a positive integer")
+        }
+
+        _ = try self.moveCursor(to: point)
+        let flags = Self.mouseButtonFlags(for: button)
+
+        for _ in 0..<clickCount {
+            mouse_event(flags.down, 0, 0, 0, 0)
+            mouse_event(flags.up, 0, 0, 0, 0)
+        }
+
+        return DesktopClickResult(
+            point: try self.cursorPosition(),
+            button: button,
+            clickCount: clickCount)
+    }
+
+    private static func mouseButtonFlags(for button: DesktopMouseButton) -> (down: DWORD, up: DWORD) {
+        switch button {
+        case .left:
+            return (DWORD(MOUSEEVENTF_LEFTDOWN), DWORD(MOUSEEVENTF_LEFTUP))
+        case .right:
+            return (DWORD(MOUSEEVENTF_RIGHTDOWN), DWORD(MOUSEEVENTF_RIGHTUP))
+        case .middle:
+            return (DWORD(MOUSEEVENTF_MIDDLEDOWN), DWORD(MOUSEEVENTF_MIDDLEUP))
+        }
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

@@ -66,6 +66,10 @@ final class DesktopModelTests: XCTestCase {
         let frontmost = try await bridge.captureFrontmost(outputPath: "frontmost.bmp")
         let cursor = try await bridge.cursorPosition()
         let movedCursor = try await bridge.moveCursor(to: DesktopPoint(x: 9, y: 10))
+        let click = try await bridge.click(
+            at: DesktopPoint(x: 11, y: 12),
+            button: .right,
+            clickCount: 2)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -77,6 +81,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(frontmost.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
         XCTAssertEqual(cursor, DesktopPoint(x: 7, y: 8))
         XCTAssertEqual(movedCursor, DesktopPoint(x: 9, y: 10))
+        XCTAssertEqual(click, DesktopClickResult(
+            point: DesktopPoint(x: 11, y: 12),
+            button: .right,
+            clickCount: 2))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -194,6 +202,43 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"y\" : 10"))
     }
 
+    func testDesktopCommandRunnerRoutesInputClick() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "click",
+            "--point",
+            "11,12",
+            "--button",
+            "right",
+            "--count",
+            "2",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"x\" : 11"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 12"))
+        XCTAssertTrue(result.stdout.contains("\"button\" : \"right\""))
+        XCTAssertTrue(result.stdout.contains("\"clickCount\" : 2"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidInputClickCount() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "click",
+            "--point",
+            "11,12",
+            "--count",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Click count must be a positive integer"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -202,6 +247,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("capture frontmost --path"))
         XCTAssertTrue(result.stdout.contains("input position"))
         XCTAssertTrue(result.stdout.contains("input move --point"))
+        XCTAssertTrue(result.stdout.contains("input click --point"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -308,6 +354,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
 
     func moveCursor(to point: DesktopPoint) throws -> DesktopPoint {
         point
+    }
+
+    func click(
+        at point: DesktopPoint,
+        button: DesktopMouseButton,
+        clickCount: Int) throws -> DesktopClickResult
+    {
+        DesktopClickResult(point: point, button: button, clickCount: clickCount)
     }
 }
 

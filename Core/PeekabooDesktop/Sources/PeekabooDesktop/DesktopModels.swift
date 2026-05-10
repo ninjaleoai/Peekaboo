@@ -14,6 +14,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case captureFrontmostPNG
     case readCursorPosition
     case moveCursor
+    case clickMouse
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -211,6 +212,24 @@ public struct DesktopCaptureResult: Codable, Equatable, Sendable {
         self.bounds = bounds
         self.format = format
         self.byteCount = byteCount
+    }
+}
+
+public enum DesktopMouseButton: String, CaseIterable, Codable, Sendable {
+    case left
+    case right
+    case middle
+}
+
+public struct DesktopClickResult: Codable, Equatable, Sendable {
+    public let point: DesktopPoint
+    public let button: DesktopMouseButton
+    public let clickCount: Int
+
+    public init(point: DesktopPoint, button: DesktopMouseButton, clickCount: Int) {
+        self.point = point
+        self.button = button
+        self.clickCount = clickCount
     }
 }
 

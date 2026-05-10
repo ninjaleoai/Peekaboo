@@ -31,6 +31,7 @@ final class Win11ModelTests: XCTestCase {
                 .captureFrontmostBMP,
                 .readCursorPosition,
                 .moveCursor,
+                .clickMouse,
             ])
         #endif
 
@@ -43,6 +44,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.captureFrontmostBMP))
         XCTAssertTrue(info.capabilities.contains(.readCursorPosition))
         XCTAssertTrue(info.capabilities.contains(.moveCursor))
+        XCTAssertTrue(info.capabilities.contains(.clickMouse))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -61,6 +63,10 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.captureFrontmost(outputPath: "frontmost.bmp"))
         XCTAssertThrowsError(try adapter.cursorPosition())
         XCTAssertThrowsError(try adapter.moveCursor(to: DesktopPoint(x: 0, y: 0)))
+        XCTAssertThrowsError(try adapter.click(
+            at: DesktopPoint(x: 0, y: 0),
+            button: .left,
+            clickCount: 1))
         #endif
     }
 
@@ -93,6 +99,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("capture frontmost --path"))
         XCTAssertTrue(output.contains("input position"))
         XCTAssertTrue(output.contains("input move --point"))
+        XCTAssertTrue(output.contains("input click --point"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -226,6 +233,20 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(moved, position)
         #else
         throw XCTSkip("Native Windows cursor smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanClickCurrentCursorPosition() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let position = try adapter.cursorPosition()
+        let result = try adapter.click(at: position, button: .left, clickCount: 1)
+
+        XCTAssertEqual(result.point, position)
+        XCTAssertEqual(result.button, .left)
+        XCTAssertEqual(result.clickCount, 1)
+        #else
+        throw XCTSkip("Native Windows click smoke test only runs on Windows.")
         #endif
     }
 }

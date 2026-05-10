@@ -182,6 +182,14 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("Cursor movement is not implemented by this adapter")
     }
 
+    public func click(
+        at _: DesktopPoint,
+        button _: DesktopMouseButton,
+        clickCount _: Int) async throws -> DesktopClickResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform("Mouse click is not implemented by this adapter")
+    }
+
     private static func write(_ data: Data, to outputPath: String) throws {
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(

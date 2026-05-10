@@ -47,7 +47,7 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position or move")
+            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position, move, or click")
         }
 
         switch subcommand {
@@ -60,6 +60,20 @@ public enum DesktopCommandRunner {
                 throw DesktopAdapterError.invalidArgument("Missing --point x,y for input move")
             }
             try stdout(self.success(adapter.moveCursor(to: self.parsePoint(pointValue))))
+        case "click", "mouse-click":
+            let pointValue = try self.value(after: "--point", in: args) ??
+                self.value(after: "--at", in: args)
+            guard let pointValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --point x,y for input click")
+            }
+            let button = try self.value(after: "--button", in: args)
+                .map(self.parseMouseButton) ?? .left
+            let clickCount = try self.value(after: "--count", in: args)
+                .map(self.parseClickCount) ?? 1
+            try stdout(self.success(adapter.click(
+                at: self.parsePoint(pointValue),
+                button: button,
+                clickCount: clickCount)))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
@@ -243,6 +257,26 @@ public enum DesktopCommandRunner {
         return DesktopPoint(x: x, y: y)
     }
 
+    private static func parseMouseButton(_ value: String) throws -> DesktopMouseButton {
+        switch value.lowercased() {
+        case "left", "primary":
+            return .left
+        case "right", "secondary":
+            return .right
+        case "middle":
+            return .middle
+        default:
+            throw DesktopAdapterError.invalidArgument("Mouse button must be left, right, or middle")
+        }
+    }
+
+    private static func parseClickCount(_ value: String) throws -> Int {
+        guard let clickCount = Int(value), clickCount > 0 else {
+            throw DesktopAdapterError.invalidArgument("Click count must be a positive integer")
+        }
+        return clickCount
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -263,6 +297,7 @@ public enum DesktopCommandRunner {
           capture frontmost --path <\(capturePath)>
           input position
           input move --point <x,y>
+          input click --point <x,y> [--button left|right|middle] [--count <n>]
         """
     }
 

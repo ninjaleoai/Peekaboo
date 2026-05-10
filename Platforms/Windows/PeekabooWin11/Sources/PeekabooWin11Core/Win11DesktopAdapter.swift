@@ -60,6 +60,14 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
+    public func click(
+        at _: DesktopPoint,
+        button _: DesktopMouseButton,
+        clickCount _: Int) throws -> DesktopClickResult
+    {
+        throw self.unsupported()
+    }
+
     private func unsupported() -> Win11DesktopError {
         Win11DesktopError.unsupportedPlatform(
             "PeekabooWin11 requires Swift on Windows and the WinSDK module.")
