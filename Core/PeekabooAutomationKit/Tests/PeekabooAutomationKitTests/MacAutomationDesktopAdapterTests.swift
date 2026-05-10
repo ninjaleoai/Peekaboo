@@ -22,7 +22,9 @@ final class MacAutomationDesktopAdapterTests: XCTestCase {
         XCTAssertEqual(readOnlyInfo.name, "macOS")
         XCTAssertTrue(readOnlyInfo.capabilities.contains(.enumerateApplications))
         XCTAssertFalse(readOnlyInfo.capabilities.contains(.captureScreenPNG))
+        XCTAssertFalse(readOnlyInfo.capabilities.contains(.captureAreaPNG))
         XCTAssertTrue(captureInfo.capabilities.contains(.captureScreenPNG))
+        XCTAssertTrue(captureInfo.capabilities.contains(.captureAreaPNG))
     }
 
     func testListsDisplaysApplicationsAndVisibleWindows() async throws {
@@ -70,6 +72,31 @@ final class MacAutomationDesktopAdapterTests: XCTestCase {
         XCTAssertEqual(result.format, .png)
         XCTAssertEqual(result.byteCount, captureService.imageData.count)
         XCTAssertEqual(result.bounds, DesktopRect(x: 100, y: 0, width: 200, height: 150))
+        XCTAssertEqual(try Data(contentsOf: outputURL), captureService.imageData)
+    }
+
+    func testCaptureAreaWritesPNGOutput() async throws {
+        let captureService = StubDesktopScreenCaptureService()
+        let adapter = MacAutomationDesktopAdapter(
+            applications: StubDesktopApplicationService(),
+            screens: StubDesktopScreenService(),
+            screenCapture: captureService)
+        let outputURL = FileManager.default
+            .temporaryDirectory
+            .appendingPathComponent("peekaboo-desktop-adapter-area-test.png")
+        let rect = DesktopRect(x: 10, y: 20, width: 30, height: 40)
+
+        defer {
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+
+        let result = try await adapter.captureArea(rect, outputPath: outputURL.path)
+
+        XCTAssertEqual(captureService.requestedArea, CGRect(x: 10, y: 20, width: 30, height: 40))
+        XCTAssertEqual(result.path, outputURL.path)
+        XCTAssertEqual(result.format, .png)
+        XCTAssertEqual(result.byteCount, captureService.imageData.count)
+        XCTAssertEqual(result.bounds, rect)
         XCTAssertEqual(try Data(contentsOf: outputURL), captureService.imageData)
     }
 
@@ -209,6 +236,7 @@ private final class StubDesktopScreenService: ScreenServiceProtocol {
 private final class StubDesktopScreenCaptureService: ScreenCaptureServiceProtocol {
     let imageData = Data([0x89, 0x50, 0x4E, 0x47])
     var requestedDisplayIndex: Int?
+    var requestedArea: CGRect?
 
     func captureScreen(
         displayIndex: Int?,
@@ -245,11 +273,21 @@ private final class StubDesktopScreenCaptureService: ScreenCaptureServiceProtoco
     }
 
     func captureArea(
-        _: CGRect,
+        _ rect: CGRect,
         visualizerMode _: CaptureVisualizerMode,
         scale _: CaptureScalePreference) async throws -> CaptureResult
     {
-        fatalError("unused")
+        self.requestedArea = rect
+        return CaptureResult(
+            imageData: self.imageData,
+            metadata: CaptureMetadata(
+                size: rect.size,
+                mode: .area,
+                displayInfo: DisplayInfo(
+                    index: 0,
+                    name: "Primary",
+                    bounds: rect,
+                    scaleFactor: 1)))
     }
 
     func hasScreenRecordingPermission() async -> Bool {

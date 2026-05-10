@@ -68,7 +68,7 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             displayIndex: displayIndex,
             visualizerMode: .screenshotFlash,
             scale: .logical1x)
-        try result.imageData.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+        try Self.write(result.imageData, to: outputPath)
 
         return DesktopCaptureResult(
             path: outputPath,
@@ -86,6 +86,7 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
 
         if self.screenCapture != nil {
             capabilities.append(.captureScreenPNG)
+            capabilities.append(.captureAreaPNG)
         }
 
         return capabilities
@@ -105,5 +106,40 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         }
 
         return CGRect(origin: .zero, size: result.metadata.size).desktopRect
+    }
+
+    public func captureArea(_ rect: DesktopRect, outputPath: String) async throws -> DesktopCaptureResult {
+        guard let screenCapture else {
+            throw DesktopAdapterError.unsupportedPlatform("Screen capture service was not provided")
+        }
+        guard !rect.isEmpty else {
+            throw DesktopAdapterError.emptyCaptureRegion(rect)
+        }
+
+        let result = try await screenCapture.captureArea(
+            rect.cgRect,
+            visualizerMode: .screenshotFlash,
+            scale: .logical1x)
+        try Self.write(result.imageData, to: outputPath)
+
+        return DesktopCaptureResult(
+            path: outputPath,
+            bounds: rect,
+            format: .png,
+            byteCount: result.imageData.count)
+    }
+
+    private static func write(_ data: Data, to outputPath: String) throws {
+        let outputURL = URL(fileURLWithPath: outputPath)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try data.write(to: outputURL, options: .atomic)
+    }
+}
+
+private extension DesktopRect {
+    var cgRect: CGRect {
+        CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
     }
 }

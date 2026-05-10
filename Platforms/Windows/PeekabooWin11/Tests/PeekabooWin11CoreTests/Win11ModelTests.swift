@@ -25,6 +25,7 @@ final class Win11ModelTests: XCTestCase {
                 .enumerateDisplays,
                 .enumerateWindows,
                 .captureScreenBMP,
+                .captureAreaBMP,
             ])
         #endif
 
@@ -32,6 +33,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(info.nativeBackend, "Win32")
         XCTAssertTrue(info.capabilities.contains(.enumerateWindows))
         XCTAssertTrue(info.capabilities.contains(.captureScreenBMP))
+        XCTAssertTrue(info.capabilities.contains(.captureAreaBMP))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -43,6 +45,9 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.listDisplays())
         XCTAssertThrowsError(try adapter.listWindows(includeInvisible: false))
         XCTAssertThrowsError(try adapter.listApplications())
+        XCTAssertThrowsError(try adapter.captureArea(
+            Win11Rect(x: 0, y: 0, width: 1, height: 1),
+            outputPath: "area.bmp"))
         #endif
     }
 
@@ -70,6 +75,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("peekaboo-win11"))
         XCTAssertTrue(output.contains("list displays"))
         XCTAssertTrue(output.contains("capture screen --path"))
+        XCTAssertTrue(output.contains("capture area --rect"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -104,6 +110,36 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         #else
         throw XCTSkip("Native Windows capture smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanCaptureAreaBMP() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let displays = try adapter.listDisplays()
+        let display = try XCTUnwrap(displays.first)
+        let area = Win11Rect(
+            x: display.bounds.x,
+            y: display.bounds.y,
+            width: min(10, display.bounds.width),
+            height: min(10, display.bounds.height))
+        let outputPath = FileManager.default
+            .temporaryDirectory
+            .appendingPathComponent("peekaboo-win11-area-smoke.bmp")
+            .path
+
+        defer {
+            try? FileManager.default.removeItem(atPath: outputPath)
+        }
+
+        let result = try adapter.captureArea(area, outputPath: outputPath)
+
+        XCTAssertEqual(result.format, .bmp)
+        XCTAssertEqual(result.bounds, area)
+        XCTAssertGreaterThan(result.byteCount, 54)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
+        #else
+        throw XCTSkip("Native Windows area capture smoke test only runs on Windows.")
         #endif
     }
 }

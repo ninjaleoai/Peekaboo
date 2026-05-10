@@ -35,12 +35,16 @@ final class DesktopModelTests: XCTestCase {
         let windows = try await bridge.listWindows(includeInvisible: true)
         let applications = try await bridge.listApplications()
         let capture = try await bridge.captureScreen(displayIndex: nil, outputPath: "screen.bmp")
+        let area = try await bridge.captureArea(
+            DesktopRect(x: 1, y: 2, width: 3, height: 4),
+            outputPath: "area.bmp")
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
         XCTAssertEqual(windows.map(\.title), ["Window"])
         XCTAssertEqual(applications.map(\.executableName), ["Example"])
         XCTAssertEqual(capture.format, .bmp)
+        XCTAssertEqual(area.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -80,6 +84,24 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.stderr, "")
         XCTAssertTrue(result.stdout.contains("\"path\" : \"screen.bmp\""))
         XCTAssertTrue(result.stdout.contains("\"format\" : \"bmp\""))
+    }
+
+    func testDesktopCommandRunnerRoutesAreaCapture() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "capture",
+            "area",
+            "--rect",
+            "1,2,3,4",
+            "--path",
+            "area.bmp",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"path\" : \"area.bmp\""))
+        XCTAssertTrue(result.stdout.contains("\"x\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"width\" : 3"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -154,6 +176,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
             bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100),
             format: .bmp,
             byteCount: 42)
+    }
+
+    func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult {
+        DesktopCaptureResult(
+            path: outputPath,
+            bounds: rect,
+            format: .bmp,
+            byteCount: 21)
     }
 }
 

@@ -6,6 +6,8 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case enumerateWindows
     case captureScreenBMP
     case captureScreenPNG
+    case captureAreaBMP
+    case captureAreaPNG
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {

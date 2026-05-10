@@ -66,10 +66,25 @@ public enum DesktopCommandRunner {
         adapter: any DesktopAdapter,
         stdout: OutputHandler) throws
     {
-        guard args.first == "screen" else {
-            throw DesktopAdapterError.invalidArgument("Only `capture screen` is implemented")
+        guard let subcommand = args.first else {
+            throw DesktopAdapterError.invalidArgument("Missing capture subcommand: screen or area")
         }
 
+        switch subcommand {
+        case "screen":
+            try self.runCaptureScreen(args: args, adapter: adapter, stdout: stdout)
+        case "area", "region":
+            try self.runCaptureArea(args: args, adapter: adapter, stdout: stdout)
+        default:
+            throw DesktopAdapterError.invalidArgument("Unknown capture subcommand: \(subcommand)")
+        }
+    }
+
+    private static func runCaptureScreen(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
         let outputPath = try self.value(after: "--path", in: args) ??
             self.value(after: "-o", in: args)
         guard let outputPath, !outputPath.isEmpty else {
@@ -87,6 +102,29 @@ public enum DesktopCommandRunner {
         try stdout(self.success(result))
     }
 
+    private static func runCaptureArea(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let outputPath = try self.value(after: "--path", in: args) ??
+            self.value(after: "-o", in: args)
+        guard let outputPath, !outputPath.isEmpty else {
+            throw DesktopAdapterError.outputPathRequired
+        }
+
+        let rectValue = try self.value(after: "--rect", in: args) ??
+            self.value(after: "--region", in: args)
+        guard let rectValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --rect x,y,width,height for capture area")
+        }
+
+        let result = try adapter.captureArea(
+            self.parseRect(rectValue),
+            outputPath: outputPath)
+        try stdout(self.success(result))
+    }
+
     private static func value(after flag: String, in args: [String]) throws -> String? {
         guard let index = args.firstIndex(of: flag) else {
             return nil
@@ -96,6 +134,27 @@ public enum DesktopCommandRunner {
             throw DesktopAdapterError.invalidArgument("Missing value after \(flag)")
         }
         return args[valueIndex]
+    }
+
+    private static func parseRect(_ value: String) throws -> DesktopRect {
+        let parts = value
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        guard parts.count == 4,
+              let x = Int(parts[0]),
+              let y = Int(parts[1]),
+              let width = Int(parts[2]),
+              let height = Int(parts[3])
+        else {
+            throw DesktopAdapterError.invalidArgument("Rect must be x,y,width,height")
+        }
+
+        let rect = DesktopRect(x: x, y: y, width: width, height: height)
+        guard !rect.isEmpty else {
+            throw DesktopAdapterError.emptyCaptureRegion(rect)
+        }
+        return rect
     }
 
     private static func success<T: Encodable>(_ data: T) throws -> String {
@@ -113,6 +172,7 @@ public enum DesktopCommandRunner {
           list windows [--include-invisible]
           list displays
           capture screen --path <\(capturePath)> [--display <index>]
+          capture area --rect <x,y,width,height> --path <\(capturePath)>
         """
     }
 

@@ -22,11 +22,12 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - visible window enumeration
 - application enumeration from window-owning processes
 - full-screen or display BMP capture through Win32 GDI
+- rectangular-area BMP capture through the same GDI capture path
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
 adapter construction; the shared package owns the platform-neutral
-`platform-info`, `list`, and `capture screen` command contract.
+`platform-info`, `list`, `capture screen`, and `capture area` command contract.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -64,6 +65,7 @@ public protocol DesktopAdapter: Sendable {
     func listWindows(includeInvisible: Bool) throws -> [DesktopWindow]
     func listApplications() throws -> [DesktopApplication]
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
+    func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
 }
 ```
 
@@ -102,6 +104,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 list dis
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 list windows
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 list apps
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture screen --path .\screen.bmp
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  capture area --rect 0,0,640,480 --path .\area.bmp
 ```
 
 ## Next Integration Steps

@@ -15,6 +15,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .enumerateDisplays,
                 .enumerateWindows,
                 .captureScreenBMP,
+                .captureAreaBMP,
             ])
     }
 
@@ -79,6 +80,22 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.emptyCaptureRegion(bounds)
         }
 
+        return try Self.captureRegion(bounds: bounds, outputPath: outputPath)
+    }
+
+    public func captureArea(_ rect: Win11Rect, outputPath: String) throws -> Win11CaptureResult {
+        guard !rect.isEmpty else {
+            throw Win11DesktopError.emptyCaptureRegion(rect)
+        }
+
+        return try Self.captureRegion(bounds: rect, outputPath: outputPath)
+    }
+
+    private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {
+        guard !bounds.isEmpty else {
+            throw Win11DesktopError.emptyCaptureRegion(bounds)
+        }
+
         guard let desktopDC = GetDC(nil) else {
             throw Win11DesktopError.nativeCallFailed("GetDC")
         }
@@ -112,7 +129,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         let data = try Self.bitmapData(bitmap: bitmap, dc: memoryDC, width: bounds.width, height: bounds.height)
-        try data.write(to: URL(fileURLWithPath: outputPath), options: [.atomic])
+        let outputURL = URL(fileURLWithPath: outputPath)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try data.write(to: outputURL, options: [.atomic])
 
         return Win11CaptureResult(path: outputPath, bounds: bounds, format: .bmp, byteCount: data.count)
     }
