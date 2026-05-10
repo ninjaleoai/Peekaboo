@@ -55,7 +55,13 @@ final class DesktopModelMappingTests: XCTestCase {
             isMinimized: false,
             isMainWindow: true,
             alpha: 1,
+            index: 2,
+            spaceID: 7,
+            spaceName: "Work",
+            screenIndex: 1,
+            screenName: "External Display",
             isOffScreen: false,
+            layer: 3,
             isOnScreen: true)
 
         let desktopWindow = window.desktopWindow(processIdentifier: 1234, executableName: "Example")
@@ -68,5 +74,14 @@ final class DesktopModelMappingTests: XCTestCase {
         XCTAssertFalse(desktopWindow.isMinimized)
         XCTAssertTrue(desktopWindow.isForeground)
         XCTAssertEqual(desktopWindow.executableName, "Example")
+        XCTAssertEqual(desktopWindow.index, 2)
+        XCTAssertEqual(desktopWindow.screenIndex, 1)
+        XCTAssertEqual(desktopWindow.screenName, "External Display")
+        XCTAssertFalse(desktopWindow.isOffScreen)
+        XCTAssertEqual(desktopWindow.layer, 3)
+        XCTAssertTrue(desktopWindow.isOnScreen)
+        XCTAssertEqual(desktopWindow.alpha, 1)
+        XCTAssertEqual(desktopWindow.spaceID, 7)
+        XCTAssertEqual(desktopWindow.spaceName, "Work")
     }
 }

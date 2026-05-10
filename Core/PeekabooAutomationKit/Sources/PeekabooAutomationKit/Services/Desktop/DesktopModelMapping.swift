@@ -52,6 +52,15 @@ extension ServiceWindowInfo {
             isVisible: self.isOnScreen && !self.isOffScreen && self.alpha > 0,
             isMinimized: self.isMinimized,
             isForeground: self.isMainWindow,
-            executableName: executableName)
+            executableName: executableName,
+            index: self.index,
+            screenIndex: self.screenIndex,
+            screenName: self.screenName,
+            isOffScreen: self.isOffScreen,
+            layer: self.layer,
+            isOnScreen: self.isOnScreen,
+            alpha: Double(self.alpha),
+            spaceID: self.spaceID,
+            spaceName: self.spaceName)
     }
 }

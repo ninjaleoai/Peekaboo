@@ -92,6 +92,15 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
     public let isMinimized: Bool
     public let isForeground: Bool
     public let executableName: String?
+    public let index: Int
+    public let screenIndex: Int?
+    public let screenName: String?
+    public let isOffScreen: Bool
+    public let layer: Int
+    public let isOnScreen: Bool
+    public let alpha: Double
+    public let spaceID: UInt64?
+    public let spaceName: String?
 
     public init(
         windowIdentifier: UInt64,
@@ -101,7 +110,16 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
         isVisible: Bool,
         isMinimized: Bool,
         isForeground: Bool,
-        executableName: String?)
+        executableName: String?,
+        index: Int = 0,
+        screenIndex: Int? = nil,
+        screenName: String? = nil,
+        isOffScreen: Bool = false,
+        layer: Int = 0,
+        isOnScreen: Bool = true,
+        alpha: Double = 1.0,
+        spaceID: UInt64? = nil,
+        spaceName: String? = nil)
     {
         self.windowIdentifier = windowIdentifier
         self.processIdentifier = processIdentifier
@@ -111,6 +129,15 @@ public struct DesktopWindow: Codable, Equatable, Sendable {
         self.isMinimized = isMinimized
         self.isForeground = isForeground
         self.executableName = executableName
+        self.index = index
+        self.screenIndex = screenIndex
+        self.screenName = screenName
+        self.isOffScreen = isOffScreen
+        self.layer = layer
+        self.isOnScreen = isOnScreen
+        self.alpha = alpha
+        self.spaceID = spaceID
+        self.spaceName = spaceName
     }
 }
 

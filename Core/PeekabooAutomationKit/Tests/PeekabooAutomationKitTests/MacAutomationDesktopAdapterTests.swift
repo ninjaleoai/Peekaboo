@@ -44,6 +44,9 @@ final class MacAutomationDesktopAdapterTests: XCTestCase {
         XCTAssertEqual(visibleWindows.map(\.title), ["Visible"])
         XCTAssertEqual(allWindows.map(\.title), ["Visible", "Hidden"])
         XCTAssertEqual(allWindows.map(\.processIdentifier), [1234, 1234])
+        XCTAssertEqual(allWindows.map(\.index), [0, 1])
+        XCTAssertEqual(allWindows.compactMap(\.spaceName), ["Work"])
+        XCTAssertEqual(allWindows.map(\.isOffScreen), [false, true])
     }
 
     func testCaptureWritesPNGOutput() async throws {
@@ -107,6 +110,8 @@ private final class StubDesktopApplicationService: ApplicationServiceProtocol {
             isMinimized: false,
             isMainWindow: true,
             alpha: 1,
+            index: 0,
+            spaceName: "Work",
             isOffScreen: false,
             isOnScreen: true),
         ServiceWindowInfo(
@@ -116,7 +121,8 @@ private final class StubDesktopApplicationService: ApplicationServiceProtocol {
             isMinimized: false,
             isMainWindow: false,
             alpha: 0,
-            isOffScreen: false,
+            index: 1,
+            isOffScreen: true,
             isOnScreen: true),
     ]
 

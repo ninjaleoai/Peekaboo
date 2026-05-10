@@ -317,7 +317,9 @@ private let windowEnumerationCallback: WNDENUMPROC = { hwnd, context in
         isVisible: isVisible,
         isMinimized: IsIconic(hwnd),
         isForeground: hwnd == foregroundWindow,
-        executableName: executablePath.map(Win32DesktopAdapter.lastPathComponent))
+        executableName: executablePath.map(Win32DesktopAdapter.lastPathComponent),
+        index: collector.windows.count,
+        isOnScreen: isVisible)
     collector.windows.append(window)
     return true
 }
