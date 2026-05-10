@@ -27,6 +27,7 @@ final class Win11ModelTests: XCTestCase {
                 .captureScreenBMP,
                 .captureAreaBMP,
                 .captureWindowBMP,
+                .captureFrontmostBMP,
             ])
         #endif
 
@@ -36,6 +37,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.captureScreenBMP))
         XCTAssertTrue(info.capabilities.contains(.captureAreaBMP))
         XCTAssertTrue(info.capabilities.contains(.captureWindowBMP))
+        XCTAssertTrue(info.capabilities.contains(.captureFrontmostBMP))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -51,6 +53,7 @@ final class Win11ModelTests: XCTestCase {
             Win11Rect(x: 0, y: 0, width: 1, height: 1),
             outputPath: "area.bmp"))
         XCTAssertThrowsError(try adapter.captureWindow(windowIdentifier: 1, outputPath: "window.bmp"))
+        XCTAssertThrowsError(try adapter.captureFrontmost(outputPath: "frontmost.bmp"))
         #endif
     }
 
@@ -80,6 +83,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("capture screen --path"))
         XCTAssertTrue(output.contains("capture area --rect"))
         XCTAssertTrue(output.contains("capture window --id"))
+        XCTAssertTrue(output.contains("capture frontmost --path"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -172,6 +176,35 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         #else
         throw XCTSkip("Native Windows window capture smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanCaptureFrontmostBMP() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let outputPath = FileManager.default
+            .temporaryDirectory
+            .appendingPathComponent("peekaboo-win11-frontmost-smoke.bmp")
+            .path
+
+        defer {
+            try? FileManager.default.removeItem(atPath: outputPath)
+        }
+
+        do {
+            let result = try adapter.captureFrontmost(outputPath: outputPath)
+
+            XCTAssertEqual(result.format, .bmp)
+            XCTAssertGreaterThan(result.byteCount, 54)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
+        } catch let error as Win11DesktopError {
+            if case .invalidArgument = error {
+                throw XCTSkip("No foreground window available for native frontmost capture smoke test.")
+            }
+            throw error
+        }
+        #else
+        throw XCTSkip("Native Windows frontmost capture smoke test only runs on Windows.")
         #endif
     }
 }

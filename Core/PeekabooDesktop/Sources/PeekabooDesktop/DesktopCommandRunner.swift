@@ -67,7 +67,7 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing capture subcommand: screen, area, or window")
+            throw DesktopAdapterError.invalidArgument("Missing capture subcommand: screen, area, window, or frontmost")
         }
 
         switch subcommand {
@@ -77,6 +77,8 @@ public enum DesktopCommandRunner {
             try self.runCaptureArea(args: args, adapter: adapter, stdout: stdout)
         case "window":
             try self.runCaptureWindow(args: args, adapter: adapter, stdout: stdout)
+        case "frontmost", "foreground":
+            try self.runCaptureFrontmost(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown capture subcommand: \(subcommand)")
         }
@@ -153,6 +155,21 @@ public enum DesktopCommandRunner {
         try stdout(self.success(result))
     }
 
+    private static func runCaptureFrontmost(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let outputPath = try self.value(after: "--path", in: args) ??
+            self.value(after: "-o", in: args)
+        guard let outputPath, !outputPath.isEmpty else {
+            throw DesktopAdapterError.outputPathRequired
+        }
+
+        let result = try adapter.captureFrontmost(outputPath: outputPath)
+        try stdout(self.success(result))
+    }
+
     private static func value(after flag: String, in args: [String]) throws -> String? {
         guard let index = args.firstIndex(of: flag) else {
             return nil
@@ -202,19 +219,22 @@ public enum DesktopCommandRunner {
           capture screen --path <\(capturePath)> [--display <index>]
           capture area --rect <x,y,width,height> --path <\(capturePath)>
           capture window --id <window-id> --path <\(capturePath)>
+          capture frontmost --path <\(capturePath)>
         """
     }
 
     private static func capturePathExample(for info: DesktopPlatformInfo) -> String {
         if info.capabilities.contains(.captureScreenBMP) ||
             info.capabilities.contains(.captureAreaBMP) ||
-            info.capabilities.contains(.captureWindowBMP)
+            info.capabilities.contains(.captureWindowBMP) ||
+            info.capabilities.contains(.captureFrontmostBMP)
         {
             return "file.bmp"
         }
         if info.capabilities.contains(.captureScreenPNG) ||
             info.capabilities.contains(.captureAreaPNG) ||
-            info.capabilities.contains(.captureWindowPNG)
+            info.capabilities.contains(.captureWindowPNG) ||
+            info.capabilities.contains(.captureFrontmostPNG)
         {
             return "file.png"
         }

@@ -17,6 +17,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .captureScreenBMP,
                 .captureAreaBMP,
                 .captureWindowBMP,
+                .captureFrontmostBMP,
             ])
     }
 
@@ -102,6 +103,24 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         return try self.captureArea(window.bounds, outputPath: outputPath)
+    }
+
+    public func captureFrontmost(outputPath: String) throws -> Win11CaptureResult {
+        guard let hwnd = GetForegroundWindow() else {
+            throw Win11DesktopError.invalidArgument("No foreground window is available")
+        }
+
+        var rect = RECT()
+        guard GetWindowRect(hwnd, &rect) else {
+            throw Win11DesktopError.nativeCallFailed("GetWindowRect")
+        }
+
+        let bounds = Self.rect(from: rect)
+        guard !bounds.isEmpty else {
+            throw Win11DesktopError.emptyCaptureRegion(bounds)
+        }
+
+        return try self.captureArea(bounds, outputPath: outputPath)
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

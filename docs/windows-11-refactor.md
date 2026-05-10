@@ -23,11 +23,13 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - application enumeration from window-owning processes
 - full-screen or display BMP capture through Win32 GDI
 - rectangular-area BMP capture through the same GDI capture path
+- region-backed foreground-window BMP capture through the same GDI capture path
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
 adapter construction; the shared package owns the platform-neutral
-`platform-info`, `list`, `capture screen`, and `capture area` command contract.
+`platform-info`, `list`, `capture screen`, `capture area`, `capture window`,
+and `capture frontmost` command contract.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -51,7 +53,8 @@ captures now use `DesktopAsyncAdapter.captureWindow`. Retina, forced-engine,
 JPG, frontmost, and app/title/window-index captures stay on the existing macOS
 observation pipeline. Window capture is now part of the neutral desktop adapter
 and the Windows platform CLI can capture a window by ID through the existing
-Win32 region capture path.
+Win32 region capture path. The Windows platform CLI can also capture the
+foreground window through the same region-backed path.
 
 ## Why This Seam
 
@@ -72,6 +75,7 @@ public protocol DesktopAdapter: Sendable {
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
     func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> DesktopCaptureResult
+    func captureFrontmost(outputPath: String) throws -> DesktopCaptureResult
 }
 ```
 
@@ -114,11 +118,13 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   capture area --rect 0,0,640,480 --path .\area.bmp
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   capture window --id <window-id> --path .\window.bmp
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  capture frontmost --path .\frontmost.bmp
 ```
 
-The first Windows window capture is region-backed: the adapter resolves the
-enumerated window bounds for the requested ID, then captures that screen
-rectangle to BMP.
+The first Windows window captures are region-backed: the adapter resolves the
+requested or foreground window bounds, then captures that screen rectangle to
+BMP. This does not yet provide off-screen semantic window rendering.
 
 ## Next Integration Steps
 

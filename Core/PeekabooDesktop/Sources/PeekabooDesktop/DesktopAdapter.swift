@@ -8,6 +8,7 @@ public protocol DesktopAdapter: Sendable {
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
     func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> DesktopCaptureResult
+    func captureFrontmost(outputPath: String) throws -> DesktopCaptureResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -18,6 +19,7 @@ public protocol DesktopAsyncAdapter: Sendable {
     func captureScreen(displayIndex: Int?, outputPath: String) async throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) async throws -> DesktopCaptureResult
     func captureWindow(windowIdentifier: UInt64, outputPath: String) async throws -> DesktopCaptureResult
+    func captureFrontmost(outputPath: String) async throws -> DesktopCaptureResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -53,6 +55,10 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
 
     public func captureWindow(windowIdentifier: UInt64, outputPath: String) async throws -> DesktopCaptureResult {
         try self.adapter.captureWindow(windowIdentifier: windowIdentifier, outputPath: outputPath)
+    }
+
+    public func captureFrontmost(outputPath: String) async throws -> DesktopCaptureResult {
+        try self.adapter.captureFrontmost(outputPath: outputPath)
     }
 }
 

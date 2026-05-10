@@ -39,6 +39,7 @@ final class DesktopModelTests: XCTestCase {
             DesktopRect(x: 1, y: 2, width: 3, height: 4),
             outputPath: "area.bmp")
         let window = try await bridge.captureWindow(windowIdentifier: 20, outputPath: "window.bmp")
+        let frontmost = try await bridge.captureFrontmost(outputPath: "frontmost.bmp")
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -47,6 +48,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(capture.format, .bmp)
         XCTAssertEqual(area.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
         XCTAssertEqual(window.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
+        XCTAssertEqual(frontmost.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -124,11 +126,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"x\" : 1"))
     }
 
+    func testDesktopCommandRunnerRoutesFrontmostCapture() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "capture",
+            "frontmost",
+            "--path",
+            "frontmost.bmp",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"path\" : \"frontmost.bmp\""))
+        XCTAssertTrue(result.stdout.contains("\"format\" : \"bmp\""))
+        XCTAssertTrue(result.stdout.contains("\"x\" : 1"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
         XCTAssertEqual(result.status, 0)
         XCTAssertTrue(result.stdout.contains("capture window --id <window-id> --path"))
+        XCTAssertTrue(result.stdout.contains("capture frontmost --path"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -214,6 +233,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
     }
 
     func captureWindow(windowIdentifier _: UInt64, outputPath: String) throws -> DesktopCaptureResult {
+        DesktopCaptureResult(
+            path: outputPath,
+            bounds: DesktopRect(x: 1, y: 2, width: 3, height: 4),
+            format: .bmp,
+            byteCount: 21)
+    }
+
+    func captureFrontmost(outputPath: String) throws -> DesktopCaptureResult {
         DesktopCaptureResult(
             path: outputPath,
             bounds: DesktopRect(x: 1, y: 2, width: 3, height: 4),
