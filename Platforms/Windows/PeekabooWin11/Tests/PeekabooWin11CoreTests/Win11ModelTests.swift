@@ -129,6 +129,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input type --text"))
         XCTAssertTrue(output.contains("automation status"))
         XCTAssertTrue(output.contains("automation snapshot"))
+        XCTAssertTrue(output.contains("automation element --index"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {

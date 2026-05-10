@@ -507,6 +507,72 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"maxElements\" : 8"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationElementLookup() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "element",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"scope\" : \"root\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
+        XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
+        XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationElementIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "element",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation element"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationElementIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "element",
+            "--index",
+            "-1",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index must be a non-negative integer"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationElement() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "element",
+            "--index",
+            "3",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 3 was not found"))
+    }
+
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -536,6 +602,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input type --text"))
         XCTAssertTrue(result.stdout.contains("automation status"))
         XCTAssertTrue(result.stdout.contains("automation snapshot"))
+        XCTAssertTrue(result.stdout.contains("automation element --index"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {

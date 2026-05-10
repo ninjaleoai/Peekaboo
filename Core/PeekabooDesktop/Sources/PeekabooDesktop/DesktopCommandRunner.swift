@@ -170,7 +170,7 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status or snapshot")
+            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status, snapshot, or element")
         }
 
         switch subcommand {
@@ -178,6 +178,8 @@ public enum DesktopCommandRunner {
             try stdout(self.success(adapter.uiAutomationStatus()))
         case "snapshot":
             try self.runAutomationSnapshot(args: args, adapter: adapter, stdout: stdout)
+        case "element", "describe":
+            try self.runAutomationElement(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown automation subcommand: \(subcommand)")
         }
@@ -199,6 +201,45 @@ public enum DesktopCommandRunner {
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements)))
+    }
+
+    private static func runAutomationElement(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation element")
+        }
+
+        let elementIndex = try self.parseUIAutomationElementIndex(indexValue)
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        let snapshot = try adapter.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+
+        try stdout(self.success(DesktopUIAutomationElementLookup(
+            nativeBackend: snapshot.nativeBackend,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementCount: snapshot.elementCount,
+            didTruncate: snapshot.didTruncate,
+            elementIndex: elementIndex,
+            element: element)))
     }
 
     private static func runCapture(
@@ -458,6 +499,14 @@ public enum DesktopCommandRunner {
         return elementCount
     }
 
+    private static func parseUIAutomationElementIndex(_ value: String) throws -> Int {
+        guard let elementIndex = Int(value), elementIndex >= 0 else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+        return elementIndex
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -485,6 +534,7 @@ public enum DesktopCommandRunner {
           input type --text <text> [--delay-ms <n>]
           automation status
           automation snapshot [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation element --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
         """
     }
 

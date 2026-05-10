@@ -430,6 +430,37 @@ public struct DesktopUIAutomationSnapshot: Codable, Equatable, Sendable {
     }
 }
 
+public struct DesktopUIAutomationElementLookup: Codable, Equatable, Sendable {
+    public let nativeBackend: String
+    public let scope: DesktopUIAutomationSnapshotScope
+    public let maxDepth: Int
+    public let maxElements: Int
+    public let elementCount: Int
+    public let didTruncate: Bool
+    public let elementIndex: Int
+    public let element: DesktopUIAutomationElementSnapshot
+
+    public init(
+        nativeBackend: String,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementCount: Int,
+        didTruncate: Bool,
+        elementIndex: Int,
+        element: DesktopUIAutomationElementSnapshot)
+    {
+        self.nativeBackend = nativeBackend
+        self.scope = scope
+        self.maxDepth = maxDepth
+        self.maxElements = maxElements
+        self.elementCount = elementCount
+        self.didTruncate = didTruncate
+        self.elementIndex = elementIndex
+        self.element = element
+    }
+}
+
 public struct DesktopCommandEnvelope<Payload: Encodable>: Encodable {
     public let ok: Bool
     public let data: Payload?
