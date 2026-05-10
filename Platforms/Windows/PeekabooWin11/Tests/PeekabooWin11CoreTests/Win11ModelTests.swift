@@ -40,6 +40,7 @@ final class Win11ModelTests: XCTestCase {
                 .invokeUIAutomation,
                 .setUIAutomationValue,
                 .toggleUIAutomation,
+                .expandCollapseUIAutomation,
             ])
         #endif
 
@@ -61,6 +62,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -112,6 +114,16 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.expandUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
+        XCTAssertThrowsError(try adapter.collapseUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
         #endif
     }
 
@@ -155,6 +167,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation invoke --index"))
         XCTAssertTrue(output.contains("automation set-value --index"))
         XCTAssertTrue(output.contains("automation toggle --index"))
+        XCTAssertTrue(output.contains("automation expand --index"))
+        XCTAssertTrue(output.contains("automation collapse --index"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {

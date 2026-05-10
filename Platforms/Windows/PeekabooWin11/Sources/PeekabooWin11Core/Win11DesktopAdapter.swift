@@ -133,6 +133,24 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
+    public func expandUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
+    public func collapseUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
     private func unsupported() -> Win11DesktopError {
         Win11DesktopError.unsupportedPlatform(
             "PeekabooWin11 requires Swift on Windows and the WinSDK module.")

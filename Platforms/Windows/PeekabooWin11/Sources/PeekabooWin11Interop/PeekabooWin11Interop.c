@@ -12,6 +12,8 @@
 #define PEEKABOO_WIN11_UIA_ACTION_INVOKE 1
 #define PEEKABOO_WIN11_UIA_ACTION_SET_VALUE 2
 #define PEEKABOO_WIN11_UIA_ACTION_TOGGLE 3
+#define PEEKABOO_WIN11_UIA_ACTION_EXPAND 4
+#define PEEKABOO_WIN11_UIA_ACTION_COLLAPSE 5
 
 static int PeekabooWin11Succeeded(HRESULT result) {
     return result >= 0;
@@ -313,6 +315,42 @@ static void PeekabooWin11CopyElementTogglePattern(
     IUIAutomationTogglePattern_Release(togglePattern);
 }
 
+static void PeekabooWin11CopyElementExpandCollapsePattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ExpandCollapsePatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationExpandCollapsePattern *expandCollapsePattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationExpandCollapsePattern,
+        (void **)&expandCollapsePattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || expandCollapsePattern == NULL) {
+        return;
+    }
+
+    enum ExpandCollapseState expandCollapseState = ExpandCollapseState_Collapsed;
+    HRESULT stateResult = IUIAutomationExpandCollapsePattern_get_CurrentExpandCollapseState(
+        expandCollapsePattern,
+        &expandCollapseState);
+    if (PeekabooWin11Succeeded(stateResult)) {
+        snapshot->hasExpandCollapseState = 1;
+        snapshot->expandCollapseState = (int32_t)expandCollapseState;
+    }
+
+    IUIAutomationExpandCollapsePattern_Release(expandCollapsePattern);
+}
+
 static void PeekabooWin11InvokeElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -444,6 +482,49 @@ static void PeekabooWin11ToggleElement(
     IUIAutomationTogglePattern_Release(togglePattern);
 }
 
+static void PeekabooWin11ExpandCollapseElement(
+    IUIAutomationElement *element,
+    int32_t shouldExpand,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ExpandCollapsePatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationExpandCollapsePattern *expandCollapsePattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationExpandCollapsePattern,
+        (void **)&expandCollapsePattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || expandCollapsePattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    if (shouldExpand) {
+        result->actionResult = (int32_t)IUIAutomationExpandCollapsePattern_Expand(
+            expandCollapsePattern);
+    } else {
+        result->actionResult = (int32_t)IUIAutomationExpandCollapsePattern_Collapse(
+            expandCollapsePattern);
+    }
+    IUIAutomationExpandCollapsePattern_Release(expandCollapsePattern);
+}
+
 static void PeekabooWin11CopyElementProperties(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -522,6 +603,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementPatterns(element, snapshot);
     PeekabooWin11CopyElementValuePattern(element, snapshot);
     PeekabooWin11CopyElementTogglePattern(element, snapshot);
+    PeekabooWin11CopyElementExpandCollapsePattern(element, snapshot);
 }
 
 static int32_t PeekabooWin11AppendElementSnapshot(
@@ -611,6 +693,10 @@ static int32_t PeekabooWin11VisitElementForAction(
         result->foundElement = 1;
         if (result->action == PEEKABOO_WIN11_UIA_ACTION_TOGGLE) {
             PeekabooWin11ToggleElement(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_EXPAND) {
+            PeekabooWin11ExpandCollapseElement(element, 1, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_COLLAPSE) {
+            PeekabooWin11ExpandCollapseElement(element, 0, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
             PeekabooWin11SetElementValue(element, value, result);
         } else {
@@ -888,6 +974,36 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
         PEEKABOO_WIN11_UIA_ACTION_TOGGLE,
         NULL);
 }
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ExpandUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_EXPAND,
+        NULL);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11CollapseUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_COLLAPSE,
+        NULL);
+}
 #else
 PeekabooWin11UIAutomationProbeResult PeekabooWin11ProbeUIAutomation(void) {
     PeekabooWin11UIAutomationProbeResult result = {0, 0, 0, -2147467263, 0, 0};
@@ -953,6 +1069,40 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     PeekabooWin11UIAutomationActionResult result;
     memset(&result, 0, sizeof(result));
     result.action = 3;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ExpandUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 4;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11CollapseUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 5;
     result.scope = scope;
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;

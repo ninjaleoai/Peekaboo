@@ -41,6 +41,16 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func expandUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func collapseUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -83,6 +93,16 @@ public protocol DesktopAsyncAdapter: Sendable {
         elementIndex: Int,
         value: String) async throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func expandUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func collapseUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
@@ -219,6 +239,32 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     {
         try self.adapter.toggleUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func expandUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.expandUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func collapseUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.collapseUIAutomationElement(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,

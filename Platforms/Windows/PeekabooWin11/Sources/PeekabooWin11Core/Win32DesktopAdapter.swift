@@ -31,6 +31,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .invokeUIAutomation,
                 .setUIAutomationValue,
                 .toggleUIAutomation,
+                .expandCollapseUIAutomation,
             ])
     }
 
@@ -657,6 +658,99 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             postActionElement: postActionElement)
     }
 
+    public func expandUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.performExpandCollapseUIAutomationElement(
+            action: .expand,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func collapseUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        try self.performExpandCollapseUIAutomationElement(
+            action: .collapse,
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    private func performExpandCollapseUIAutomationElement(
+        action: DesktopUIAutomationAction,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.expandCollapse) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support expand/collapse")
+        }
+        if element.expandCollapseState == .leafNode {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is a leaf node")
+        }
+
+        let nativeResult: PeekabooWin11UIAutomationActionResult
+        if action == .expand {
+            nativeResult = PeekabooWin11ExpandUIAutomationElement(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex))
+        } else {
+            nativeResult = PeekabooWin11CollapseUIAutomationElement(
+                Self.nativeUIAutomationScope(scope),
+                Int32(maxDepth),
+                Int32(maxElements),
+                Int32(elementIndex))
+        }
+        try Self.validateUIAutomationExpandCollapse(nativeResult, action: action)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: action,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            postActionElement: postActionElement)
+    }
+
     private func refreshedUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -862,6 +956,56 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationExpandCollapse(
+        _ actionResult: PeekabooWin11UIAutomationActionResult,
+        action: DesktopUIAutomationAction) throws
+    {
+        let actionName = action == .expand ? "expand" : "collapse"
+        let methodName = action == .expand ? "Expand" : "Collapse"
+        if actionResult.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation \(actionName) failed: \(Self.hresultDescription(actionResult.errorResult))")
+        }
+
+        let didReachAutomation = actionResult.createResult != 0 ||
+            actionResult.rootResult != 0 ||
+            actionResult.walkerResult != 0 ||
+            actionResult.elementCount > 0
+        if actionResult.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(actionResult.initializeResult))")
+        }
+        if !Self.succeeded(actionResult.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(actionResult.createResult))")
+        }
+        if !Self.succeeded(actionResult.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(actionResult.rootResult))")
+        }
+        if !Self.succeeded(actionResult.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(actionResult.walkerResult))")
+        }
+        if actionResult.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(actionResult.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(actionResult.elementIndex) does not support expand/collapse")
+        }
+        if !Self.succeeded(actionResult.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationExpandCollapsePattern query failed: \(Self.hresultDescription(actionResult.queryResult))")
+        }
+        if !Self.succeeded(actionResult.actionResult) {
+            let description = Self.hresultDescription(actionResult.actionResult)
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationExpandCollapsePattern.\(methodName) failed: \(description)")
+        }
+    }
+
     private static func nativeUIAutomationScope(_ scope: DesktopUIAutomationSnapshotScope) -> Int32 {
         switch scope {
         case .root:
@@ -895,6 +1039,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let isValueReadOnly = Self.optionalBool(
                 hasValue: nativeElement.hasIsValueReadOnly,
                 value: nativeElement.isValueReadOnly)
+            let expandCollapseState = Self.uiAutomationExpandCollapseState(
+                hasValue: nativeElement.hasExpandCollapseState,
+                value: nativeElement.expandCollapseState)
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -929,7 +1076,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 supportedPatterns: supportedPatterns,
                 availableActions: Self.uiAutomationActions(
                     supportedPatterns: supportedPatterns,
-                    isValueReadOnly: isValueReadOnly),
+                    isValueReadOnly: isValueReadOnly,
+                    expandCollapseState: expandCollapseState),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
@@ -937,13 +1085,15 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 toggleState: Self.uiAutomationToggleState(
                     hasValue: nativeElement.hasToggleState,
                     value: nativeElement.toggleState),
+                expandCollapseState: expandCollapseState,
                 childCount: Int(nativeElement.childCount))
         }
     }
 
     private static func uiAutomationActions(
         supportedPatterns: [DesktopUIAutomationPattern],
-        isValueReadOnly: Bool?) -> [DesktopUIAutomationAction]
+        isValueReadOnly: Bool?,
+        expandCollapseState: DesktopUIAutomationExpandCollapseState?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
         if supportedPatterns.contains(.invoke) {
@@ -954,6 +1104,19 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
+        }
+        if supportedPatterns.contains(.expandCollapse) {
+            switch expandCollapseState {
+            case .collapsed:
+                actions.append(.expand)
+            case .expanded:
+                actions.append(.collapse)
+            case .partiallyExpanded:
+                actions.append(.expand)
+                actions.append(.collapse)
+            case .leafNode, nil:
+                break
+            }
         }
         return actions
     }
@@ -972,6 +1135,27 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return .on
         case 2:
             return .indeterminate
+        default:
+            return nil
+        }
+    }
+
+    private static func uiAutomationExpandCollapseState(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationExpandCollapseState?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .collapsed
+        case 1:
+            return .expanded
+        case 2:
+            return .partiallyExpanded
+        case 3:
+            return .leafNode
         default:
             return nil
         }
