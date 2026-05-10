@@ -197,8 +197,10 @@ identifier, class name, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
 and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
-selection item, text, toggle, and legacy IAccessible. Root snapshots should
-stay shallow because desktop-wide UIA traversal is expensive.
+selection item, text, toggle, and legacy IAccessible. When an element supports
+the UIA Value pattern, snapshots also include its current string value and
+whether that value is read-only. Root snapshots should stay shallow because
+desktop-wide UIA traversal is expensive.
 
 ## Next Integration Steps
 

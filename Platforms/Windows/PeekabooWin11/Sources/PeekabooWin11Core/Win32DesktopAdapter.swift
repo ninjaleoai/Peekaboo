@@ -606,6 +606,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     hasValue: nativeElement.hasIsOffscreen,
                     value: nativeElement.isOffscreen),
                 supportedPatterns: Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask),
+                value: nativeElement.hasValue != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
+                    : nil,
+                isValueReadOnly: Self.optionalBool(
+                    hasValue: nativeElement.hasIsValueReadOnly,
+                    value: nativeElement.isValueReadOnly),
                 childCount: Int(nativeElement.childCount))
         }
     }
@@ -744,6 +750,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         let value = String(cString: pointer)
         return value.isEmpty ? nil : value
+    }
+
+    private static func rawString(from pointer: UnsafePointer<CChar>?) -> String {
+        guard let pointer else {
+            return ""
+        }
+        return String(cString: pointer)
     }
 
     private static func optionalBool(hasValue: Int32, value: Int32) -> Bool? {

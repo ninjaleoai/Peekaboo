@@ -41,11 +41,15 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasIsOffscreen;
     int32_t isOffscreen;
     uint64_t supportedPatternMask;
+    int32_t hasValue;
+    int32_t hasIsValueReadOnly;
+    int32_t isValueReadOnly;
     int32_t childCount;
     char name[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char automationIdentifier[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char className[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char localizedControlType[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char value[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
 } PeekabooWin11UIAutomationElementSnapshot;
 
 typedef struct PeekabooWin11UIAutomationSnapshotResult {
@@ -81,6 +85,9 @@ const char *PeekabooWin11UIAutomationElementClassName(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLocalizedControlType(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementValue(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 #ifdef __cplusplus

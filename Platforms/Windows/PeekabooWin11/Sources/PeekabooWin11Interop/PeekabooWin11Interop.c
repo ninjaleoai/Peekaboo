@@ -207,6 +207,52 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_LegacyIAccessiblePatternId, 1ULL << 9, snapshot);
 }
 
+static void PeekabooWin11CopyElementValuePattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ValuePatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationValuePattern *valuePattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationValuePattern,
+        (void **)&valuePattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || valuePattern == NULL) {
+        return;
+    }
+
+    BSTR value = NULL;
+    HRESULT valueResult = IUIAutomationValuePattern_get_CurrentValue(valuePattern, &value);
+    if (PeekabooWin11Succeeded(valueResult)) {
+        snapshot->hasValue = 1;
+        PeekabooWin11CopyBSTR(value, snapshot->value, PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+
+    BOOL isReadOnly = FALSE;
+    HRESULT readOnlyResult = IUIAutomationValuePattern_get_CurrentIsReadOnly(
+        valuePattern,
+        &isReadOnly);
+    if (PeekabooWin11Succeeded(readOnlyResult)) {
+        snapshot->hasIsValueReadOnly = 1;
+        snapshot->isValueReadOnly = isReadOnly ? 1 : 0;
+    }
+
+    IUIAutomationValuePattern_Release(valuePattern);
+}
+
 static void PeekabooWin11CopyElementProperties(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -283,6 +329,7 @@ static void PeekabooWin11CopyElementProperties(
     }
 
     PeekabooWin11CopyElementPatterns(element, snapshot);
+    PeekabooWin11CopyElementValuePattern(element, snapshot);
 }
 
 static int32_t PeekabooWin11AppendElementSnapshot(
@@ -499,4 +546,10 @@ const char *PeekabooWin11UIAutomationElementLocalizedControlType(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->localizedControlType;
+}
+
+const char *PeekabooWin11UIAutomationElementValue(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->value;
 }

@@ -127,6 +127,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(snapshot.elements.first?.supportedPatterns, [.invoke, .value])
+        XCTAssertEqual(snapshot.elements.first?.value, "Example value")
+        XCTAssertEqual(snapshot.elements.first?.isValueReadOnly, false)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -461,6 +463,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"supportedPatterns\" : ["))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"value\""))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
+        XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
     }
 
     func testDesktopCommandRunnerRoutesFocusedAutomationSnapshot() {
@@ -709,7 +713,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: false,
                     hasKeyboardFocus: false,
                     isOffscreen: false,
-                    supportedPatterns: [.invoke, .value]),
+                    supportedPatterns: [.invoke, .value],
+                    value: "Example value",
+                    isValueReadOnly: false),
             ])
     }
 }

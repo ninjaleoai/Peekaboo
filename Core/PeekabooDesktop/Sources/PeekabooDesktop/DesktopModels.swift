@@ -350,6 +350,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let hasKeyboardFocus: Bool?
     public let isOffscreen: Bool?
     public let supportedPatterns: [DesktopUIAutomationPattern]
+    public let value: String?
+    public let isValueReadOnly: Bool?
     public let childCount: Int
 
     public init(
@@ -370,6 +372,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         hasKeyboardFocus: Bool? = nil,
         isOffscreen: Bool? = nil,
         supportedPatterns: [DesktopUIAutomationPattern] = [],
+        value: String? = nil,
+        isValueReadOnly: Bool? = nil,
         childCount: Int = 0)
     {
         self.index = index
@@ -389,6 +393,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.hasKeyboardFocus = hasKeyboardFocus
         self.isOffscreen = isOffscreen
         self.supportedPatterns = supportedPatterns
+        self.value = value
+        self.isValueReadOnly = isValueReadOnly
         self.childCount = childCount
     }
 }
