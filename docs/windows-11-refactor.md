@@ -40,6 +40,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - Text-pattern UI Automation selection capability and bounded text preview
   metadata in bounded snapshots
+- Legacy IAccessible-pattern UI Automation fallback metadata in bounded
+  snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
   metadata in bounded snapshots
 - Transform-pattern UI Automation movement, resize, and rotation capability
@@ -348,9 +350,12 @@ state, whether the window can be minimized or maximized, and whether it is
 modal or topmost when UIA reports them. When an element supports the UIA Text
 pattern, snapshots include a bounded text preview from the document range and
 whether text selection is unsupported, single-range, or multi-range when UIA
-reports them. When an element supports the UIA Grid pattern, snapshots include
-row and column counts; GridItem elements include row, column, row span, and
-column span when UIA reports them.
+reports them. When an element supports the UIA Legacy IAccessible pattern,
+snapshots include fallback MSAA child ID, name, value, description, help,
+keyboard shortcut, default action, role ID, and state ID when UIA reports them.
+When an element supports the UIA Grid pattern, snapshots include row and
+column counts; GridItem elements include row, column, row span, and column
+span when UIA reports them.
 When an element supports the UIA Toggle pattern, snapshots also include the
 current toggle state: off, on, or indeterminate. When an element supports the
 UIA ExpandCollapse pattern,

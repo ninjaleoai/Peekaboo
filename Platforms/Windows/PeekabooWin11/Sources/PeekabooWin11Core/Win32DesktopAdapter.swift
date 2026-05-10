@@ -1873,6 +1873,36 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 canRotate: Self.optionalBool(
                     hasValue: nativeElement.hasCanRotate,
                     value: nativeElement.canRotate),
+                legacyChildId: Self.optionalInt(
+                    hasValue: nativeElement.hasLegacyChildId,
+                    value: nativeElement.legacyChildId),
+                legacyName: nativeElement.hasLegacyName != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyName(&nativeElement))
+                    : nil,
+                legacyValue: nativeElement.hasLegacyValue != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyValue(&nativeElement))
+                    : nil,
+                legacyDescription: nativeElement.hasLegacyDescription != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementLegacyDescription(&nativeElement))
+                    : nil,
+                legacyHelp: nativeElement.hasLegacyHelp != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyHelp(&nativeElement))
+                    : nil,
+                legacyKeyboardShortcut: nativeElement.hasLegacyKeyboardShortcut != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementLegacyKeyboardShortcut(&nativeElement))
+                    : nil,
+                legacyDefaultAction: nativeElement.hasLegacyDefaultAction != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementLegacyDefaultAction(&nativeElement))
+                    : nil,
+                legacyRole: Self.optionalInt(
+                    hasValue: nativeElement.hasLegacyRole,
+                    value: nativeElement.legacyRole),
+                legacyState: Self.optionalInt(
+                    hasValue: nativeElement.hasLegacyState,
+                    value: nativeElement.legacyState),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }

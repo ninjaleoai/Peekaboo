@@ -826,6 +826,119 @@ static void PeekabooWin11CopyElementTransformPattern(
     IUIAutomationTransformPattern_Release(transformPattern);
 }
 
+static void PeekabooWin11CopyLegacyString(
+    HRESULT result,
+    BSTR value,
+    int32_t *hasValue,
+    char *target)
+{
+    if (PeekabooWin11Succeeded(result)) {
+        *hasValue = 1;
+        PeekabooWin11CopyBSTR(value, target, PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
+static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_LegacyIAccessiblePatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationLegacyIAccessiblePattern *legacyPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationLegacyIAccessiblePattern,
+        (void **)&legacyPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || legacyPattern == NULL) {
+        return;
+    }
+
+    int childId = 0;
+    HRESULT childIdResult = IUIAutomationLegacyIAccessiblePattern_get_CurrentChildId(
+        legacyPattern,
+        &childId);
+    if (PeekabooWin11Succeeded(childIdResult)) {
+        snapshot->hasLegacyChildId = 1;
+        snapshot->legacyChildId = (int32_t)childId;
+    }
+
+    DWORD role = 0;
+    HRESULT roleResult = IUIAutomationLegacyIAccessiblePattern_get_CurrentRole(
+        legacyPattern,
+        &role);
+    if (PeekabooWin11Succeeded(roleResult)) {
+        snapshot->hasLegacyRole = 1;
+        snapshot->legacyRole = (int32_t)role;
+    }
+
+    DWORD state = 0;
+    HRESULT stateResult = IUIAutomationLegacyIAccessiblePattern_get_CurrentState(
+        legacyPattern,
+        &state);
+    if (PeekabooWin11Succeeded(stateResult)) {
+        snapshot->hasLegacyState = 1;
+        snapshot->legacyState = (int32_t)state;
+    }
+
+    BSTR name = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentName(legacyPattern, &name),
+        name,
+        &snapshot->hasLegacyName,
+        snapshot->legacyName);
+
+    BSTR value = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentValue(legacyPattern, &value),
+        value,
+        &snapshot->hasLegacyValue,
+        snapshot->legacyValue);
+
+    BSTR description = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentDescription(legacyPattern, &description),
+        description,
+        &snapshot->hasLegacyDescription,
+        snapshot->legacyDescription);
+
+    BSTR help = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentHelp(legacyPattern, &help),
+        help,
+        &snapshot->hasLegacyHelp,
+        snapshot->legacyHelp);
+
+    BSTR shortcut = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentKeyboardShortcut(legacyPattern, &shortcut),
+        shortcut,
+        &snapshot->hasLegacyKeyboardShortcut,
+        snapshot->legacyKeyboardShortcut);
+
+    BSTR defaultAction = NULL;
+    PeekabooWin11CopyLegacyString(
+        IUIAutomationLegacyIAccessiblePattern_get_CurrentDefaultAction(
+            legacyPattern,
+            &defaultAction),
+        defaultAction,
+        &snapshot->hasLegacyDefaultAction,
+        snapshot->legacyDefaultAction);
+
+    IUIAutomationLegacyIAccessiblePattern_Release(legacyPattern);
+}
+
 static void PeekabooWin11CopyElementSelectionItemPattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -1343,6 +1456,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementGridPattern(element, snapshot);
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
+    PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 
@@ -2276,4 +2390,40 @@ const char *PeekabooWin11UIAutomationElementText(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->text;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyName;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyValue(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyValue;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyDescription(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyDescription;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyHelp(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyHelp;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyKeyboardShortcut(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyKeyboardShortcut;
+}
+
+const char *PeekabooWin11UIAutomationElementLegacyDefaultAction(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->legacyDefaultAction;
 }

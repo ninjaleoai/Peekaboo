@@ -105,6 +105,18 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t canResize;
     int32_t hasCanRotate;
     int32_t canRotate;
+    int32_t hasLegacyChildId;
+    int32_t legacyChildId;
+    int32_t hasLegacyRole;
+    int32_t legacyRole;
+    int32_t hasLegacyState;
+    int32_t legacyState;
+    int32_t hasLegacyName;
+    int32_t hasLegacyValue;
+    int32_t hasLegacyDescription;
+    int32_t hasLegacyHelp;
+    int32_t hasLegacyKeyboardShortcut;
+    int32_t hasLegacyDefaultAction;
     int32_t hasIsSelected;
     int32_t isSelected;
     int32_t childCount;
@@ -114,6 +126,12 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char localizedControlType[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char value[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyValue[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyDescription[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyHelp[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyKeyboardShortcut[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char legacyDefaultAction[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
 } PeekabooWin11UIAutomationElementSnapshot;
 
 typedef struct PeekabooWin11UIAutomationSnapshotResult {
@@ -259,6 +277,24 @@ const char *PeekabooWin11UIAutomationElementValue(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementText(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyName(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyValue(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyDescription(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyHelp(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyKeyboardShortcut(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementLegacyDefaultAction(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 #ifdef __cplusplus

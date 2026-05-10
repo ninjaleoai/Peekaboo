@@ -208,6 +208,7 @@ final class DesktopModelTests: XCTestCase {
                 .selectionItem,
                 .text,
                 .toggle,
+                .legacyIAccessible,
                 .grid,
                 .gridItem,
                 .transform,
@@ -260,6 +261,15 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.canMove, true)
         XCTAssertEqual(snapshot.elements.first?.canResize, true)
         XCTAssertEqual(snapshot.elements.first?.canRotate, true)
+        XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
+        XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
+        XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
+        XCTAssertEqual(snapshot.elements.first?.legacyDescription, "Legacy description")
+        XCTAssertEqual(snapshot.elements.first?.legacyHelp, "Legacy help")
+        XCTAssertEqual(snapshot.elements.first?.legacyKeyboardShortcut, "Alt+D")
+        XCTAssertEqual(snapshot.elements.first?.legacyDefaultAction, "Open")
+        XCTAssertEqual(snapshot.elements.first?.legacyRole, 10)
+        XCTAssertEqual(snapshot.elements.first?.legacyState, 1048576)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -654,6 +664,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -685,6 +696,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canResize\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
+        XCTAssertTrue(result.stdout.contains("\"legacyRole\" : 10"))
+        XCTAssertTrue(result.stdout.contains("\"legacyState\" : 1048576"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -766,6 +783,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1952,6 +1970,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .selectionItem,
                         .text,
                         .toggle,
+                        .legacyIAccessible,
                         .grid,
                         .gridItem,
                         .transform,
@@ -1990,6 +2009,15 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canMove: true,
                     canResize: true,
                     canRotate: true,
+                    legacyChildId: 0,
+                    legacyName: "Legacy Desktop",
+                    legacyValue: "Legacy value",
+                    legacyDescription: "Legacy description",
+                    legacyHelp: "Legacy help",
+                    legacyKeyboardShortcut: "Alt+D",
+                    legacyDefaultAction: "Open",
+                    legacyRole: 10,
+                    legacyState: 1_048_576,
                     isSelected: isSelected),
             ])
     }

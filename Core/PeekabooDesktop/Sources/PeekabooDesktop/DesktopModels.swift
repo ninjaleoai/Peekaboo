@@ -446,6 +446,15 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let canMove: Bool?
     public let canResize: Bool?
     public let canRotate: Bool?
+    public let legacyChildId: Int?
+    public let legacyName: String?
+    public let legacyValue: String?
+    public let legacyDescription: String?
+    public let legacyHelp: String?
+    public let legacyKeyboardShortcut: String?
+    public let legacyDefaultAction: String?
+    public let legacyRole: Int?
+    public let legacyState: Int?
     public let isSelected: Bool?
     public let childCount: Int
 
@@ -501,6 +510,15 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         canMove: Bool? = nil,
         canResize: Bool? = nil,
         canRotate: Bool? = nil,
+        legacyChildId: Int? = nil,
+        legacyName: String? = nil,
+        legacyValue: String? = nil,
+        legacyDescription: String? = nil,
+        legacyHelp: String? = nil,
+        legacyKeyboardShortcut: String? = nil,
+        legacyDefaultAction: String? = nil,
+        legacyRole: Int? = nil,
+        legacyState: Int? = nil,
         isSelected: Bool? = nil,
         childCount: Int = 0)
     {
@@ -555,6 +573,15 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.canMove = canMove
         self.canResize = canResize
         self.canRotate = canRotate
+        self.legacyChildId = legacyChildId
+        self.legacyName = legacyName
+        self.legacyValue = legacyValue
+        self.legacyDescription = legacyDescription
+        self.legacyHelp = legacyHelp
+        self.legacyKeyboardShortcut = legacyKeyboardShortcut
+        self.legacyDefaultAction = legacyDefaultAction
+        self.legacyRole = legacyRole
+        self.legacyState = legacyState
         self.isSelected = isSelected
         self.childCount = childCount
     }
