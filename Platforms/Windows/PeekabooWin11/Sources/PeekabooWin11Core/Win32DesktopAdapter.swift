@@ -1,6 +1,7 @@
 #if os(Windows)
 import Foundation
 import PeekabooDesktop
+import PeekabooWin11Interop
 import WinSDK
 
 public struct Win32DesktopAdapter: Win11DesktopAdapter {
@@ -458,74 +459,40 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     }
 
     public func uiAutomationStatus() throws -> DesktopUIAutomationStatus {
-        let initializeResult = CoInitialize(nil)
-        let didInitializeCOM = Self.succeeded(initializeResult)
-        let canContinue = didInitializeCOM || initializeResult == Self.rpcEChangedMode
-        guard canContinue else {
-            return DesktopUIAutomationStatus(
-                nativeBackend: "UIAutomation",
-                isAvailable: false,
-                rootElementAvailable: false,
-                error: "CoInitialize failed: \(Self.hresultDescription(initializeResult))")
-        }
-        defer {
-            if didInitializeCOM {
-                CoUninitialize()
-            }
-        }
-
-        var automation: UnsafeMutablePointer<IUIAutomation>?
-        let createResult = withUnsafePointer(to: CLSID_CUIAutomation) { classIdentifier in
-            withUnsafePointer(to: IID_IUIAutomation) { interfaceIdentifier in
-                withUnsafeMutablePointer(to: &automation) { automationPointer in
-                    automationPointer.withMemoryRebound(to: UnsafeMutableRawPointer?.self, capacity: 1) {
-                        CoCreateInstance(
-                            classIdentifier,
-                            nil,
-                            DWORD(CLSCTX_INPROC_SERVER),
-                            interfaceIdentifier,
-                            $0)
-                    }
-                }
-            }
-        }
-        guard Self.succeeded(createResult), let automation else {
-            return DesktopUIAutomationStatus(
-                nativeBackend: "UIAutomation",
-                isAvailable: false,
-                rootElementAvailable: false,
-                error: "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(createResult))")
-        }
-        defer {
-            _ = automation.pointee.lpVtbl.pointee.Release(automation)
-        }
-
-        var rootElement: UnsafeMutablePointer<IUIAutomationElement>?
-        let rootResult = automation.pointee.lpVtbl.pointee.GetRootElement(automation, &rootElement)
-        guard Self.succeeded(rootResult), let rootElement else {
-            return DesktopUIAutomationStatus(
-                nativeBackend: "UIAutomation",
-                isAvailable: true,
-                rootElementAvailable: false,
-                error: "IUIAutomation.GetRootElement failed: \(Self.hresultDescription(rootResult))")
-        }
-        defer {
-            _ = rootElement.pointee.lpVtbl.pointee.Release(rootElement)
-        }
-
+        let probe = PeekabooWin11ProbeUIAutomation()
         return DesktopUIAutomationStatus(
             nativeBackend: "UIAutomation",
-            isAvailable: true,
-            rootElementAvailable: true)
+            isAvailable: probe.isAvailable != 0,
+            rootElementAvailable: probe.rootElementAvailable != 0,
+            error: Self.uiAutomationError(from: probe))
     }
 
-    private static let rpcEChangedMode = HRESULT(bitPattern: 0x80010106)
+    private static func uiAutomationError(
+        from probe: PeekabooWin11UIAutomationProbeResult) -> String?
+    {
+        let didReachAutomation = probe.createResult != 0 ||
+            probe.isAvailable != 0 ||
+            probe.rootResult != 0
+        if probe.initializeResult < 0, !didReachAutomation {
+            return "CoInitialize failed: \(Self.hresultDescription(probe.initializeResult))"
+        }
+        if !Self.succeeded(probe.createResult) {
+            return "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(probe.createResult))"
+        }
+        if probe.isAvailable != 0, !Self.succeeded(probe.rootResult) {
+            return "IUIAutomation.GetRootElement failed: \(Self.hresultDescription(probe.rootResult))"
+        }
+        if probe.isAvailable != 0, probe.rootElementAvailable == 0 {
+            return "IUIAutomation.GetRootElement did not return a root element"
+        }
+        return nil
+    }
 
-    private static func succeeded(_ result: HRESULT) -> Bool {
+    private static func succeeded(_ result: Int32) -> Bool {
         result >= 0
     }
 
-    private static func hresultDescription(_ result: HRESULT) -> String {
+    private static func hresultDescription(_ result: Int32) -> String {
         let bits = UInt32(bitPattern: result)
         return "0x" + String(bits, radix: 16, uppercase: true)
     }

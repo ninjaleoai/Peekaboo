@@ -17,8 +17,17 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "PeekabooWin11Interop",
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedLibrary("Ole32", .when(platforms: [.windows])),
+                .linkedLibrary("Uuid", .when(platforms: [.windows])),
+                .linkedLibrary("Uiautomationcore", .when(platforms: [.windows])),
+            ]),
+        .target(
             name: "PeekabooWin11Core",
             dependencies: [
+                "PeekabooWin11Interop",
                 .product(name: "PeekabooDesktop", package: "PeekabooDesktop"),
             ]),
         .executableTarget(
