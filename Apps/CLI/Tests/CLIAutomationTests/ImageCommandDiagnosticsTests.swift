@@ -202,5 +202,70 @@ extension ImageCommandTests {
         #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
         try? FileManager.default.removeItem(atPath: path)
     }
+
+    @Test(.tags(.imageCapture))
+    func `Compatible frontmost captures route through desktop adapter`() async throws {
+        let window = ServiceWindowInfo(
+            windowID: 84,
+            title: "Frontmost Adapter Window",
+            bounds: CGRect(x: 30, y: 40, width: 800, height: 600),
+            isMainWindow: true,
+            index: 2
+        )
+        let app = ServiceApplicationInfo(
+            processIdentifier: 8484,
+            bundleIdentifier: "dev.peekaboo.frontmost",
+            name: "FrontmostApp",
+            windowCount: 1
+        )
+        let captureResult = Self.makeCaptureResult(app: app, window: window)
+        let captureService = StubScreenCaptureService(permissionGranted: true)
+        var requestedScale: CaptureScalePreference?
+        captureService.captureFrontmostHandler = { scale in
+            requestedScale = scale
+            return captureResult
+        }
+
+        let applications = StubApplicationService(
+            applications: [app],
+            windowsByApp: [app.name: [window]]
+        )
+        let services = TestServicesFactory.makePeekabooServices(
+            applications: applications,
+            screenCapture: captureService
+        )
+        let path = Self.makeTempCapturePath("desktop-adapter-frontmost.png")
+
+        let result = try await InProcessCommandRunner.run(
+            [
+                "image",
+                "--mode", "frontmost",
+                "--path", path,
+                "--json",
+            ],
+            services: services
+        )
+
+        #expect(result.exitStatus == 0)
+        #expect(requestedScale == .logical1x)
+
+        let response = try JSONDecoder().decode(
+            CodableJSONResponse<ImageCaptureResult>.self,
+            from: Data(result.combinedOutput.utf8)
+        )
+        let captureSpan = try #require(
+            response.data.observations[0].spans.first { $0.name == "capture.frontmost" }
+        )
+        #expect(captureSpan.metadata["source"] == "desktop-adapter")
+        #expect(response.data.observations[0].target?.source == "desktop-adapter")
+        #expect(response.data.files[0].path == path)
+        #expect(response.data.files[0].item_label == "frontmost")
+        #expect(response.data.files[0].window_title == "Frontmost Adapter Window")
+        #expect(response.data.files[0].window_id == UInt32(window.windowID))
+        #expect(response.data.files[0].window_index == 2)
+        #expect(response.data.files[0].mime_type == "image/png")
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
+        try? FileManager.default.removeItem(atPath: path)
+    }
 }
 #endif

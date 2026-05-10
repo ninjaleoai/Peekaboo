@@ -49,12 +49,14 @@ first capture read paths are also routed through the adapter: compatible
 `image --mode screen` PNG captures now use `DesktopAsyncAdapter.captureScreen`,
 and compatible `image --mode area --region x,y,width,height` PNG captures now
 use `DesktopAsyncAdapter.captureArea`. Compatible `image --window-id <id>` PNG
-captures now use `DesktopAsyncAdapter.captureWindow`. Retina, forced-engine,
-JPG, frontmost, and app/title/window-index captures stay on the existing macOS
-observation pipeline. Window capture is now part of the neutral desktop adapter
-and the Windows platform CLI can capture a window by ID through the existing
-Win32 region capture path. The Windows platform CLI can also capture the
-foreground window through the same region-backed path.
+captures now use `DesktopAsyncAdapter.captureWindow`, and compatible
+`image --mode frontmost` PNG captures now use
+`DesktopAsyncAdapter.captureFrontmost`. Retina, forced-engine, JPG, and
+app/title/window-index captures stay on the existing macOS observation
+pipeline. Window capture is now part of the neutral desktop adapter and the
+Windows platform CLI can capture a window by ID through the existing Win32
+region capture path. The Windows platform CLI can also capture the foreground
+window through the same region-backed path.
 
 ## Why This Seam
 

@@ -382,6 +382,11 @@ extension ImageCommand {
     }
 
     private func captureFrontmost() async throws -> [ImageCapturedFile] {
+        let desktop = self.services.desktop
+        if await self.canUseDesktopFrontmostCapture(adapter: desktop) {
+            return try await self.captureDesktopFrontmost(adapter: desktop)
+        }
+
         let observation = try await self.captureObservation(
             target: .frontmost,
             preferredName: "frontmost",
@@ -394,6 +399,57 @@ extension ImageCommand {
                 windowIndex: nil
             ),
         ]
+    }
+
+    private func canUseDesktopFrontmostCapture(adapter: any DesktopAsyncAdapter) async -> Bool {
+        guard self.format == .png,
+              !self.retina,
+              self.captureEngine == nil,
+              self.configuredCaptureEnginePreference == nil
+        else {
+            return false
+        }
+
+        let platformInfo = await adapter.platformInfo()
+        return platformInfo.capabilities.contains(.captureFrontmostPNG)
+    }
+
+    private func captureDesktopFrontmost(adapter: any DesktopAsyncAdapter) async throws -> [ImageCapturedFile] {
+        let window = await self.desktopFrontmostWindow(adapter: adapter)
+        let outputURL = self.makeOutputURL(preferredName: "frontmost", index: nil)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+
+        let snapshot = await self.desktopSnapshot(adapter: adapter)
+        let start = ContinuousClock.now
+        let result = try await adapter.captureFrontmost(outputPath: outputURL.path)
+        let span = Self.desktopCaptureSpan(name: "capture.frontmost", start: start, result: result)
+        let windowTitle = window?.title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return [
+            ImageCapturedFile(
+                file: SavedFile(
+                    path: result.path,
+                    item_label: "frontmost",
+                    window_title: windowTitle?.isEmpty == false ? windowTitle : nil,
+                    window_id: window.map { UInt32(clamping: $0.windowIdentifier) },
+                    window_index: window?.index,
+                    mime_type: result.format.mimeType),
+                observation: ImageObservationDiagnostics(
+                    spans: [span],
+                    stateSnapshot: snapshot,
+                    target: DesktopObservationTargetDiagnostics(
+                        requestedKind: "frontmost",
+                        resolvedKind: "window",
+                        source: "desktop-adapter",
+                        bounds: result.bounds.cgRect))),
+        ]
+    }
+
+    private func desktopFrontmostWindow(adapter: any DesktopAsyncAdapter) async -> DesktopWindow? {
+        let windows = (try? await adapter.listWindows(includeInvisible: true)) ?? []
+        return windows.first(where: \.isForeground)
     }
 
     private func captureArea() async throws -> [ImageCapturedFile] {
