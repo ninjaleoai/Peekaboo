@@ -90,6 +90,12 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let setValue = try await bridge.setUIAutomationElementValue(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            value: "Updated value")
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -137,6 +143,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
         XCTAssertEqual(invoke.element.name, "Desktop")
+        XCTAssertEqual(setValue.action, .setValue)
+        XCTAssertEqual(setValue.elementIndex, 0)
+        XCTAssertEqual(setValue.value, "Updated value")
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -615,6 +624,44 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation invoke"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationSetValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "Updated value",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setValue\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"Updated value\""))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationSetValueText() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-value",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-value"))
+    }
+
     func testDesktopCommandRunnerRejectsInvalidAutomationSnapshotScope() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -646,6 +693,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation snapshot"))
         XCTAssertTrue(result.stdout.contains("automation element --index"))
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
+        XCTAssertTrue(result.stdout.contains("automation set-value --index"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -850,6 +898,31 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element)
+    }
+
+    func setUIAutomationElementValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setValue,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: value)
     }
 }
 

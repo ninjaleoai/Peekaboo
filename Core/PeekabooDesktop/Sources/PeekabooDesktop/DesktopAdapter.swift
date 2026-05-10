@@ -30,6 +30,12 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) throws -> DesktopUIAutomationActionResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -65,6 +71,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) async throws -> DesktopUIAutomationActionResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -173,6 +185,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxDepth: maxDepth,
             maxElements: maxElements,
             elementIndex: elementIndex)
+    }
+
+    public func setUIAutomationElementValue(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        value: String) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.setUIAutomationElementValue(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            value: value)
     }
 }
 

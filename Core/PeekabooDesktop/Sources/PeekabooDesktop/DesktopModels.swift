@@ -21,6 +21,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case typeText
     case inspectUIAutomation
     case invokeUIAutomation
+    case setUIAutomationValue
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -464,6 +465,7 @@ public struct DesktopUIAutomationElementLookup: Codable, Equatable, Sendable {
 
 public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case invoke
+    case setValue
 }
 
 public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
@@ -474,6 +476,7 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
     public let maxElements: Int
     public let elementIndex: Int
     public let element: DesktopUIAutomationElementSnapshot
+    public let value: String?
 
     public init(
         nativeBackend: String,
@@ -482,7 +485,8 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int,
-        element: DesktopUIAutomationElementSnapshot)
+        element: DesktopUIAutomationElementSnapshot,
+        value: String? = nil)
     {
         self.nativeBackend = nativeBackend
         self.action = action
@@ -491,6 +495,7 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         self.maxElements = maxElements
         self.elementIndex = elementIndex
         self.element = element
+        self.value = value
     }
 }
 

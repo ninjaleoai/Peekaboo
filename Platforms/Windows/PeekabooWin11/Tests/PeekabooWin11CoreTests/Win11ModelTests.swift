@@ -38,6 +38,7 @@ final class Win11ModelTests: XCTestCase {
                 .typeText,
                 .inspectUIAutomation,
                 .invokeUIAutomation,
+                .setUIAutomationValue,
             ])
         #endif
 
@@ -57,6 +58,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.typeText))
         XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -97,6 +99,12 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.setUIAutomationElementValue(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            value: "updated"))
         #endif
     }
 
@@ -138,6 +146,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation snapshot"))
         XCTAssertTrue(output.contains("automation element --index"))
         XCTAssertTrue(output.contains("automation invoke --index"))
+        XCTAssertTrue(output.contains("automation set-value --index"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
