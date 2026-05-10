@@ -83,6 +83,7 @@ final class DesktopModelTests: XCTestCase {
             keys: ["ctrl", "shift", "escape"],
             holdDurationMilliseconds: 25)
         let typing = try await bridge.typeText("Hello", delayMilliseconds: 3)
+        let automation = try await bridge.uiAutomationStatus()
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -114,6 +115,10 @@ final class DesktopModelTests: XCTestCase {
             text: "Hello",
             characterCount: 5,
             delayMilliseconds: 3))
+        XCTAssertEqual(automation, DesktopUIAutomationStatus(
+            nativeBackend: "StubUIA",
+            isAvailable: true,
+            rootElementAvailable: true))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -414,6 +419,16 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --text <text> for input type"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationStatus() {
+        let result = self.runDesktopCommand(["peekaboo-desktop", "automation", "status"])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"nativeBackend\" : \"StubUIA\""))
+        XCTAssertTrue(result.stdout.contains("\"isAvailable\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"rootElementAvailable\" : true"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -427,6 +442,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input drag --from"))
         XCTAssertTrue(result.stdout.contains("input hotkey --keys"))
         XCTAssertTrue(result.stdout.contains("input type --text"))
+        XCTAssertTrue(result.stdout.contains("automation status"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -569,6 +585,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
             text: text,
             characterCount: text.count,
             delayMilliseconds: delayMilliseconds)
+    }
+
+    func uiAutomationStatus() throws -> DesktopUIAutomationStatus {
+        DesktopUIAutomationStatus(
+            nativeBackend: "StubUIA",
+            isAvailable: true,
+            rootElementAvailable: true)
     }
 }
 

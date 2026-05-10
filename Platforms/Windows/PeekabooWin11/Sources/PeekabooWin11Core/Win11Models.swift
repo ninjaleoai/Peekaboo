@@ -7,4 +7,5 @@ public typealias Win11Application = DesktopApplication
 public typealias Win11Window = DesktopWindow
 public typealias Win11CaptureFormat = DesktopCaptureFormat
 public typealias Win11CaptureResult = DesktopCaptureResult
+public typealias Win11UIAutomationStatus = DesktopUIAutomationStatus
 public typealias Win11CommandEnvelope<Payload: Encodable> = DesktopCommandEnvelope<Payload>

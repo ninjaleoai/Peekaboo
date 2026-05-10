@@ -19,6 +19,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case dragMouse
     case sendHotkey
     case typeText
+    case inspectUIAutomation
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -289,6 +290,25 @@ public struct DesktopTypingResult: Codable, Equatable, Sendable {
         self.text = text
         self.characterCount = characterCount
         self.delayMilliseconds = delayMilliseconds
+    }
+}
+
+public struct DesktopUIAutomationStatus: Codable, Equatable, Sendable {
+    public let nativeBackend: String
+    public let isAvailable: Bool
+    public let rootElementAvailable: Bool
+    public let error: String?
+
+    public init(
+        nativeBackend: String,
+        isAvailable: Bool,
+        rootElementAvailable: Bool,
+        error: String? = nil)
+    {
+        self.nativeBackend = nativeBackend
+        self.isAvailable = isAvailable
+        self.rootElementAvailable = rootElementAvailable
+        self.error = error
     }
 }
 

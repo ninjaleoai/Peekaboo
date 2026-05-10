@@ -20,6 +20,7 @@ public protocol DesktopAdapter: Sendable {
         steps: Int) throws -> DesktopDragResult
     func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult
     func typeText(_ text: String, delayMilliseconds: Int) throws -> DesktopTypingResult
+    func uiAutomationStatus() throws -> DesktopUIAutomationStatus
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -45,6 +46,7 @@ public protocol DesktopAsyncAdapter: Sendable {
         steps: Int) async throws -> DesktopDragResult
     func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult
     func typeText(_ text: String, delayMilliseconds: Int) async throws -> DesktopTypingResult
+    func uiAutomationStatus() async throws -> DesktopUIAutomationStatus
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -125,6 +127,10 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
 
     public func typeText(_ text: String, delayMilliseconds: Int) async throws -> DesktopTypingResult {
         try self.adapter.typeText(text, delayMilliseconds: delayMilliseconds)
+    }
+
+    public func uiAutomationStatus() async throws -> DesktopUIAutomationStatus {
+        try self.adapter.uiAutomationStatus()
     }
 }
 

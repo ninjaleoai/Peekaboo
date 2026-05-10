@@ -26,6 +26,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .dragMouse,
                 .sendHotkey,
                 .typeText,
+                .inspectUIAutomation,
             ])
     }
 
@@ -454,6 +455,79 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
     private static func tapKey(_ key: Win32VirtualKey) {
         Self.sendKey(key, flags: 0)
         Self.sendKey(key, flags: DWORD(KEYEVENTF_KEYUP))
+    }
+
+    public func uiAutomationStatus() throws -> DesktopUIAutomationStatus {
+        let initializeResult = CoInitialize(nil)
+        let didInitializeCOM = Self.succeeded(initializeResult)
+        let canContinue = didInitializeCOM || initializeResult == Self.rpcEChangedMode
+        guard canContinue else {
+            return DesktopUIAutomationStatus(
+                nativeBackend: "UIAutomation",
+                isAvailable: false,
+                rootElementAvailable: false,
+                error: "CoInitialize failed: \(Self.hresultDescription(initializeResult))")
+        }
+        defer {
+            if didInitializeCOM {
+                CoUninitialize()
+            }
+        }
+
+        var automation: UnsafeMutablePointer<IUIAutomation>?
+        let createResult = withUnsafePointer(to: CLSID_CUIAutomation) { classIdentifier in
+            withUnsafePointer(to: IID_IUIAutomation) { interfaceIdentifier in
+                withUnsafeMutablePointer(to: &automation) { automationPointer in
+                    automationPointer.withMemoryRebound(to: UnsafeMutableRawPointer?.self, capacity: 1) {
+                        CoCreateInstance(
+                            classIdentifier,
+                            nil,
+                            DWORD(CLSCTX_INPROC_SERVER),
+                            interfaceIdentifier,
+                            $0)
+                    }
+                }
+            }
+        }
+        guard Self.succeeded(createResult), let automation else {
+            return DesktopUIAutomationStatus(
+                nativeBackend: "UIAutomation",
+                isAvailable: false,
+                rootElementAvailable: false,
+                error: "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(createResult))")
+        }
+        defer {
+            _ = automation.pointee.lpVtbl.pointee.Release(automation)
+        }
+
+        var rootElement: UnsafeMutablePointer<IUIAutomationElement>?
+        let rootResult = automation.pointee.lpVtbl.pointee.GetRootElement(automation, &rootElement)
+        guard Self.succeeded(rootResult), let rootElement else {
+            return DesktopUIAutomationStatus(
+                nativeBackend: "UIAutomation",
+                isAvailable: true,
+                rootElementAvailable: false,
+                error: "IUIAutomation.GetRootElement failed: \(Self.hresultDescription(rootResult))")
+        }
+        defer {
+            _ = rootElement.pointee.lpVtbl.pointee.Release(rootElement)
+        }
+
+        return DesktopUIAutomationStatus(
+            nativeBackend: "UIAutomation",
+            isAvailable: true,
+            rootElementAvailable: true)
+    }
+
+    private static let rpcEChangedMode = HRESULT(bitPattern: 0x80010106)
+
+    private static func succeeded(_ result: HRESULT) -> Bool {
+        result >= 0
+    }
+
+    private static func hresultDescription(_ result: HRESULT) -> String {
+        let bits = UInt32(bitPattern: result)
+        return "0x" + String(bits, radix: 16, uppercase: true)
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

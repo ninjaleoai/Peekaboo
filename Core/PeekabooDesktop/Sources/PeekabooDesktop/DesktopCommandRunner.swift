@@ -28,6 +28,8 @@ public enum DesktopCommandRunner {
                 try self.runCapture(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
             case "input":
                 try self.runInput(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
+            case "automation", "uia":
+                try self.runAutomation(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
             case "help", "--help", "-h":
                 stdout(self.helpText(commandName: commandName, adapter: adapter))
             default:
@@ -159,6 +161,23 @@ public enum DesktopCommandRunner {
             try stdout(self.success(adapter.listDisplays()))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown list subcommand: \(subcommand)")
+        }
+    }
+
+    private static func runAutomation(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        guard let subcommand = args.first else {
+            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status")
+        }
+
+        switch subcommand {
+        case "status":
+            try stdout(self.success(adapter.uiAutomationStatus()))
+        default:
+            throw DesktopAdapterError.invalidArgument("Unknown automation subcommand: \(subcommand)")
         }
     }
 
@@ -420,6 +439,7 @@ public enum DesktopCommandRunner {
           input drag --from <x,y> --to <x,y> [--button left|right|middle] [--steps <n>]
           input hotkey --keys <key1,key2> [--hold-ms <n>]
           input type --text <text> [--delay-ms <n>]
+          automation status
         """
     }
 

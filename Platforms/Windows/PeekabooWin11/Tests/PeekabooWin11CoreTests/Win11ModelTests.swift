@@ -36,6 +36,7 @@ final class Win11ModelTests: XCTestCase {
                 .dragMouse,
                 .sendHotkey,
                 .typeText,
+                .inspectUIAutomation,
             ])
         #endif
 
@@ -53,6 +54,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.dragMouse))
         XCTAssertTrue(info.capabilities.contains(.sendHotkey))
         XCTAssertTrue(info.capabilities.contains(.typeText))
+        XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -86,6 +88,7 @@ final class Win11ModelTests: XCTestCase {
             steps: 1))
         XCTAssertThrowsError(try adapter.hotkey(keys: ["shift"], holdDurationMilliseconds: 0))
         XCTAssertThrowsError(try adapter.typeText("a", delayMilliseconds: 0))
+        XCTAssertThrowsError(try adapter.uiAutomationStatus())
         #endif
     }
 
@@ -123,6 +126,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input drag --from"))
         XCTAssertTrue(output.contains("input hotkey --keys"))
         XCTAssertTrue(output.contains("input type --text"))
+        XCTAssertTrue(output.contains("automation status"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -348,6 +352,19 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.typeText("\u{1F642}", delayMilliseconds: 0))
         #else
         throw XCTSkip("Native Windows typing validation test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanProbeUIAutomation() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let status = try adapter.uiAutomationStatus()
+
+        XCTAssertEqual(status.nativeBackend, "UIAutomation")
+        XCTAssertTrue(status.isAvailable, status.error ?? "UI Automation is not available")
+        XCTAssertTrue(status.rootElementAvailable, status.error ?? "UI Automation root element is not available")
+        #else
+        throw XCTSkip("Native Windows UI Automation smoke test only runs on Windows.")
         #endif
     }
 }
