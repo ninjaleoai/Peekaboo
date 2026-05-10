@@ -28,6 +28,11 @@ The production adapter is compiled only behind `#if os(Windows)` and imports
 tests and documentation tooling from accidentally pretending the native backend
 is available.
 
+`PeekabooAutomationKit` also depends on `Core/PeekabooDesktop` and maps the
+existing macOS service models into the neutral desktop models. That gives the
+main automation package a shared contract to target without changing existing
+macOS runtime behavior.
+
 ## Why This Seam
 
 The existing macOS implementation leaks platform types through service
@@ -79,8 +84,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Wire `Core/PeekabooDesktop` into `PeekabooAutomationKit` and
-   wire macOS as the first adapter, preserving current behavior.
+1. Promote the `PeekabooAutomationKit` model mappings into a macOS desktop
+   adapter, preserving current async/main-actor behavior.
 2. Make CLI commands depend on the platform-neutral interface instead of
    directly importing Darwin/CoreGraphics/AppKit at the command layer.
 3. Add Windows implementations for input and UI Automation after capture and
