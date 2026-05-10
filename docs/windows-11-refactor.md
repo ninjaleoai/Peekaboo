@@ -27,13 +27,14 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - cursor position reads and cursor movement through Win32 cursor APIs
 - point-based mouse clicks through Win32 mouse input APIs
 - point-based wheel scrolling through Win32 mouse input APIs
+- point-to-point mouse dragging through Win32 mouse input APIs
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
 adapter construction; the shared package owns the platform-neutral
 `platform-info`, `list`, `capture screen`, `capture area`, `capture window`,
-`capture frontmost`, `input position`, `input move`, `input click`, and
-`input scroll` command contract.
+`capture frontmost`, `input position`, `input move`, `input click`,
+`input scroll`, and `input drag` command contract.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -91,6 +92,11 @@ public protocol DesktopAdapter: Sendable {
     func moveCursor(to point: DesktopPoint) throws -> DesktopPoint
     func click(at point: DesktopPoint, button: DesktopMouseButton, clickCount: Int) throws -> DesktopClickResult
     func scroll(at point: DesktopPoint, direction: DesktopScrollDirection, amount: Int) throws -> DesktopScrollResult
+    func drag(
+        from startPoint: DesktopPoint,
+        to endPoint: DesktopPoint,
+        button: DesktopMouseButton,
+        steps: Int) throws -> DesktopDragResult
 }
 ```
 
@@ -141,6 +147,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   input click --point 100,100 --button left --count 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   input scroll --point 100,100 --direction down --amount 3
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  input drag --from 100,100 --to 200,200 --button left --steps 10
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -152,8 +160,8 @@ BMP. This does not yet provide off-screen semantic window rendering.
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Broaden the new Windows input path from cursor position/move/click/scroll to
-   drag, hotkey, and typing once each verb has a small shared command
+2. Broaden the new Windows input path from cursor position/move/click/scroll/drag to
+   hotkey and typing once each verb has a small shared command
    contract and native smoke coverage.
 3. Add Windows UI Automation after capture/enumeration and basic input have
    stable test coverage.

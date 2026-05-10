@@ -16,6 +16,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case moveCursor
     case clickMouse
     case scrollMouse
+    case dragMouse
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -250,6 +251,20 @@ public struct DesktopScrollResult: Codable, Equatable, Sendable {
         self.point = point
         self.direction = direction
         self.amount = amount
+    }
+}
+
+public struct DesktopDragResult: Codable, Equatable, Sendable {
+    public let startPoint: DesktopPoint
+    public let endPoint: DesktopPoint
+    public let button: DesktopMouseButton
+    public let steps: Int
+
+    public init(startPoint: DesktopPoint, endPoint: DesktopPoint, button: DesktopMouseButton, steps: Int) {
+        self.startPoint = startPoint
+        self.endPoint = endPoint
+        self.button = button
+        self.steps = steps
     }
 }
 

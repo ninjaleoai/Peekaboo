@@ -33,6 +33,7 @@ final class Win11ModelTests: XCTestCase {
                 .moveCursor,
                 .clickMouse,
                 .scrollMouse,
+                .dragMouse,
             ])
         #endif
 
@@ -47,6 +48,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.moveCursor))
         XCTAssertTrue(info.capabilities.contains(.clickMouse))
         XCTAssertTrue(info.capabilities.contains(.scrollMouse))
+        XCTAssertTrue(info.capabilities.contains(.dragMouse))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -73,6 +75,11 @@ final class Win11ModelTests: XCTestCase {
             at: DesktopPoint(x: 0, y: 0),
             direction: .down,
             amount: 1))
+        XCTAssertThrowsError(try adapter.drag(
+            from: DesktopPoint(x: 0, y: 0),
+            to: DesktopPoint(x: 0, y: 0),
+            button: .left,
+            steps: 1))
         #endif
     }
 
@@ -107,6 +114,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input move --point"))
         XCTAssertTrue(output.contains("input click --point"))
         XCTAssertTrue(output.contains("input scroll --point"))
+        XCTAssertTrue(output.contains("input drag --from"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -268,6 +276,25 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(result.amount, 1)
         #else
         throw XCTSkip("Native Windows scroll smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanDragAtCurrentCursorPosition() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let position = try adapter.cursorPosition()
+        let result = try adapter.drag(
+            from: position,
+            to: position,
+            button: .left,
+            steps: 1)
+
+        XCTAssertEqual(result.startPoint, position)
+        XCTAssertEqual(result.endPoint, position)
+        XCTAssertEqual(result.button, .left)
+        XCTAssertEqual(result.steps, 1)
+        #else
+        throw XCTSkip("Native Windows drag smoke test only runs on Windows.")
         #endif
     }
 }

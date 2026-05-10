@@ -23,6 +23,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .moveCursor,
                 .clickMouse,
                 .scrollMouse,
+                .dragMouse,
             ])
     }
 
@@ -216,6 +217,51 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         case .left:
             return (DWORD(MOUSEEVENTF_HWHEEL), -delta)
         }
+    }
+
+    public func drag(
+        from startPoint: DesktopPoint,
+        to endPoint: DesktopPoint,
+        button: DesktopMouseButton,
+        steps: Int) throws -> DesktopDragResult
+    {
+        guard steps > 0 else {
+            throw Win11DesktopError.invalidArgument("Steps must be a positive integer")
+        }
+
+        _ = try self.moveCursor(to: startPoint)
+        let flags = Self.mouseButtonFlags(for: button)
+        mouse_event(flags.down, 0, 0, 0, 0)
+        defer {
+            mouse_event(flags.up, 0, 0, 0, 0)
+        }
+
+        for step in 1...steps {
+            let point = Self.dragPoint(
+                from: startPoint,
+                to: endPoint,
+                step: step,
+                steps: steps)
+            _ = try self.moveCursor(to: point)
+        }
+
+        return DesktopDragResult(
+            startPoint: startPoint,
+            endPoint: try self.cursorPosition(),
+            button: button,
+            steps: steps)
+    }
+
+    private static func dragPoint(
+        from startPoint: DesktopPoint,
+        to endPoint: DesktopPoint,
+        step: Int,
+        steps: Int) -> DesktopPoint
+    {
+        let progress = Double(step) / Double(steps)
+        let x = Double(startPoint.x) + (Double(endPoint.x - startPoint.x) * progress)
+        let y = Double(startPoint.y) + (Double(endPoint.y - startPoint.y) * progress)
+        return DesktopPoint(x: Int(x.rounded()), y: Int(y.rounded()))
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

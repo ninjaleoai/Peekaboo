@@ -74,6 +74,11 @@ final class DesktopModelTests: XCTestCase {
             at: DesktopPoint(x: 13, y: 14),
             direction: .down,
             amount: 3)
+        let drag = try await bridge.drag(
+            from: DesktopPoint(x: 15, y: 16),
+            to: DesktopPoint(x: 17, y: 18),
+            button: .left,
+            steps: 5)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -93,6 +98,11 @@ final class DesktopModelTests: XCTestCase {
             point: DesktopPoint(x: 13, y: 14),
             direction: .down,
             amount: 3))
+        XCTAssertEqual(drag, DesktopDragResult(
+            startPoint: DesktopPoint(x: 15, y: 16),
+            endPoint: DesktopPoint(x: 17, y: 18),
+            button: .left,
+            steps: 5))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -284,6 +294,49 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Scroll direction must be up, down, left, or right"))
     }
 
+    func testDesktopCommandRunnerRoutesInputDrag() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "drag",
+            "--from",
+            "15,16",
+            "--to",
+            "17,18",
+            "--button",
+            "left",
+            "--steps",
+            "5",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"startPoint\""))
+        XCTAssertTrue(result.stdout.contains("\"endPoint\""))
+        XCTAssertTrue(result.stdout.contains("\"x\" : 15"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 18"))
+        XCTAssertTrue(result.stdout.contains("\"button\" : \"left\""))
+        XCTAssertTrue(result.stdout.contains("\"steps\" : 5"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidInputDragSteps() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "drag",
+            "--from",
+            "15,16",
+            "--to",
+            "17,18",
+            "--steps",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Steps must be a positive integer"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -294,6 +347,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input move --point"))
         XCTAssertTrue(result.stdout.contains("input click --point"))
         XCTAssertTrue(result.stdout.contains("input scroll --point"))
+        XCTAssertTrue(result.stdout.contains("input drag --from"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -416,6 +470,15 @@ private struct StubDesktopAdapter: DesktopAdapter {
         amount: Int) throws -> DesktopScrollResult
     {
         DesktopScrollResult(point: point, direction: direction, amount: amount)
+    }
+
+    func drag(
+        from startPoint: DesktopPoint,
+        to endPoint: DesktopPoint,
+        button: DesktopMouseButton,
+        steps: Int) throws -> DesktopDragResult
+    {
+        DesktopDragResult(startPoint: startPoint, endPoint: endPoint, button: button, steps: steps)
     }
 }
 

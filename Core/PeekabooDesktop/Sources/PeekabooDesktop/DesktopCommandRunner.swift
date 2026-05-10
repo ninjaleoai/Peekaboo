@@ -47,7 +47,8 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position, move, click, or scroll")
+            throw DesktopAdapterError.invalidArgument(
+                "Missing input subcommand: position, move, click, scroll, or drag")
         }
 
         switch subcommand {
@@ -91,6 +92,26 @@ public enum DesktopCommandRunner {
                 at: self.parsePoint(pointValue),
                 direction: self.parseScrollDirection(directionValue),
                 amount: amount)))
+        case "drag", "mouse-drag":
+            let startValue = try self.value(after: "--from", in: args) ??
+                self.value(after: "--start", in: args)
+            guard let startValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --from x,y for input drag")
+            }
+            let endValue = try self.value(after: "--to", in: args) ??
+                self.value(after: "--end", in: args)
+            guard let endValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --to x,y for input drag")
+            }
+            let button = try self.value(after: "--button", in: args)
+                .map(self.parseMouseButton) ?? .left
+            let steps = try self.value(after: "--steps", in: args)
+                .map(self.parseDragSteps) ?? 10
+            try stdout(self.success(adapter.drag(
+                from: self.parsePoint(startValue),
+                to: self.parsePoint(endValue),
+                button: button,
+                steps: steps)))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
@@ -317,6 +338,14 @@ public enum DesktopCommandRunner {
         return amount
     }
 
+    private static func parseDragSteps(_ value: String) throws -> Int {
+        do {
+            return try self.parsePositiveAmount(value)
+        } catch {
+            throw DesktopAdapterError.invalidArgument("Steps must be a positive integer")
+        }
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -339,6 +368,7 @@ public enum DesktopCommandRunner {
           input move --point <x,y>
           input click --point <x,y> [--button left|right|middle] [--count <n>]
           input scroll --point <x,y> --direction <up|down|left|right> [--amount <n>]
+          input drag --from <x,y> --to <x,y> [--button left|right|middle] [--steps <n>]
         """
     }
 
