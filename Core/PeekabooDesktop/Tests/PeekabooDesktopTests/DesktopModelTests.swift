@@ -172,7 +172,16 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(
             snapshot.elements.first?.supportedPatterns,
-            [.invoke, .value, .rangeValue, .scroll, .expandCollapse, .selectionItem, .toggle])
+            [
+                .invoke,
+                .value,
+                .rangeValue,
+                .scroll,
+                .expandCollapse,
+                .window,
+                .selectionItem,
+                .toggle,
+            ])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
             [.invoke, .setValue, .setRangeValue, .setScrollPercent, .toggle, .expand, .select])
@@ -192,6 +201,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isVerticallyScrollable, true)
         XCTAssertEqual(snapshot.elements.first?.toggleState, .off)
         XCTAssertEqual(snapshot.elements.first?.expandCollapseState, .collapsed)
+        XCTAssertEqual(snapshot.elements.first?.windowVisualState, .normal)
+        XCTAssertEqual(snapshot.elements.first?.windowInteractionState, .readyForUserInteraction)
+        XCTAssertEqual(snapshot.elements.first?.canMaximizeWindow, true)
+        XCTAssertEqual(snapshot.elements.first?.canMinimizeWindow, true)
+        XCTAssertEqual(snapshot.elements.first?.isModalWindow, false)
+        XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -576,6 +591,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isVerticallyScrollable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"toggleState\" : \"off\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
+        XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"normal\""))
+        XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
+        XCTAssertTrue(result.stdout.contains("\"canMaximizeWindow\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"canMinimizeWindow\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"isModalWindow\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"isTopmostWindow\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -649,6 +670,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 25"))
         XCTAssertTrue(result.stdout.contains("\"isVerticallyScrollable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
+        XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"normal\""))
+        XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1497,6 +1520,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .rangeValue,
                         .scroll,
                         .expandCollapse,
+                        .window,
                         .selectionItem,
                         .toggle,
                     ],
@@ -1517,6 +1541,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isVerticallyScrollable: true,
                     toggleState: toggleState,
                     expandCollapseState: expandCollapseState,
+                    windowVisualState: .normal,
+                    windowInteractionState: .readyForUserInteraction,
+                    canMaximizeWindow: true,
+                    canMinimizeWindow: true,
+                    isModalWindow: false,
+                    isTopmostWindow: false,
                     isSelected: isSelected),
             ])
     }

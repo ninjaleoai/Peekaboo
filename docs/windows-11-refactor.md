@@ -35,6 +35,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - bounded native UI Automation root, foreground-window, focused-element, or
   cursor-hit element snapshots through the UIA control view walker
 - stable UI Automation action availability mapping for snapshot elements
+- Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -290,8 +291,11 @@ change, large change, and read-only status when UIA reports them. When an
 element supports the UIA Scroll pattern, snapshots include horizontal and
 vertical scroll percentages, horizontal and vertical view sizes, and whether
 each axis is scrollable when UIA reports them. When an element supports the UIA
-Toggle pattern, snapshots also include the current toggle state: off, on, or
-indeterminate. When an element supports the UIA ExpandCollapse pattern,
+Window pattern, snapshots include visual state, interaction state, whether the
+window can be minimized or maximized, and whether it is modal or topmost when
+UIA reports them. When an element supports the UIA Toggle pattern, snapshots
+also include the current toggle state: off, on, or indeterminate. When an
+element supports the UIA ExpandCollapse pattern,
 snapshots also include the current expand/collapse state: collapsed, expanded,
 partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently

@@ -363,6 +363,20 @@ public enum DesktopUIAutomationExpandCollapseState: String, Codable, Equatable, 
     case leafNode
 }
 
+public enum DesktopUIAutomationWindowVisualState: String, Codable, Equatable, Sendable {
+    case normal
+    case maximized
+    case minimized
+}
+
+public enum DesktopUIAutomationWindowInteractionState: String, Codable, Equatable, Sendable {
+    case running
+    case closing
+    case readyForUserInteraction
+    case blockedByModalWindow
+    case notResponding
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -398,6 +412,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isVerticallyScrollable: Bool?
     public let toggleState: DesktopUIAutomationToggleState?
     public let expandCollapseState: DesktopUIAutomationExpandCollapseState?
+    public let windowVisualState: DesktopUIAutomationWindowVisualState?
+    public let windowInteractionState: DesktopUIAutomationWindowInteractionState?
+    public let canMaximizeWindow: Bool?
+    public let canMinimizeWindow: Bool?
+    public let isModalWindow: Bool?
+    public let isTopmostWindow: Bool?
     public let isSelected: Bool?
     public let childCount: Int
 
@@ -436,6 +456,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isVerticallyScrollable: Bool? = nil,
         toggleState: DesktopUIAutomationToggleState? = nil,
         expandCollapseState: DesktopUIAutomationExpandCollapseState? = nil,
+        windowVisualState: DesktopUIAutomationWindowVisualState? = nil,
+        windowInteractionState: DesktopUIAutomationWindowInteractionState? = nil,
+        canMaximizeWindow: Bool? = nil,
+        canMinimizeWindow: Bool? = nil,
+        isModalWindow: Bool? = nil,
+        isTopmostWindow: Bool? = nil,
         isSelected: Bool? = nil,
         childCount: Int = 0)
     {
@@ -473,6 +499,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isVerticallyScrollable = isVerticallyScrollable
         self.toggleState = toggleState
         self.expandCollapseState = expandCollapseState
+        self.windowVisualState = windowVisualState
+        self.windowInteractionState = windowInteractionState
+        self.canMaximizeWindow = canMaximizeWindow
+        self.canMinimizeWindow = canMinimizeWindow
+        self.isModalWindow = isModalWindow
+        self.isTopmostWindow = isTopmostWindow
         self.isSelected = isSelected
         self.childCount = childCount
     }

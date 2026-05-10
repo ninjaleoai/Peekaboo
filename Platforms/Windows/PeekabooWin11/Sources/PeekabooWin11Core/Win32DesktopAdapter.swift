@@ -1396,6 +1396,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let expandCollapseState = Self.uiAutomationExpandCollapseState(
                 hasValue: nativeElement.hasExpandCollapseState,
                 value: nativeElement.expandCollapseState)
+            let windowVisualState = Self.uiAutomationWindowVisualState(
+                hasValue: nativeElement.hasWindowVisualState,
+                value: nativeElement.windowVisualState)
+            let windowInteractionState = Self.uiAutomationWindowInteractionState(
+                hasValue: nativeElement.hasWindowInteractionState,
+                value: nativeElement.windowInteractionState)
             let isSelected = Self.optionalBool(
                 hasValue: nativeElement.hasIsSelected,
                 value: nativeElement.isSelected)
@@ -1476,6 +1482,20 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     hasValue: nativeElement.hasToggleState,
                     value: nativeElement.toggleState),
                 expandCollapseState: expandCollapseState,
+                windowVisualState: windowVisualState,
+                windowInteractionState: windowInteractionState,
+                canMaximizeWindow: Self.optionalBool(
+                    hasValue: nativeElement.hasCanMaximizeWindow,
+                    value: nativeElement.canMaximizeWindow),
+                canMinimizeWindow: Self.optionalBool(
+                    hasValue: nativeElement.hasCanMinimizeWindow,
+                    value: nativeElement.canMinimizeWindow),
+                isModalWindow: Self.optionalBool(
+                    hasValue: nativeElement.hasIsModalWindow,
+                    value: nativeElement.isModalWindow),
+                isTopmostWindow: Self.optionalBool(
+                    hasValue: nativeElement.hasIsTopmostWindow,
+                    value: nativeElement.isTopmostWindow),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }
@@ -1561,6 +1581,48 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return .partiallyExpanded
         case 3:
             return .leafNode
+        default:
+            return nil
+        }
+    }
+
+    private static func uiAutomationWindowVisualState(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationWindowVisualState?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .normal
+        case 1:
+            return .maximized
+        case 2:
+            return .minimized
+        default:
+            return nil
+        }
+    }
+
+    private static func uiAutomationWindowInteractionState(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationWindowInteractionState?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .running
+        case 1:
+            return .closing
+        case 2:
+            return .readyForUserInteraction
+        case 3:
+            return .blockedByModalWindow
+        case 4:
+            return .notResponding
         default:
             return nil
         }

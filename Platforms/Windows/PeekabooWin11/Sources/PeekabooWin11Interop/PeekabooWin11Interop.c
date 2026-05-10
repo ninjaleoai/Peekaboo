@@ -519,6 +519,88 @@ static void PeekabooWin11CopyElementExpandCollapsePattern(
     IUIAutomationExpandCollapsePattern_Release(expandCollapsePattern);
 }
 
+static void PeekabooWin11CopyElementWindowPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_WindowPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationWindowPattern *windowPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationWindowPattern,
+        (void **)&windowPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || windowPattern == NULL) {
+        return;
+    }
+
+    enum WindowVisualState visualState = WindowVisualState_Normal;
+    HRESULT visualStateResult = IUIAutomationWindowPattern_get_CurrentWindowVisualState(
+        windowPattern,
+        &visualState);
+    if (PeekabooWin11Succeeded(visualStateResult)) {
+        snapshot->hasWindowVisualState = 1;
+        snapshot->windowVisualState = (int32_t)visualState;
+    }
+
+    enum WindowInteractionState interactionState = WindowInteractionState_Running;
+    HRESULT interactionStateResult =
+        IUIAutomationWindowPattern_get_CurrentWindowInteractionState(
+            windowPattern,
+            &interactionState);
+    if (PeekabooWin11Succeeded(interactionStateResult)) {
+        snapshot->hasWindowInteractionState = 1;
+        snapshot->windowInteractionState = (int32_t)interactionState;
+    }
+
+    BOOL canMaximize = FALSE;
+    HRESULT canMaximizeResult = IUIAutomationWindowPattern_get_CurrentCanMaximize(
+        windowPattern,
+        &canMaximize);
+    if (PeekabooWin11Succeeded(canMaximizeResult)) {
+        snapshot->hasCanMaximizeWindow = 1;
+        snapshot->canMaximizeWindow = canMaximize ? 1 : 0;
+    }
+
+    BOOL canMinimize = FALSE;
+    HRESULT canMinimizeResult = IUIAutomationWindowPattern_get_CurrentCanMinimize(
+        windowPattern,
+        &canMinimize);
+    if (PeekabooWin11Succeeded(canMinimizeResult)) {
+        snapshot->hasCanMinimizeWindow = 1;
+        snapshot->canMinimizeWindow = canMinimize ? 1 : 0;
+    }
+
+    BOOL isModal = FALSE;
+    HRESULT isModalResult = IUIAutomationWindowPattern_get_CurrentIsModal(
+        windowPattern,
+        &isModal);
+    if (PeekabooWin11Succeeded(isModalResult)) {
+        snapshot->hasIsModalWindow = 1;
+        snapshot->isModalWindow = isModal ? 1 : 0;
+    }
+
+    BOOL isTopmost = FALSE;
+    HRESULT isTopmostResult = IUIAutomationWindowPattern_get_CurrentIsTopmost(
+        windowPattern,
+        &isTopmost);
+    if (PeekabooWin11Succeeded(isTopmostResult)) {
+        snapshot->hasIsTopmostWindow = 1;
+        snapshot->isTopmostWindow = isTopmost ? 1 : 0;
+    }
+
+    IUIAutomationWindowPattern_Release(windowPattern);
+}
+
 static void PeekabooWin11CopyElementSelectionItemPattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -939,6 +1021,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementScrollPattern(element, snapshot);
     PeekabooWin11CopyElementTogglePattern(element, snapshot);
     PeekabooWin11CopyElementExpandCollapsePattern(element, snapshot);
+    PeekabooWin11CopyElementWindowPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 

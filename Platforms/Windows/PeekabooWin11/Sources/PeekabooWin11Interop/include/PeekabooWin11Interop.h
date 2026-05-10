@@ -72,6 +72,18 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t toggleState;
     int32_t hasExpandCollapseState;
     int32_t expandCollapseState;
+    int32_t hasWindowVisualState;
+    int32_t windowVisualState;
+    int32_t hasWindowInteractionState;
+    int32_t windowInteractionState;
+    int32_t hasCanMaximizeWindow;
+    int32_t canMaximizeWindow;
+    int32_t hasCanMinimizeWindow;
+    int32_t canMinimizeWindow;
+    int32_t hasIsModalWindow;
+    int32_t isModalWindow;
+    int32_t hasIsTopmostWindow;
+    int32_t isTopmostWindow;
     int32_t hasIsSelected;
     int32_t isSelected;
     int32_t childCount;
