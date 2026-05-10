@@ -37,6 +37,7 @@ final class Win11ModelTests: XCTestCase {
                 .sendHotkey,
                 .typeText,
                 .inspectUIAutomation,
+                .invokeUIAutomation,
             ])
         #endif
 
@@ -55,6 +56,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.sendHotkey))
         XCTAssertTrue(info.capabilities.contains(.typeText))
         XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -90,6 +92,11 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.typeText("a", delayMilliseconds: 0))
         XCTAssertThrowsError(try adapter.uiAutomationStatus())
         XCTAssertThrowsError(try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4))
+        XCTAssertThrowsError(try adapter.invokeUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
         #endif
     }
 
@@ -130,6 +137,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation status"))
         XCTAssertTrue(output.contains("automation snapshot"))
         XCTAssertTrue(output.contains("automation element --index"))
+        XCTAssertTrue(output.contains("automation invoke --index"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {

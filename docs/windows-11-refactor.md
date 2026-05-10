@@ -34,6 +34,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
   cursor-hit element snapshots through the UIA control view walker
+- Invoke-pattern UI Automation actions against a bounded snapshot element index
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -43,7 +44,8 @@ adapter construction; the shared package owns the platform-neutral
 `input scroll`, `input drag`, `input hotkey`, and `input type` command
 contract, plus `automation status` and bounded `automation snapshot` UI
 Automation commands. It also exposes `automation element --index <n>` as a
-bounded element lookup over the same snapshot traversal.
+bounded element lookup over the same snapshot traversal, and
+`automation invoke --index <n>` for Invoke-pattern UIA actions.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -113,6 +115,11 @@ public protocol DesktopAdapter: Sendable {
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int) throws -> DesktopUIAutomationSnapshot
+    func invokeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
 }
 ```
 
@@ -178,6 +185,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation snapshot --scope cursor --max-depth 0 --max-elements 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation element --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation invoke --scope foreground --index 0 --max-depth 2 --max-elements 64
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -206,12 +215,14 @@ whether that value is read-only. Root snapshots should stay shallow because
 desktop-wide UIA traversal is expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
 invoke and value actions a concrete element lookup surface without introducing
-persistent UIA element handles yet.
+persistent UIA element handles yet. `automation invoke --index <n>` performs
+the UIA Invoke pattern for an element from that bounded traversal and returns
+the pre-action element metadata used for the invocation.
 
 ## Next Integration Steps
 
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Expand the Windows UI Automation path from element lookup into invoke/value
-   actions and stable control-type/action mapping.
+2. Expand the Windows UI Automation path from element lookup and invoke into
+   value actions and stable control-type/action mapping.

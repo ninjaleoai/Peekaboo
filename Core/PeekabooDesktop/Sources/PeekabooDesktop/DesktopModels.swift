@@ -20,6 +20,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case sendHotkey
     case typeText
     case inspectUIAutomation
+    case invokeUIAutomation
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -456,6 +457,38 @@ public struct DesktopUIAutomationElementLookup: Codable, Equatable, Sendable {
         self.maxElements = maxElements
         self.elementCount = elementCount
         self.didTruncate = didTruncate
+        self.elementIndex = elementIndex
+        self.element = element
+    }
+}
+
+public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
+    case invoke
+}
+
+public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
+    public let nativeBackend: String
+    public let action: DesktopUIAutomationAction
+    public let scope: DesktopUIAutomationSnapshotScope
+    public let maxDepth: Int
+    public let maxElements: Int
+    public let elementIndex: Int
+    public let element: DesktopUIAutomationElementSnapshot
+
+    public init(
+        nativeBackend: String,
+        action: DesktopUIAutomationAction,
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        element: DesktopUIAutomationElementSnapshot)
+    {
+        self.nativeBackend = nativeBackend
+        self.action = action
+        self.scope = scope
+        self.maxDepth = maxDepth
+        self.maxElements = maxElements
         self.elementIndex = elementIndex
         self.element = element
     }

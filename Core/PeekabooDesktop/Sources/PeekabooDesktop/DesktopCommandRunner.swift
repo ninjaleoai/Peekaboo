@@ -170,7 +170,8 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing automation subcommand: status, snapshot, or element")
+            throw DesktopAdapterError.invalidArgument(
+                "Missing automation subcommand: status, snapshot, element, or invoke")
         }
 
         switch subcommand {
@@ -180,6 +181,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSnapshot(args: args, adapter: adapter, stdout: stdout)
         case "element", "describe":
             try self.runAutomationElement(args: args, adapter: adapter, stdout: stdout)
+        case "invoke":
+            try self.runAutomationInvoke(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown automation subcommand: \(subcommand)")
         }
@@ -240,6 +243,31 @@ public enum DesktopCommandRunner {
             didTruncate: snapshot.didTruncate,
             elementIndex: elementIndex,
             element: element)))
+    }
+
+    private static func runAutomationInvoke(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation invoke")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.invokeUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
     }
 
     private static func runCapture(
@@ -535,6 +563,7 @@ public enum DesktopCommandRunner {
           automation status
           automation snapshot [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation element --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation invoke --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
         """
     }
 
