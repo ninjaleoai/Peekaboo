@@ -236,6 +236,8 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TextPatternId, 1ULL << 7, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TogglePatternId, 1ULL << 8, snapshot);
     PeekabooWin11MarkPattern(element, UIA_LegacyIAccessiblePatternId, 1ULL << 9, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_GridPatternId, 1ULL << 10, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_GridItemPatternId, 1ULL << 11, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -656,6 +658,114 @@ static void PeekabooWin11CopyElementTextPattern(
     }
 
     IUIAutomationTextPattern_Release(textPattern);
+}
+
+static void PeekabooWin11CopyElementGridPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_GridPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationGridPattern *gridPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationGridPattern,
+        (void **)&gridPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || gridPattern == NULL) {
+        return;
+    }
+
+    int rowCount = 0;
+    HRESULT rowCountResult = IUIAutomationGridPattern_get_CurrentRowCount(
+        gridPattern,
+        &rowCount);
+    if (PeekabooWin11Succeeded(rowCountResult)) {
+        snapshot->hasGridRowCount = 1;
+        snapshot->gridRowCount = (int32_t)rowCount;
+    }
+
+    int columnCount = 0;
+    HRESULT columnCountResult = IUIAutomationGridPattern_get_CurrentColumnCount(
+        gridPattern,
+        &columnCount);
+    if (PeekabooWin11Succeeded(columnCountResult)) {
+        snapshot->hasGridColumnCount = 1;
+        snapshot->gridColumnCount = (int32_t)columnCount;
+    }
+
+    IUIAutomationGridPattern_Release(gridPattern);
+}
+
+static void PeekabooWin11CopyElementGridItemPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_GridItemPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationGridItemPattern *gridItemPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationGridItemPattern,
+        (void **)&gridItemPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || gridItemPattern == NULL) {
+        return;
+    }
+
+    int row = 0;
+    HRESULT rowResult = IUIAutomationGridItemPattern_get_CurrentRow(
+        gridItemPattern,
+        &row);
+    if (PeekabooWin11Succeeded(rowResult)) {
+        snapshot->hasGridItemRow = 1;
+        snapshot->gridItemRow = (int32_t)row;
+    }
+
+    int column = 0;
+    HRESULT columnResult = IUIAutomationGridItemPattern_get_CurrentColumn(
+        gridItemPattern,
+        &column);
+    if (PeekabooWin11Succeeded(columnResult)) {
+        snapshot->hasGridItemColumn = 1;
+        snapshot->gridItemColumn = (int32_t)column;
+    }
+
+    int rowSpan = 0;
+    HRESULT rowSpanResult = IUIAutomationGridItemPattern_get_CurrentRowSpan(
+        gridItemPattern,
+        &rowSpan);
+    if (PeekabooWin11Succeeded(rowSpanResult)) {
+        snapshot->hasGridItemRowSpan = 1;
+        snapshot->gridItemRowSpan = (int32_t)rowSpan;
+    }
+
+    int columnSpan = 0;
+    HRESULT columnSpanResult = IUIAutomationGridItemPattern_get_CurrentColumnSpan(
+        gridItemPattern,
+        &columnSpan);
+    if (PeekabooWin11Succeeded(columnSpanResult)) {
+        snapshot->hasGridItemColumnSpan = 1;
+        snapshot->gridItemColumnSpan = (int32_t)columnSpan;
+    }
+
+    IUIAutomationGridItemPattern_Release(gridItemPattern);
 }
 
 static void PeekabooWin11CopyElementSelectionItemPattern(
@@ -1119,6 +1229,8 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementExpandCollapsePattern(element, snapshot);
     PeekabooWin11CopyElementWindowPattern(element, snapshot);
     PeekabooWin11CopyElementTextPattern(element, snapshot);
+    PeekabooWin11CopyElementGridPattern(element, snapshot);
+    PeekabooWin11CopyElementGridItemPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 

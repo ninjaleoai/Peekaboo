@@ -87,6 +87,18 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasText;
     int32_t hasSupportedTextSelection;
     int32_t supportedTextSelection;
+    int32_t hasGridRowCount;
+    int32_t gridRowCount;
+    int32_t hasGridColumnCount;
+    int32_t gridColumnCount;
+    int32_t hasGridItemRow;
+    int32_t gridItemRow;
+    int32_t hasGridItemColumn;
+    int32_t gridItemColumn;
+    int32_t hasGridItemRowSpan;
+    int32_t gridItemRowSpan;
+    int32_t hasGridItemColumnSpan;
+    int32_t gridItemColumnSpan;
     int32_t hasIsSelected;
     int32_t isSelected;
     int32_t childCount;

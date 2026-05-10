@@ -1613,6 +1613,24 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 supportedTextSelection: Self.uiAutomationSupportedTextSelection(
                     hasValue: nativeElement.hasSupportedTextSelection,
                     value: nativeElement.supportedTextSelection),
+                gridRowCount: Self.optionalInt(
+                    hasValue: nativeElement.hasGridRowCount,
+                    value: nativeElement.gridRowCount),
+                gridColumnCount: Self.optionalInt(
+                    hasValue: nativeElement.hasGridColumnCount,
+                    value: nativeElement.gridColumnCount),
+                gridItemRow: Self.optionalInt(
+                    hasValue: nativeElement.hasGridItemRow,
+                    value: nativeElement.gridItemRow),
+                gridItemColumn: Self.optionalInt(
+                    hasValue: nativeElement.hasGridItemColumn,
+                    value: nativeElement.gridItemColumn),
+                gridItemRowSpan: Self.optionalInt(
+                    hasValue: nativeElement.hasGridItemRowSpan,
+                    value: nativeElement.gridItemRowSpan),
+                gridItemColumnSpan: Self.optionalInt(
+                    hasValue: nativeElement.hasGridItemColumnSpan,
+                    value: nativeElement.gridItemColumnSpan),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }
@@ -1810,6 +1828,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if Self.hasPatternBit(mask, 9) {
             patterns.append(.legacyIAccessible)
         }
+        if Self.hasPatternBit(mask, 10) {
+            patterns.append(.grid)
+        }
+        if Self.hasPatternBit(mask, 11) {
+            patterns.append(.gridItem)
+        }
         return patterns
     }
 
@@ -1933,6 +1957,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return nil
         }
         return value
+    }
+
+    private static func optionalInt(hasValue: Int32, value: Int32) -> Int? {
+        guard hasValue != 0 else {
+            return nil
+        }
+        return Int(value)
     }
 
     private static let noScrollPercent = -1.0

@@ -188,6 +188,8 @@ final class DesktopModelTests: XCTestCase {
                 .selectionItem,
                 .text,
                 .toggle,
+                .grid,
+                .gridItem,
             ])
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
@@ -225,6 +227,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
         XCTAssertEqual(snapshot.elements.first?.text, "Example text")
         XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
+        XCTAssertEqual(snapshot.elements.first?.gridRowCount, 3)
+        XCTAssertEqual(snapshot.elements.first?.gridColumnCount, 2)
+        XCTAssertEqual(snapshot.elements.first?.gridItemRow, 1)
+        XCTAssertEqual(snapshot.elements.first?.gridItemColumn, 0)
+        XCTAssertEqual(snapshot.elements.first?.gridItemRowSpan, 1)
+        XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -623,6 +631,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isTopmostWindow\" : false"))
         XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
+        XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
+        XCTAssertTrue(result.stdout.contains("\"gridColumnCount\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"gridItemColumn\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"gridItemColumnSpan\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -700,6 +713,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
         XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
+        XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
+        XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1645,6 +1660,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .selectionItem,
                         .text,
                         .toggle,
+                        .grid,
+                        .gridItem,
                     ],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
                     value: elementValue,
@@ -1671,6 +1688,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isTopmostWindow: false,
                     text: "Example text",
                     supportedTextSelection: .single,
+                    gridRowCount: 3,
+                    gridColumnCount: 2,
+                    gridItemRow: 1,
+                    gridItemColumn: 0,
+                    gridItemRowSpan: 1,
+                    gridItemColumnSpan: 2,
                     isSelected: isSelected),
             ])
     }

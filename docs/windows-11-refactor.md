@@ -40,6 +40,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - Text-pattern UI Automation selection capability and bounded text preview
   metadata in bounded snapshots
+- Grid-pattern and GridItem-pattern UI Automation row, column, and span
+  metadata in bounded snapshots
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -296,19 +298,22 @@ identifier, class name, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
 and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
-selection item, text, toggle, and legacy IAccessible. When an element supports
-the UIA Value pattern, snapshots also include its current string value and
-whether that value is read-only. When an element supports the UIA RangeValue
-pattern, snapshots include the current numeric value, minimum, maximum, small
-change, large change, and read-only status when UIA reports them. When an
-element supports the UIA Scroll pattern, snapshots include horizontal and
-vertical scroll percentages, horizontal and vertical view sizes, and whether
-each axis is scrollable when UIA reports them. When an element supports the UIA
-Window pattern, snapshots include visual state, interaction state, whether the
-window can be minimized or maximized, and whether it is modal or topmost when
-UIA reports them. When an element supports the UIA Text pattern, snapshots
-include a bounded text preview from the document range and whether text
-selection is unsupported, single-range, or multi-range when UIA reports them.
+selection item, text, toggle, grid, grid item, and legacy IAccessible. When an
+element supports the UIA Value pattern, snapshots also include its current
+string value and whether that value is read-only. When an element supports the
+UIA RangeValue pattern, snapshots include the current numeric value, minimum,
+maximum, small change, large change, and read-only status when UIA reports
+them. When an element supports the UIA Scroll pattern, snapshots include
+horizontal and vertical scroll percentages, horizontal and vertical view sizes,
+and whether each axis is scrollable when UIA reports them. When an element
+supports the UIA Window pattern, snapshots include visual state, interaction
+state, whether the window can be minimized or maximized, and whether it is
+modal or topmost when UIA reports them. When an element supports the UIA Text
+pattern, snapshots include a bounded text preview from the document range and
+whether text selection is unsupported, single-range, or multi-range when UIA
+reports them. When an element supports the UIA Grid pattern, snapshots include
+row and column counts; GridItem elements include row, column, row span, and
+column span when UIA reports them.
 When an element supports the UIA Toggle pattern, snapshots also include the
 current toggle state: off, on, or indeterminate. When an element supports the
 UIA ExpandCollapse pattern,

@@ -338,6 +338,8 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case text
     case toggle
     case legacyIAccessible
+    case grid
+    case gridItem
 }
 
 public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
@@ -428,6 +430,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isTopmostWindow: Bool?
     public let text: String?
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
+    public let gridRowCount: Int?
+    public let gridColumnCount: Int?
+    public let gridItemRow: Int?
+    public let gridItemColumn: Int?
+    public let gridItemRowSpan: Int?
+    public let gridItemColumnSpan: Int?
     public let isSelected: Bool?
     public let childCount: Int
 
@@ -474,6 +482,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isTopmostWindow: Bool? = nil,
         text: String? = nil,
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
+        gridRowCount: Int? = nil,
+        gridColumnCount: Int? = nil,
+        gridItemRow: Int? = nil,
+        gridItemColumn: Int? = nil,
+        gridItemRowSpan: Int? = nil,
+        gridItemColumnSpan: Int? = nil,
         isSelected: Bool? = nil,
         childCount: Int = 0)
     {
@@ -519,6 +533,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isTopmostWindow = isTopmostWindow
         self.text = text
         self.supportedTextSelection = supportedTextSelection
+        self.gridRowCount = gridRowCount
+        self.gridColumnCount = gridColumnCount
+        self.gridItemRow = gridItemRow
+        self.gridItemColumn = gridItemColumn
+        self.gridItemRowSpan = gridItemRowSpan
+        self.gridItemColumnSpan = gridItemColumnSpan
         self.isSelected = isSelected
         self.childCount = childCount
     }
