@@ -191,7 +191,8 @@ element, then walks the UIA control view with explicit `--max-depth` and
 `--max-elements` limits. Snapshot elements include the raw control type, stable
 non-localized control type name, localized control type, name, automation
 identifier, class name, process ID, native window handle, bounds, depth, parent
-index, and child count. Root snapshots should stay shallow because desktop-wide
+index, child count, and optional state flags for enabled, focusable, focused,
+and off-screen status. Root snapshots should stay shallow because desktop-wide
 UIA traversal is expensive.
 
 ## Next Integration Steps

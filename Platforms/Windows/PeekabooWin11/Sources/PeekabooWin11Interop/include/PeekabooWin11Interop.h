@@ -32,6 +32,14 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t boundsY;
     int32_t boundsWidth;
     int32_t boundsHeight;
+    int32_t hasIsEnabled;
+    int32_t isEnabled;
+    int32_t hasIsKeyboardFocusable;
+    int32_t isKeyboardFocusable;
+    int32_t hasHasKeyboardFocus;
+    int32_t hasKeyboardFocus;
+    int32_t hasIsOffscreen;
+    int32_t isOffscreen;
     int32_t childCount;
     char name[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char automationIdentifier[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];

@@ -215,6 +215,34 @@ static void PeekabooWin11CopyElementProperties(
         snapshot->boundsWidth = (int32_t)(bounds.right - bounds.left);
         snapshot->boundsHeight = (int32_t)(bounds.bottom - bounds.top);
     }
+
+    BOOL isEnabled = FALSE;
+    if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentIsEnabled(element, &isEnabled))) {
+        snapshot->hasIsEnabled = 1;
+        snapshot->isEnabled = isEnabled ? 1 : 0;
+    }
+
+    BOOL isKeyboardFocusable = FALSE;
+    if (PeekabooWin11Succeeded(
+        IUIAutomationElement_get_CurrentIsKeyboardFocusable(element, &isKeyboardFocusable)))
+    {
+        snapshot->hasIsKeyboardFocusable = 1;
+        snapshot->isKeyboardFocusable = isKeyboardFocusable ? 1 : 0;
+    }
+
+    BOOL hasKeyboardFocus = FALSE;
+    if (PeekabooWin11Succeeded(
+        IUIAutomationElement_get_CurrentHasKeyboardFocus(element, &hasKeyboardFocus)))
+    {
+        snapshot->hasHasKeyboardFocus = 1;
+        snapshot->hasKeyboardFocus = hasKeyboardFocus ? 1 : 0;
+    }
+
+    BOOL isOffscreen = FALSE;
+    if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentIsOffscreen(element, &isOffscreen))) {
+        snapshot->hasIsOffscreen = 1;
+        snapshot->isOffscreen = isOffscreen ? 1 : 0;
+    }
 }
 
 static int32_t PeekabooWin11AppendElementSnapshot(

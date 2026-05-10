@@ -386,6 +386,9 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(snapshot.elements.contains { element in
             element.controlTypeName != nil
         })
+        XCTAssertTrue(snapshot.elements.contains { element in
+            element.isEnabled != nil || element.isOffscreen != nil
+        })
         #else
         throw XCTSkip("Native Windows UI Automation snapshot smoke test only runs on Windows.")
         #endif

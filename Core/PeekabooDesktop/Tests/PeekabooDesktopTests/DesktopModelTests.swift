@@ -124,6 +124,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elementCount, 1)
         XCTAssertEqual(snapshot.elements.first?.name, "Desktop")
         XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
+        XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
+        XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -453,6 +455,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
+        XCTAssertTrue(result.stdout.contains("\"isEnabled\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"isOffscreen\" : false"))
     }
 
     func testDesktopCommandRunnerRoutesFocusedAutomationSnapshot() {
@@ -676,7 +680,11 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     localizedControlType: "pane",
                     controlType: 50033,
                     controlTypeName: "Pane",
-                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100)),
+                    bounds: DesktopRect(x: 0, y: 0, width: 100, height: 100),
+                    isEnabled: true,
+                    isKeyboardFocusable: false,
+                    hasKeyboardFocus: false,
+                    isOffscreen: false),
             ])
     }
 }

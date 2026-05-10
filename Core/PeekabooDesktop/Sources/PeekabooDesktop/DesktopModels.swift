@@ -331,6 +331,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let processIdentifier: UInt32?
     public let nativeWindowHandle: UInt64?
     public let bounds: DesktopRect?
+    public let isEnabled: Bool?
+    public let isKeyboardFocusable: Bool?
+    public let hasKeyboardFocus: Bool?
+    public let isOffscreen: Bool?
     public let childCount: Int
 
     public init(
@@ -346,6 +350,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         processIdentifier: UInt32? = nil,
         nativeWindowHandle: UInt64? = nil,
         bounds: DesktopRect? = nil,
+        isEnabled: Bool? = nil,
+        isKeyboardFocusable: Bool? = nil,
+        hasKeyboardFocus: Bool? = nil,
+        isOffscreen: Bool? = nil,
         childCount: Int = 0)
     {
         self.index = index
@@ -360,6 +368,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.processIdentifier = processIdentifier
         self.nativeWindowHandle = nativeWindowHandle
         self.bounds = bounds
+        self.isEnabled = isEnabled
+        self.isKeyboardFocusable = isKeyboardFocusable
+        self.hasKeyboardFocus = hasKeyboardFocus
+        self.isOffscreen = isOffscreen
         self.childCount = childCount
     }
 }

@@ -591,6 +591,18 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     ? nativeElement.nativeWindowHandle
                     : nil,
                 bounds: bounds,
+                isEnabled: Self.optionalBool(
+                    hasValue: nativeElement.hasIsEnabled,
+                    value: nativeElement.isEnabled),
+                isKeyboardFocusable: Self.optionalBool(
+                    hasValue: nativeElement.hasIsKeyboardFocusable,
+                    value: nativeElement.isKeyboardFocusable),
+                hasKeyboardFocus: Self.optionalBool(
+                    hasValue: nativeElement.hasHasKeyboardFocus,
+                    value: nativeElement.hasKeyboardFocus),
+                isOffscreen: Self.optionalBool(
+                    hasValue: nativeElement.hasIsOffscreen,
+                    value: nativeElement.isOffscreen),
                 childCount: Int(nativeElement.childCount))
         }
     }
@@ -690,6 +702,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         let value = String(cString: pointer)
         return value.isEmpty ? nil : value
+    }
+
+    private static func optionalBool(hasValue: Int32, value: Int32) -> Bool? {
+        guard hasValue != 0 else {
+            return nil
+        }
+        return value != 0
     }
 
     private static func succeeded(_ result: Int32) -> Bool {
