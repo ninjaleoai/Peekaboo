@@ -602,6 +602,62 @@ static void PeekabooWin11CopyElementWindowPattern(
     IUIAutomationWindowPattern_Release(windowPattern);
 }
 
+static void PeekabooWin11CopyElementTextPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TextPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTextPattern *textPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTextPattern,
+        (void **)&textPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || textPattern == NULL) {
+        return;
+    }
+
+    IUIAutomationTextRange *documentRange = NULL;
+    HRESULT documentRangeResult = IUIAutomationTextPattern_get_DocumentRange(
+        textPattern,
+        &documentRange);
+    if (PeekabooWin11Succeeded(documentRangeResult) && documentRange != NULL) {
+        BSTR text = NULL;
+        HRESULT textResult = IUIAutomationTextRange_GetText(
+            documentRange,
+            PEEKABOO_WIN11_UIA_TEXT_CAPACITY - 1,
+            &text);
+        if (PeekabooWin11Succeeded(textResult)) {
+            snapshot->hasText = 1;
+            PeekabooWin11CopyBSTR(text, snapshot->text, PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+        }
+        if (text != NULL) {
+            SysFreeString(text);
+        }
+        IUIAutomationTextRange_Release(documentRange);
+    }
+
+    enum SupportedTextSelection supportedTextSelection = SupportedTextSelection_None;
+    HRESULT selectionResult = IUIAutomationTextPattern_get_SupportedTextSelection(
+        textPattern,
+        &supportedTextSelection);
+    if (PeekabooWin11Succeeded(selectionResult)) {
+        snapshot->hasSupportedTextSelection = 1;
+        snapshot->supportedTextSelection = (int32_t)supportedTextSelection;
+    }
+
+    IUIAutomationTextPattern_Release(textPattern);
+}
+
 static void PeekabooWin11CopyElementSelectionItemPattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -1062,6 +1118,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTogglePattern(element, snapshot);
     PeekabooWin11CopyElementExpandCollapsePattern(element, snapshot);
     PeekabooWin11CopyElementWindowPattern(element, snapshot);
+    PeekabooWin11CopyElementTextPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 
@@ -1824,4 +1881,10 @@ const char *PeekabooWin11UIAutomationElementValue(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->value;
+}
+
+const char *PeekabooWin11UIAutomationElementText(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->text;
 }

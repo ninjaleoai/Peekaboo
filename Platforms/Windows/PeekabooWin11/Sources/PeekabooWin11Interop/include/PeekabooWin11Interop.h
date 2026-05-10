@@ -84,6 +84,9 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t isModalWindow;
     int32_t hasIsTopmostWindow;
     int32_t isTopmostWindow;
+    int32_t hasText;
+    int32_t hasSupportedTextSelection;
+    int32_t supportedTextSelection;
     int32_t hasIsSelected;
     int32_t isSelected;
     int32_t childCount;
@@ -92,6 +95,7 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char className[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char localizedControlType[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char value[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
 } PeekabooWin11UIAutomationElementSnapshot;
 
 typedef struct PeekabooWin11UIAutomationSnapshotResult {
@@ -211,6 +215,9 @@ const char *PeekabooWin11UIAutomationElementLocalizedControlType(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementValue(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 #ifdef __cplusplus

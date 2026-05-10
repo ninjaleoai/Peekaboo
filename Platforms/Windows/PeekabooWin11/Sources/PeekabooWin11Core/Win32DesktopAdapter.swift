@@ -1607,6 +1607,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isTopmostWindow: Self.optionalBool(
                     hasValue: nativeElement.hasIsTopmostWindow,
                     value: nativeElement.isTopmostWindow),
+                text: nativeElement.hasText != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementText(&nativeElement))
+                    : nil,
+                supportedTextSelection: Self.uiAutomationSupportedTextSelection(
+                    hasValue: nativeElement.hasSupportedTextSelection,
+                    value: nativeElement.supportedTextSelection),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
         }
@@ -1748,6 +1754,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return .blockedByModalWindow
         case 4:
             return .notResponding
+        default:
+            return nil
+        }
+    }
+
+    private static func uiAutomationSupportedTextSelection(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationSupportedTextSelection?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .none
+        case 1:
+            return .single
+        case 2:
+            return .multiple
         default:
             return nil
         }

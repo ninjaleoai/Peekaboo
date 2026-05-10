@@ -38,6 +38,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Window-pattern UI Automation set-window-state actions against a bounded
   snapshot element index
+- Text-pattern UI Automation selection capability and bounded text preview
+  metadata in bounded snapshots
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -304,9 +306,12 @@ vertical scroll percentages, horizontal and vertical view sizes, and whether
 each axis is scrollable when UIA reports them. When an element supports the UIA
 Window pattern, snapshots include visual state, interaction state, whether the
 window can be minimized or maximized, and whether it is modal or topmost when
-UIA reports them. When an element supports the UIA Toggle pattern, snapshots
-also include the current toggle state: off, on, or indeterminate. When an
-element supports the UIA ExpandCollapse pattern,
+UIA reports them. When an element supports the UIA Text pattern, snapshots
+include a bounded text preview from the document range and whether text
+selection is unsupported, single-range, or multi-range when UIA reports them.
+When an element supports the UIA Toggle pattern, snapshots also include the
+current toggle state: off, on, or indeterminate. When an element supports the
+UIA ExpandCollapse pattern,
 snapshots also include the current expand/collapse state: collapsed, expanded,
 partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently
@@ -337,7 +342,6 @@ elements, rejecting known read-only and out-of-range values before calling UIA
 `automation set-scroll-percent` does the same for Scroll-pattern elements,
 rejecting known unscrollable requested axes before calling UIA
 `SetScrollPercent`, then verifies refreshed scroll percentages for requested
-axes when UIA reports them. `automation toggle --index <n>` performs the UIA
 axes when UIA reports them. `automation set-window-state` performs the UIA
 Window pattern visual-state action, rejects known unsupported maximize or
 minimize requests before calling UIA `SetWindowVisualState`, then verifies the

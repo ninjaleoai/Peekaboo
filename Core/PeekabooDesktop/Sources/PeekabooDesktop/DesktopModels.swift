@@ -379,6 +379,12 @@ public enum DesktopUIAutomationWindowInteractionState: String, Codable, Equatabl
     case notResponding
 }
 
+public enum DesktopUIAutomationSupportedTextSelection: String, Codable, Equatable, Sendable {
+    case none
+    case single
+    case multiple
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -420,6 +426,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let canMinimizeWindow: Bool?
     public let isModalWindow: Bool?
     public let isTopmostWindow: Bool?
+    public let text: String?
+    public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
     public let isSelected: Bool?
     public let childCount: Int
 
@@ -464,6 +472,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         canMinimizeWindow: Bool? = nil,
         isModalWindow: Bool? = nil,
         isTopmostWindow: Bool? = nil,
+        text: String? = nil,
+        supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
         isSelected: Bool? = nil,
         childCount: Int = 0)
     {
@@ -507,6 +517,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.canMinimizeWindow = canMinimizeWindow
         self.isModalWindow = isModalWindow
         self.isTopmostWindow = isTopmostWindow
+        self.text = text
+        self.supportedTextSelection = supportedTextSelection
         self.isSelected = isSelected
         self.childCount = childCount
     }

@@ -186,6 +186,7 @@ final class DesktopModelTests: XCTestCase {
                 .expandCollapse,
                 .window,
                 .selectionItem,
+                .text,
                 .toggle,
             ])
         XCTAssertEqual(
@@ -222,6 +223,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.canMinimizeWindow, true)
         XCTAssertEqual(snapshot.elements.first?.isModalWindow, false)
         XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
+        XCTAssertEqual(snapshot.elements.first?.text, "Example text")
+        XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
         XCTAssertEqual(snapshot.elements.first?.isSelected, false)
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
@@ -618,6 +621,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"canMinimizeWindow\" : true"))
         XCTAssertTrue(result.stdout.contains("\"isModalWindow\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isTopmostWindow\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
+        XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -693,6 +698,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"normal\""))
         XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
+        XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
+        XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
 
@@ -1636,6 +1643,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .expandCollapse,
                         .window,
                         .selectionItem,
+                        .text,
                         .toggle,
                     ],
                     availableActions: self.stubAvailableActions(for: expandCollapseState),
@@ -1661,6 +1669,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canMinimizeWindow: true,
                     isModalWindow: false,
                     isTopmostWindow: false,
+                    text: "Example text",
+                    supportedTextSelection: .single,
                     isSelected: isSelected),
             ])
     }
