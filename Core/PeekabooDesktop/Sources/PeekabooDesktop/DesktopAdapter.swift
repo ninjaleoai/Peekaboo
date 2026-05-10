@@ -30,6 +30,11 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func focusUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementValue(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -147,6 +152,11 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int) async throws -> DesktopUIAutomationSnapshot
     func invokeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func focusUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
@@ -341,6 +351,19 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     {
         try self.adapter.invokeUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+    }
+
+    public func focusUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.focusUIAutomationElement(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,

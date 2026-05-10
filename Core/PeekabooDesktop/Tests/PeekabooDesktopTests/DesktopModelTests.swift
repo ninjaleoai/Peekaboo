@@ -90,6 +90,11 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let focus = try await bridge.focusUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let setValue = try await bridge.setUIAutomationElementValue(
             scope: .root,
             maxDepth: 1,
@@ -216,6 +221,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.name, "Desktop")
         XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
+        XCTAssertEqual(snapshot.elements.first?.isKeyboardFocusable, true)
+        XCTAssertEqual(snapshot.elements.first?.hasKeyboardFocus, false)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
         XCTAssertEqual(
             snapshot.elements.first?.supportedPatterns,
@@ -240,6 +247,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(
             snapshot.elements.first?.availableActions,
             [
+                .focus,
                 .invoke,
                 .setValue,
                 .setRangeValue,
@@ -305,6 +313,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
         XCTAssertEqual(invoke.element.name, "Desktop")
+        XCTAssertEqual(focus.action, .focus)
+        XCTAssertEqual(focus.elementIndex, 0)
+        XCTAssertEqual(focus.value, "focused=true")
+        XCTAssertEqual(focus.postActionElement?.hasKeyboardFocus, true)
+        XCTAssertEqual(focus.valueWasVerified, true)
         XCTAssertEqual(setValue.action, .setValue)
         XCTAssertEqual(setValue.elementIndex, 0)
         XCTAssertEqual(setValue.value, "Updated value")
@@ -712,9 +725,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
         XCTAssertTrue(result.stdout.contains("\"isEnabled\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"isKeyboardFocusable\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"hasKeyboardFocus\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isOffscreen\" : false"))
         XCTAssertTrue(result.stdout.contains("\"supportedPatterns\" : ["))
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
+        XCTAssertTrue(result.stdout.contains("\"focus\""))
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
@@ -917,6 +933,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationFocus() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "focus",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"focus\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"focused=true\""))
+        XCTAssertTrue(result.stdout.contains("\"hasKeyboardFocus\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRejectsMissingAutomationInvokeIndex() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -927,6 +967,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation invoke"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationFocusIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "focus",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation focus"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetValue() {
@@ -1595,6 +1647,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation snapshot"))
         XCTAssertTrue(result.stdout.contains("automation element --index"))
         XCTAssertTrue(result.stdout.contains("automation invoke --index"))
+        XCTAssertTrue(result.stdout.contains("automation focus --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
@@ -1794,6 +1847,40 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element)
+    }
+
+    func focusUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            hasKeyboardFocus: true)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .focus,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "focused=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.hasKeyboardFocus == true)
     }
 
     func setUIAutomationElementValue(
@@ -2339,6 +2426,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         dockPosition: DesktopUIAutomationDockPosition = .left,
         toggleState: DesktopUIAutomationToggleState = .off,
         expandCollapseState: DesktopUIAutomationExpandCollapseState = .collapsed,
+        hasKeyboardFocus: Bool = false,
         bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
         isOffscreen: Bool = false,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
@@ -2361,8 +2449,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     controlTypeName: "Pane",
                     bounds: bounds,
                     isEnabled: true,
-                    isKeyboardFocusable: false,
-                    hasKeyboardFocus: false,
+                    isKeyboardFocusable: true,
+                    hasKeyboardFocus: hasKeyboardFocus,
                     isOffscreen: isOffscreen,
                     supportedPatterns: [
                         .invoke,
@@ -2445,6 +2533,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         switch expandCollapseState {
         case .collapsed:
             return [
+                .focus,
                 .invoke,
                 .setValue,
                 .setRangeValue,
@@ -2461,6 +2550,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             ]
         case .expanded:
             return [
+                .focus,
                 .invoke,
                 .setValue,
                 .setRangeValue,
@@ -2477,6 +2567,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             ]
         case .partiallyExpanded:
             return [
+                .focus,
                 .invoke,
                 .setValue,
                 .setRangeValue,
@@ -2494,6 +2585,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             ]
         case .leafNode:
             return [
+                .focus,
                 .invoke,
                 .setValue,
                 .setRangeValue,

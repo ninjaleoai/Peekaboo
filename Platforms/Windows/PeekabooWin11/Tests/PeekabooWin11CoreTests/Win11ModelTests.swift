@@ -37,6 +37,7 @@ final class Win11ModelTests: XCTestCase {
                 .sendHotkey,
                 .typeText,
                 .inspectUIAutomation,
+                .focusUIAutomationElement,
                 .invokeUIAutomation,
                 .setUIAutomationValue,
                 .setUIAutomationRangeValue,
@@ -70,6 +71,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.sendHotkey))
         XCTAssertTrue(info.capabilities.contains(.typeText))
         XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
+        XCTAssertTrue(info.capabilities.contains(.focusUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
@@ -121,6 +123,11 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertThrowsError(try adapter.uiAutomationStatus())
         XCTAssertThrowsError(try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4))
         XCTAssertThrowsError(try adapter.invokeUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
+        XCTAssertThrowsError(try adapter.focusUIAutomationElement(
             scope: .root,
             maxDepth: 1,
             maxElements: 4,
@@ -252,6 +259,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation snapshot"))
         XCTAssertTrue(output.contains("automation element --index"))
         XCTAssertTrue(output.contains("automation invoke --index"))
+        XCTAssertTrue(output.contains("automation focus --index"))
         XCTAssertTrue(output.contains("automation set-value --index"))
         XCTAssertTrue(output.contains("automation set-range-value --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))

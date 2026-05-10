@@ -25,6 +25,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_ADD_TO_SELECTION 14
 #define PEEKABOO_WIN11_UIA_ACTION_REMOVE_FROM_SELECTION 15
 #define PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION 16
+#define PEEKABOO_WIN11_UIA_ACTION_FOCUS 17
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1360,6 +1361,13 @@ static void PeekabooWin11SetElementDockPosition(
     IUIAutomationDockPattern_Release(dockPattern);
 }
 
+static void PeekabooWin11FocusElement(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    result->actionResult = (int32_t)IUIAutomationElement_SetFocus(element);
+}
+
 static void PeekabooWin11TransformElement(
     IUIAutomationElement *element,
     int32_t action,
@@ -1819,6 +1827,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SetElementWindowVisualState(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION) {
             PeekabooWin11SetElementDockPosition(element, dockPosition, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
+            PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_MOVE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_RESIZE ||
             result->action == PEEKABOO_WIN11_UIA_ACTION_ROTATE)
@@ -2104,6 +2114,28 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11InvokeUIAutomationElement(
         maxElements,
         elementIndex,
         PEEKABOO_WIN11_UIA_ACTION_INVOKE,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11FocusUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_FOCUS,
         NULL,
         0.0,
         PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
@@ -2483,6 +2515,23 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11InvokeUIAutomationElement(
     PeekabooWin11UIAutomationActionResult result;
     memset(&result, 0, sizeof(result));
     result.action = 1;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11FocusUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 17;
     result.scope = scope;
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;

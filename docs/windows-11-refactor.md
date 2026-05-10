@@ -55,6 +55,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   bounded snapshot element index
 - refreshed post-action verification metadata for observable UI Automation
   Toggle, ExpandCollapse, and SelectionItem actions
+- UI Automation focus actions against a bounded snapshot element index, verified
+  through refreshed keyboard-focus metadata when UIA reports it
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
@@ -81,11 +83,15 @@ adapter construction; the shared package owns the platform-neutral
 contract, plus `automation status` and bounded `automation snapshot` UI
 Automation commands. It also exposes `automation element --index <n>` as a
 bounded element lookup over the same snapshot traversal, and
-`automation invoke --index <n>`, `automation set-value --index <n>`,
+`automation focus --index <n>`, `automation invoke --index <n>`,
+`automation set-value --index <n>`,
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`, and
 `automation set-window-state --index <n>` for Invoke-pattern, Value-pattern,
 RangeValue-pattern, Scroll-pattern, and Window-pattern UIA actions.
+`automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
+advertises availability only when UIA reports that the element is keyboard
+focusable.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
 covers Dock-pattern controls that can be rearranged within a docking
 container.
@@ -181,6 +187,11 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int) throws -> DesktopUIAutomationSnapshot
     func invokeUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func focusUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
         maxElements: Int,
@@ -339,6 +350,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation invoke --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation focus --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-range-value --scope foreground --index 0 --value 42.5 --max-depth 2 --max-elements 64
@@ -419,8 +432,9 @@ snapshots also include the current expand/collapse state: collapsed, expanded,
 partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently
 selected. Elements also expose stable available actions derived from those
-patterns: invoke is available when the Invoke pattern is present, setValue is
-available only when the Value pattern is present and known writable,
+patterns and element properties: focus is available when UIA reports that the
+element is keyboard focusable, invoke is available when the Invoke pattern is
+present, setValue is available only when the Value pattern is present and known writable,
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
@@ -439,7 +453,10 @@ Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
 returns a single element from the same bounded traversal, which gives later
 invoke and value actions a concrete element lookup surface without introducing
-persistent UIA element handles yet. `automation invoke --index <n>` performs
+persistent UIA element handles yet. `automation focus --index <n>` calls
+`IUIAutomationElement::SetFocus` for the bounded element, rejects elements known
+not to be enabled or keyboard focusable, then verifies `hasKeyboardFocus` from a
+refreshed lookup when UIA reports it. `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal and returns
 the pre-action element metadata used for the invocation. `automation set-value`
 does the same for Value-pattern elements, rejecting known read-only values

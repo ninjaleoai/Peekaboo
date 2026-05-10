@@ -28,6 +28,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .sendHotkey,
                 .typeText,
                 .inspectUIAutomation,
+                .focusUIAutomationElement,
                 .invokeUIAutomation,
                 .setUIAutomationValue,
                 .toggleUIAutomation,
@@ -555,6 +556,63 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element)
+    }
+
+    public func focusUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
+        if element.isKeyboardFocusable == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not keyboard focusable")
+        }
+
+        let nativeResult = PeekabooWin11FocusUIAutomationElement(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex))
+        try Self.validateUIAutomationFocus(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .focus,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "focused=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.hasKeyboardFocus.map { $0 == true })
     }
 
     public func setUIAutomationElementValue(
@@ -1498,6 +1556,44 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationFocus(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation focus failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationElement.SetFocus failed: \(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationSetValue(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -2088,6 +2184,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let expandCollapseState = Self.uiAutomationExpandCollapseState(
                 hasValue: nativeElement.hasExpandCollapseState,
                 value: nativeElement.expandCollapseState)
+            let isKeyboardFocusable = Self.optionalBool(
+                hasValue: nativeElement.hasIsKeyboardFocusable,
+                value: nativeElement.isKeyboardFocusable)
             let windowVisualState = Self.uiAutomationWindowVisualState(
                 hasValue: nativeElement.hasWindowVisualState,
                 value: nativeElement.windowVisualState)
@@ -2131,9 +2230,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isEnabled: Self.optionalBool(
                     hasValue: nativeElement.hasIsEnabled,
                     value: nativeElement.isEnabled),
-                isKeyboardFocusable: Self.optionalBool(
-                    hasValue: nativeElement.hasIsKeyboardFocusable,
-                    value: nativeElement.isKeyboardFocusable),
+                isKeyboardFocusable: isKeyboardFocusable,
                 hasKeyboardFocus: Self.optionalBool(
                     hasValue: nativeElement.hasHasKeyboardFocus,
                     value: nativeElement.hasKeyboardFocus),
@@ -2143,6 +2240,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 supportedPatterns: supportedPatterns,
                 availableActions: Self.uiAutomationActions(
                     supportedPatterns: supportedPatterns,
+                    isKeyboardFocusable: isKeyboardFocusable,
                     isValueReadOnly: isValueReadOnly,
                     isRangeValueReadOnly: isRangeValueReadOnly,
                     isHorizontallyScrollable: isHorizontallyScrollable,
@@ -2288,6 +2386,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
 
     private static func uiAutomationActions(
         supportedPatterns: [DesktopUIAutomationPattern],
+        isKeyboardFocusable: Bool?,
         isValueReadOnly: Bool?,
         isRangeValueReadOnly: Bool?,
         isHorizontallyScrollable: Bool?,
@@ -2303,6 +2402,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         canRotate: Bool?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
+        if isKeyboardFocusable == true {
+            actions.append(.focus)
+        }
         if supportedPatterns.contains(.invoke) {
             actions.append(.invoke)
         }

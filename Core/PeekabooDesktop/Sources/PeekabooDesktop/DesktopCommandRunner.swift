@@ -172,6 +172,7 @@ public enum DesktopCommandRunner {
         guard let subcommand = args.first else {
             throw DesktopAdapterError.invalidArgument(
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
+                    "focus, " +
                     "set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
@@ -186,6 +187,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationElement(args: args, adapter: adapter, stdout: stdout)
         case "invoke":
             try self.runAutomationInvoke(args: args, adapter: adapter, stdout: stdout)
+        case "focus":
+            try self.runAutomationFocus(args: args, adapter: adapter, stdout: stdout)
         case "set-value", "setValue":
             try self.runAutomationSetValue(args: args, adapter: adapter, stdout: stdout)
         case "set-range-value", "setRangeValue":
@@ -297,6 +300,31 @@ public enum DesktopCommandRunner {
             .map(self.parseUIAutomationMaxElements) ?? 64
 
         try stdout(self.success(adapter.invokeUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
+    private static func runAutomationFocus(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation focus")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.focusUIAutomationElement(
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,
@@ -1139,6 +1167,7 @@ public enum DesktopCommandRunner {
           automation snapshot [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation element --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation invoke --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation focus --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-value --index <n> --value <text>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-range-value --index <n> --value <number>

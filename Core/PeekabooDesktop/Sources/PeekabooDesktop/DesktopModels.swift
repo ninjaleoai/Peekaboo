@@ -20,6 +20,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case sendHotkey
     case typeText
     case inspectUIAutomation
+    case focusUIAutomationElement
     case invokeUIAutomation
     case setUIAutomationValue
     case toggleUIAutomation
@@ -354,6 +355,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
 }
 
 public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
+    case focus
     case invoke
     case setValue
     case toggle
