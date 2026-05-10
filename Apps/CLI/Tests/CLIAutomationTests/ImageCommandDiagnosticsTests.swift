@@ -87,5 +87,53 @@ extension ImageCommandTests {
         #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
         try? FileManager.default.removeItem(atPath: path)
     }
+
+    @Test(.tags(.imageCapture))
+    func `Compatible area captures route through desktop adapter`() async throws {
+        let captureResult = Self.makeScreenCaptureResult(size: CGSize(width: 300, height: 200), scale: 1.0)
+        let captureService = StubScreenCaptureService(permissionGranted: true)
+        var requestedRect: CGRect?
+        var requestedScale: CaptureScalePreference?
+        captureService.captureAreaHandler = { rect, scale in
+            requestedRect = rect
+            requestedScale = scale
+            return captureResult
+        }
+
+        let services = TestServicesFactory.makePeekabooServices(
+            screens: [Self.makeScreenInfo(scale: 2.0)],
+            screenCapture: captureService
+        )
+        let path = Self.makeTempCapturePath("desktop-adapter-area.png")
+
+        let result = try await InProcessCommandRunner.run(
+            [
+                "image",
+                "--mode", "area",
+                "--region", "10,20,300,200",
+                "--path", path,
+                "--json",
+            ],
+            services: services
+        )
+
+        #expect(result.exitStatus == 0)
+        #expect(requestedRect == CGRect(x: 10, y: 20, width: 300, height: 200))
+        #expect(requestedScale == .logical1x)
+
+        let response = try JSONDecoder().decode(
+            CodableJSONResponse<ImageCaptureResult>.self,
+            from: Data(result.combinedOutput.utf8)
+        )
+        let captureSpan = try #require(
+            response.data.observations[0].spans.first { $0.name == "capture.area" }
+        )
+        #expect(captureSpan.metadata["source"] == "desktop-adapter")
+        #expect(response.data.observations[0].target?.source == "desktop-adapter")
+        #expect(response.data.files[0].path == path)
+        #expect(response.data.files[0].mime_type == "image/png")
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
+        try? FileManager.default.removeItem(atPath: path)
+    }
 }
 #endif

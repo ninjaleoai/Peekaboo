@@ -43,10 +43,11 @@ adapter for the `list apps`, `list screens`, and `list windows` read paths
 while preserving the existing JSON payload shapes. The neutral window model
 now carries the cross-platform fields needed by CLI output, including z-order
 index, screen, Space, off-screen, layer, alpha, and on-screen metadata. The
-first capture read path is also routed through the adapter: compatible
+first capture read paths are also routed through the adapter: compatible
 `image --mode screen` PNG captures now use `DesktopAsyncAdapter.captureScreen`,
-while Retina, forced-engine, JPG, window, area, and frontmost captures stay on
-the existing macOS observation pipeline.
+and compatible `image --mode area --region x,y,width,height` PNG captures now
+use `DesktopAsyncAdapter.captureArea`. Retina, forced-engine, JPG, window, and
+frontmost captures stay on the existing macOS observation pipeline.
 
 ## Why This Seam
 

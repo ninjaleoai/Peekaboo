@@ -226,7 +226,16 @@ extension ImageCommand {
         return DesktopStateSnapshotSummary(snapshot)
     }
 
+    private func desktopSnapshot(adapter: any DesktopAsyncAdapter) async -> DesktopStateSnapshotSummary? {
+        guard let displays = try? await adapter.listDisplays() else {
+            return nil
+        }
+
+        return await self.desktopSnapshot(adapter: adapter, displays: displays)
+    }
+
     private static func desktopCaptureSpan(
+        name: String = "capture.screen",
         start: ContinuousClock.Instant,
         result: DesktopCaptureResult
     ) -> ObservationSpan {
@@ -234,7 +243,7 @@ extension ImageCommand {
         let milliseconds = Double(duration.components.seconds * 1000)
             + Double(duration.components.attoseconds) / 1_000_000_000_000_000
         return ObservationSpan(
-            name: "capture.screen",
+            name: name,
             durationMS: milliseconds,
             metadata: [
                 "byte_count": "\(result.byteCount)",
@@ -313,6 +322,16 @@ extension ImageCommand {
 
     private func captureArea() async throws -> [ImageCapturedFile] {
         let rect = try self.areaCaptureRect()
+        let desktop = self.services.desktop
+        if await self.canUseDesktopAreaCapture(adapter: desktop) {
+            let snapshot = await self.desktopSnapshot(adapter: desktop)
+            let capture = try await self.captureDesktopArea(
+                rect: rect,
+                adapter: desktop,
+                stateSnapshot: snapshot)
+            return [capture]
+        }
+
         let observation = try await self.captureObservation(
             target: .area(rect),
             preferredName: "area",
@@ -351,6 +370,48 @@ extension ImageCommand {
         }
 
         return CGRect(x: x, y: y, width: width, height: height)
+    }
+
+    private func canUseDesktopAreaCapture(adapter: any DesktopAsyncAdapter) async -> Bool {
+        guard self.format == .png,
+              !self.retina,
+              self.captureEngine == nil,
+              self.configuredCaptureEnginePreference == nil
+        else {
+            return false
+        }
+
+        let platformInfo = await adapter.platformInfo()
+        return platformInfo.capabilities.contains(.captureAreaPNG)
+    }
+
+    private func captureDesktopArea(
+        rect: CGRect,
+        adapter: any DesktopAsyncAdapter,
+        stateSnapshot: DesktopStateSnapshotSummary?
+    ) async throws -> ImageCapturedFile {
+        let outputURL = self.makeOutputURL(preferredName: "area", index: nil)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+
+        let start = ContinuousClock.now
+        let result = try await adapter.captureArea(rect.desktopRect, outputPath: outputURL.path)
+        let span = Self.desktopCaptureSpan(name: "capture.area", start: start, result: result)
+
+        return ImageCapturedFile(
+            file: SavedFile(
+                path: result.path,
+                item_label: "area",
+                mime_type: result.format.mimeType),
+            observation: ImageObservationDiagnostics(
+                spans: [span],
+                stateSnapshot: stateSnapshot,
+                target: DesktopObservationTargetDiagnostics(
+                    requestedKind: "area",
+                    resolvedKind: "area",
+                    source: "desktop-adapter",
+                    bounds: result.bounds.cgRect)))
     }
 
     private func captureMenuBar() async throws -> [ImageCapturedFile] {
@@ -425,5 +486,19 @@ private extension DesktopWindow {
 private extension DesktopRect {
     var cgRect: CGRect {
         CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
+    }
+}
+
+private extension CGRect {
+    var desktopRect: DesktopRect {
+        DesktopRect(
+            x: Self.desktopCoordinate(self.origin.x),
+            y: Self.desktopCoordinate(self.origin.y),
+            width: Self.desktopCoordinate(self.width),
+            height: Self.desktopCoordinate(self.height))
+    }
+
+    private static func desktopCoordinate(_ value: CGFloat) -> Int {
+        Int(value.rounded(.toNearestOrAwayFromZero))
     }
 }
