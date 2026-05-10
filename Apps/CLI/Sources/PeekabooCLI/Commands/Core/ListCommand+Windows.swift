@@ -3,6 +3,7 @@ import CoreGraphics
 import Foundation
 import PeekabooCore
 import PeekabooDesktop
+import PeekabooFoundation
 
 extension ListCommand {
     @MainActor
