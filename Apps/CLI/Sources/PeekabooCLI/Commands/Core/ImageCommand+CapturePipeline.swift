@@ -330,6 +330,11 @@ extension ImageCommand {
 
     private func captureApplicationWindow(_ target: ImageWindowObservationTarget) async throws -> [ImageCapturedFile] {
         try await self.focusIfNeeded(appIdentifier: target.focusIdentifier)
+        let desktop = self.services.desktop
+        if await self.canUseDesktopApplicationWindowCapture(adapter: desktop) {
+            return try await self.captureDesktopApplicationWindow(target, adapter: desktop)
+        }
+
         let observation = try await self.captureObservation(
             target: target.target,
             preferredName: target.preferredName,
@@ -346,6 +351,213 @@ extension ImageCommand {
         )
 
         return [saved]
+    }
+
+    private func canUseDesktopApplicationWindowCapture(adapter: any DesktopAsyncAdapter) async -> Bool {
+        guard self.format == .png,
+              !self.retina,
+              self.captureEngine == nil,
+              self.configuredCaptureEnginePreference == nil
+        else {
+            return false
+        }
+
+        let platformInfo = await adapter.platformInfo()
+        return platformInfo.capabilities.contains(.captureWindowPNG)
+    }
+
+    private func captureDesktopApplicationWindow(
+        _ target: ImageWindowObservationTarget,
+        adapter: any DesktopAsyncAdapter
+    ) async throws -> [ImageCapturedFile] {
+        let resolved = try await self.resolveDesktopApplicationWindow(target, adapter: adapter)
+        let resolvedTitle = resolved.window.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preferredName = self.windowTitle ??
+            (resolvedTitle.isEmpty ? nil : resolvedTitle) ??
+            target.preferredName
+        let outputURL = self.makeOutputURL(preferredName: target.preferredName, index: nil)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+
+        let snapshot = await self.desktopSnapshot(adapter: adapter)
+        let start = ContinuousClock.now
+        let result = try await adapter.captureWindow(
+            windowIdentifier: resolved.window.windowIdentifier,
+            outputPath: outputURL.path)
+        let span = Self.desktopCaptureSpan(name: "capture.window", start: start, result: result)
+
+        return [
+            ImageCapturedFile(
+                file: SavedFile(
+                    path: result.path,
+                    item_label: preferredName,
+                    window_title: resolvedTitle.isEmpty ? nil : resolvedTitle,
+                    window_id: UInt32(clamping: resolved.window.windowIdentifier),
+                    window_index: resolved.window.index,
+                    mime_type: result.format.mimeType),
+                observation: ImageObservationDiagnostics(
+                    spans: [span],
+                    stateSnapshot: snapshot,
+                    target: DesktopObservationTargetDiagnostics(
+                        requestedKind: "window",
+                        resolvedKind: "window",
+                        source: "desktop-adapter",
+                        bounds: result.bounds.cgRect))),
+        ]
+    }
+
+    private func resolveDesktopApplicationWindow(
+        _ target: ImageWindowObservationTarget,
+        adapter: any DesktopAsyncAdapter
+    ) async throws -> (application: DesktopApplication, window: DesktopWindow) {
+        let applications = try await adapter.listApplications()
+        let windows = try await adapter.listWindows(includeInvisible: true)
+
+        let application: DesktopApplication
+        let selection: WindowSelection
+        switch target.target {
+        case let .pid(pid, windowSelection):
+            guard let match = applications.first(where: { $0.processIdentifier == UInt32(clamping: pid) }) else {
+                throw DesktopObservationError.targetNotFound("pid \(pid)")
+            }
+            application = match
+            selection = windowSelection ?? .automatic
+        case let .app(identifier, windowSelection):
+            guard let match = Self.desktopApplication(matching: identifier, in: applications) else {
+                throw DesktopObservationError.targetNotFound(identifier)
+            }
+            application = match
+            selection = windowSelection ?? .automatic
+        default:
+            throw DesktopObservationError.targetNotFound("application window")
+        }
+
+        let applicationWindows = windows.filter { $0.processIdentifier == application.processIdentifier }
+        let selectedWindow = try Self.selectDesktopWindow(
+            from: applicationWindows,
+            selection: selection,
+            applicationName: application.executableName)
+        return (application, selectedWindow)
+    }
+
+    private static func desktopApplication(
+        matching identifier: String,
+        in applications: [DesktopApplication]
+    ) -> DesktopApplication? {
+        let trimmedIdentifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        let uppercasedIdentifier = trimmedIdentifier.uppercased()
+        if uppercasedIdentifier.hasPrefix("PID:"),
+           let pid = UInt32(String(trimmedIdentifier.dropFirst("PID:".count)))
+        {
+            return applications.first(where: { $0.processIdentifier == pid })
+        }
+
+        if let bundleMatch = applications.first(where: { $0.bundleIdentifier == trimmedIdentifier }) {
+            return bundleMatch
+        }
+
+        if let exactName = applications.first(where: {
+            $0.executableName.compare(trimmedIdentifier, options: .caseInsensitive) == .orderedSame
+        }) {
+            return exactName
+        }
+
+        return applications.first(where: {
+            $0.executableName.localizedCaseInsensitiveContains(trimmedIdentifier)
+        })
+    }
+
+    private static func selectDesktopWindow(
+        from windows: [DesktopWindow],
+        selection: WindowSelection,
+        applicationName: String
+    ) throws -> DesktopWindow {
+        switch selection {
+        case .automatic:
+            guard let window = self.bestDesktopWindow(from: windows) else {
+                let criteria = windows.isEmpty ? "application window" : "shareable window for \(applicationName)"
+                throw DesktopObservationError.targetNotFound(criteria)
+            }
+            return window
+        case let .index(index):
+            guard let window = windows.first(where: { $0.index == index }) ?? windows[desktopSafe: index] else {
+                throw DesktopObservationError.targetNotFound("window index \(index)")
+            }
+            return window
+        case let .title(title):
+            guard let window = windows.first(where: { $0.title.localizedCaseInsensitiveContains(title) }) else {
+                throw DesktopObservationError.targetNotFound("window title \(title)")
+            }
+            return window
+        case let .id(windowID):
+            let identifier = UInt64(windowID)
+            guard let window = windows.first(where: { $0.windowIdentifier == identifier }) else {
+                throw DesktopObservationError.targetNotFound("window id \(windowID)")
+            }
+            return window
+        }
+    }
+
+    private static func bestDesktopWindow(from windows: [DesktopWindow]) -> DesktopWindow? {
+        self.desktopCaptureCandidates(from: windows).max { lhs, rhs in
+            let lhsScore = self.desktopWindowScore(lhs)
+            let rhsScore = self.desktopWindowScore(rhs)
+            if lhsScore == rhsScore {
+                return lhs.index > rhs.index
+            }
+            return lhsScore < rhsScore
+        }
+    }
+
+    private static func desktopCaptureCandidates(from windows: [DesktopWindow]) -> [DesktopWindow] {
+        var seenWindowIdentifiers = Set<UInt64>()
+        var candidates: [DesktopWindow] = []
+        candidates.reserveCapacity(windows.count)
+
+        for window in windows where seenWindowIdentifiers.insert(window.windowIdentifier).inserted {
+            guard window.isVisible,
+                  !window.isMinimized,
+                  !window.isOffScreen,
+                  window.isOnScreen,
+                  window.layer == 0,
+                  window.alpha > 0.01,
+                  window.bounds.width >= 120,
+                  window.bounds.height >= 90
+            else {
+                continue
+            }
+            candidates.append(window)
+        }
+
+        return candidates
+    }
+
+    private static func desktopWindowScore(_ window: DesktopWindow) -> Double {
+        var score = 0.0
+
+        if window.isForeground {
+            score += 2000
+        }
+        if window.layer == 0 {
+            score += 500
+        }
+        if window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            score -= 500
+        } else {
+            score += 2500
+        }
+        if !window.isMinimized {
+            score += 300
+        }
+
+        let area = window.bounds.width * window.bounds.height
+        if area > 0 {
+            score += min(Double(area) / 150.0, 4000)
+        }
+
+        score += max(0, 600 - Double(window.index) * 40)
+        return score
     }
 
     private func captureAllApplicationWindows(_ identifier: String) async throws -> [ImageCapturedFile] {
@@ -632,5 +844,11 @@ private extension CGRect {
 
     private static func desktopCoordinate(_ value: CGFloat) -> Int {
         Int(value.rounded(.toNearestOrAwayFromZero))
+    }
+}
+
+private extension Array {
+    subscript(desktopSafe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
