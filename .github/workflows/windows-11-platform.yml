@@ -1,0 +1,39 @@
+name: Windows 11 Platform
+
+on:
+  push:
+    paths:
+      - "Platforms/Windows/PeekabooWin11/**"
+      - "scripts/windows/build-win11.ps1"
+      - "docs/windows-11-refactor.md"
+      - ".github/workflows/windows-11-platform.yml"
+  pull_request:
+    paths:
+      - "Platforms/Windows/PeekabooWin11/**"
+      - "scripts/windows/build-win11.ps1"
+      - "docs/windows-11-refactor.md"
+      - ".github/workflows/windows-11-platform.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: windows-11-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and test Windows 11 adapter
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Swift
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: "6.2"
+
+      - name: Build and test
+        run: .\scripts\windows\build-win11.ps1

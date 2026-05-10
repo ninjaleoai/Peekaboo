@@ -143,6 +143,15 @@ Set providers via `PEEKABOO_AI_PROVIDERS` or `peekaboo config add`.
 
 - [PeekabooWin](https://github.com/FelixKruger/PeekabooWin) — Windows-first rewrite of the Peekaboo automation loop (JavaScript + PowerShell) by [@FelixKruger](https://github.com/FelixKruger)
 
+## Windows 11 fork status
+
+This fork includes an initial native Windows 11 refactor slice in
+[`Platforms/Windows/PeekabooWin11`](Platforms/Windows/PeekabooWin11). It is a
+standalone Swift package with a Win32-backed adapter for display/window/app
+enumeration and BMP screen capture. See
+[`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the seam and
+next integration steps.
+
 ## Development basics
 - Requirements: macOS 15+, Xcode 16+/Swift 6.2. Node 22+ only if you run the pnpm docs/build helper scripts (core CLI/app/MCP are Swift-only).
 - Install deps: `pnpm install` then `pnpm run build:cli` or `pnpm run test:safe`.
