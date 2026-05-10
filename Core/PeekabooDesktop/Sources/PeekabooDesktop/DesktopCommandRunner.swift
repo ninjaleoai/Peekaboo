@@ -67,7 +67,7 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing capture subcommand: screen or area")
+            throw DesktopAdapterError.invalidArgument("Missing capture subcommand: screen, area, or window")
         }
 
         switch subcommand {
@@ -75,6 +75,8 @@ public enum DesktopCommandRunner {
             try self.runCaptureScreen(args: args, adapter: adapter, stdout: stdout)
         case "area", "region":
             try self.runCaptureArea(args: args, adapter: adapter, stdout: stdout)
+        case "window":
+            try self.runCaptureWindow(args: args, adapter: adapter, stdout: stdout)
         default:
             throw DesktopAdapterError.invalidArgument("Unknown capture subcommand: \(subcommand)")
         }
@@ -121,6 +123,32 @@ public enum DesktopCommandRunner {
 
         let result = try adapter.captureArea(
             self.parseRect(rectValue),
+            outputPath: outputPath)
+        try stdout(self.success(result))
+    }
+
+    private static func runCaptureWindow(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let outputPath = try self.value(after: "--path", in: args) ??
+            self.value(after: "-o", in: args)
+        guard let outputPath, !outputPath.isEmpty else {
+            throw DesktopAdapterError.outputPathRequired
+        }
+
+        let windowValue = try self.value(after: "--id", in: args) ??
+            self.value(after: "--window-id", in: args)
+        guard let windowValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --id <window-id> for capture window")
+        }
+        guard let windowIdentifier = UInt64(windowValue) else {
+            throw DesktopAdapterError.invalidArgument("Invalid window id: \(windowValue)")
+        }
+
+        let result = try adapter.captureWindow(
+            windowIdentifier: windowIdentifier,
             outputPath: outputPath)
         try stdout(self.success(result))
     }
@@ -173,14 +201,21 @@ public enum DesktopCommandRunner {
           list displays
           capture screen --path <\(capturePath)> [--display <index>]
           capture area --rect <x,y,width,height> --path <\(capturePath)>
+          capture window --id <window-id> --path <\(capturePath)>
         """
     }
 
     private static func capturePathExample(for info: DesktopPlatformInfo) -> String {
-        if info.capabilities.contains(.captureScreenBMP) {
+        if info.capabilities.contains(.captureScreenBMP) ||
+            info.capabilities.contains(.captureAreaBMP) ||
+            info.capabilities.contains(.captureWindowBMP)
+        {
             return "file.bmp"
         }
-        if info.capabilities.contains(.captureScreenPNG) {
+        if info.capabilities.contains(.captureScreenPNG) ||
+            info.capabilities.contains(.captureAreaPNG) ||
+            info.capabilities.contains(.captureWindowPNG)
+        {
             return "file.png"
         }
         return "file"

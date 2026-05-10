@@ -46,8 +46,12 @@ index, screen, Space, off-screen, layer, alpha, and on-screen metadata. The
 first capture read paths are also routed through the adapter: compatible
 `image --mode screen` PNG captures now use `DesktopAsyncAdapter.captureScreen`,
 and compatible `image --mode area --region x,y,width,height` PNG captures now
-use `DesktopAsyncAdapter.captureArea`. Retina, forced-engine, JPG, window, and
-frontmost captures stay on the existing macOS observation pipeline.
+use `DesktopAsyncAdapter.captureArea`. Retina, forced-engine, JPG, and
+frontmost captures stay on the existing macOS observation pipeline. Window
+capture is now part of the neutral desktop adapter and the Windows platform CLI
+can capture a window by ID through the existing Win32 region capture path. The
+main macOS `image --mode window` path stays on the existing observation
+pipeline until a behavior-compatible adapter route is proven.
 
 ## Why This Seam
 
@@ -67,6 +71,7 @@ public protocol DesktopAdapter: Sendable {
     func listApplications() throws -> [DesktopApplication]
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
+    func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> DesktopCaptureResult
 }
 ```
 
@@ -107,7 +112,13 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 list app
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture screen --path .\screen.bmp
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   capture area --rect 0,0,640,480 --path .\area.bmp
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  capture window --id <window-id> --path .\window.bmp
 ```
+
+The first Windows window capture is region-backed: the adapter resolves the
+enumerated window bounds for the requested ID, then captures that screen
+rectangle to BMP.
 
 ## Next Integration Steps
 

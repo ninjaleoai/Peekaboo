@@ -7,6 +7,7 @@ public protocol DesktopAdapter: Sendable {
     func listApplications() throws -> [DesktopApplication]
     func captureScreen(displayIndex: Int?, outputPath: String) throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
+    func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> DesktopCaptureResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -16,6 +17,7 @@ public protocol DesktopAsyncAdapter: Sendable {
     func listApplications() async throws -> [DesktopApplication]
     func captureScreen(displayIndex: Int?, outputPath: String) async throws -> DesktopCaptureResult
     func captureArea(_ rect: DesktopRect, outputPath: String) async throws -> DesktopCaptureResult
+    func captureWindow(windowIdentifier: UInt64, outputPath: String) async throws -> DesktopCaptureResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -48,6 +50,10 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
     public func captureArea(_ rect: DesktopRect, outputPath: String) async throws -> DesktopCaptureResult {
         try self.adapter.captureArea(rect, outputPath: outputPath)
     }
+
+    public func captureWindow(windowIdentifier: UInt64, outputPath: String) async throws -> DesktopCaptureResult {
+        try self.adapter.captureWindow(windowIdentifier: windowIdentifier, outputPath: outputPath)
+    }
 }
 
 public enum DesktopAdapterError: Error, Equatable, Sendable {
@@ -73,7 +79,7 @@ extension DesktopAdapterError: LocalizedError {
         case let .emptyCaptureRegion(rect):
             return "Capture region is empty: \(rect)"
         case .outputPathRequired:
-            return "An output path is required for screen capture"
+            return "An output path is required for capture"
         }
     }
 }

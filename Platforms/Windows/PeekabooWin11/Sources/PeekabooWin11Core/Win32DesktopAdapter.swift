@@ -16,6 +16,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .enumerateWindows,
                 .captureScreenBMP,
                 .captureAreaBMP,
+                .captureWindowBMP,
             ])
     }
 
@@ -89,6 +90,18 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         return try Self.captureRegion(bounds: rect, outputPath: outputPath)
+    }
+
+    public func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> Win11CaptureResult {
+        let windows = try self.listWindows(includeInvisible: true)
+        guard let window = windows.first(where: { $0.windowIdentifier == windowIdentifier }) else {
+            throw Win11DesktopError.invalidArgument("Window not found: \(windowIdentifier)")
+        }
+        guard !window.bounds.isEmpty else {
+            throw Win11DesktopError.emptyCaptureRegion(window.bounds)
+        }
+
+        return try self.captureArea(window.bounds, outputPath: outputPath)
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

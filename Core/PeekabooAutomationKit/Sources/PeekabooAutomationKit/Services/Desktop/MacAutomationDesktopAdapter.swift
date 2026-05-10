@@ -87,6 +87,7 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         if self.screenCapture != nil {
             capabilities.append(.captureScreenPNG)
             capabilities.append(.captureAreaPNG)
+            capabilities.append(.captureWindowPNG)
         }
 
         return capabilities
@@ -103,6 +104,32 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
 
         if let primaryDisplay = self.screens.primaryScreen {
             return primaryDisplay.frame.desktopRect
+        }
+
+        return CGRect(origin: .zero, size: result.metadata.size).desktopRect
+    }
+
+    public func captureWindow(windowIdentifier: UInt64, outputPath: String) async throws -> DesktopCaptureResult {
+        guard let screenCapture else {
+            throw DesktopAdapterError.unsupportedPlatform("Screen capture service was not provided")
+        }
+
+        let result = try await screenCapture.captureWindow(
+            windowID: CGWindowID(clamping: windowIdentifier),
+            visualizerMode: .screenshotFlash,
+            scale: .logical1x)
+        try Self.write(result.imageData, to: outputPath)
+
+        return DesktopCaptureResult(
+            path: outputPath,
+            bounds: self.windowCaptureBounds(from: result),
+            format: .png,
+            byteCount: result.imageData.count)
+    }
+
+    private func windowCaptureBounds(from result: CaptureResult) -> DesktopRect {
+        if let bounds = result.metadata.windowInfo?.bounds {
+            return bounds.desktopRect
         }
 
         return CGRect(origin: .zero, size: result.metadata.size).desktopRect
