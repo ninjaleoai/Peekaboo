@@ -24,6 +24,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .clickMouse,
                 .scrollMouse,
                 .dragMouse,
+                .sendHotkey,
             ])
     }
 
@@ -264,6 +265,112 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         return DesktopPoint(x: Int(x.rounded()), y: Int(y.rounded()))
     }
 
+    public func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult {
+        guard !keys.isEmpty else {
+            throw Win11DesktopError.invalidArgument("Hotkey requires at least one key")
+        }
+        guard holdDurationMilliseconds >= 0 else {
+            throw Win11DesktopError.invalidArgument("Hold duration must be a non-negative integer")
+        }
+
+        let resolvedKeys = try keys.map { try Self.virtualKey(for: $0) }
+        for key in resolvedKeys {
+            Self.sendKey(key, flags: 0)
+        }
+        defer {
+            for key in resolvedKeys.reversed() {
+                Self.sendKey(key, flags: DWORD(KEYEVENTF_KEYUP))
+            }
+        }
+
+        if holdDurationMilliseconds > 0 {
+            Thread.sleep(forTimeInterval: Double(holdDurationMilliseconds) / 1_000)
+        }
+
+        return DesktopHotkeyResult(
+            keys: resolvedKeys.map(\.name),
+            holdDurationMilliseconds: holdDurationMilliseconds)
+    }
+
+    private static func sendKey(_ key: Win32VirtualKey, flags: DWORD) {
+        keybd_event(key.virtualKey, 0, flags, 0)
+    }
+
+    private static func virtualKey(for name: String) throws -> Win32VirtualKey {
+        let normalized = name
+            .lowercased()
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "_", with: "")
+
+        if let key = Self.namedVirtualKey(normalized) {
+            return key
+        }
+
+        if normalized.count == 1, let scalar = normalized.unicodeScalars.first {
+            let value = scalar.value
+            if (48...57).contains(value) || (65...90).contains(value) {
+                return Win32VirtualKey(name: normalized, virtualKey: BYTE(value))
+            }
+            if (97...122).contains(value) {
+                return Win32VirtualKey(name: normalized, virtualKey: BYTE(value - 32))
+            }
+        }
+
+        if normalized.first == "f",
+           let number = Int(normalized.dropFirst()),
+           (1...24).contains(number)
+        {
+            return Win32VirtualKey(name: normalized, virtualKey: BYTE(0x70 + number - 1))
+        }
+
+        throw Win11DesktopError.invalidArgument("Unsupported hotkey: \(name)")
+    }
+
+    private static func namedVirtualKey(_ normalized: String) -> Win32VirtualKey? {
+        switch normalized {
+        case "ctrl", "control":
+            return Win32VirtualKey(name: "ctrl", virtualKey: 0x11)
+        case "shift":
+            return Win32VirtualKey(name: "shift", virtualKey: 0x10)
+        case "alt", "option":
+            return Win32VirtualKey(name: "alt", virtualKey: 0x12)
+        case "win", "windows", "meta", "cmd", "command":
+            return Win32VirtualKey(name: "win", virtualKey: 0x5B)
+        case "enter", "return":
+            return Win32VirtualKey(name: "enter", virtualKey: 0x0D)
+        case "tab":
+            return Win32VirtualKey(name: "tab", virtualKey: 0x09)
+        case "esc", "escape":
+            return Win32VirtualKey(name: "escape", virtualKey: 0x1B)
+        case "space", "spacebar":
+            return Win32VirtualKey(name: "space", virtualKey: 0x20)
+        case "backspace", "bksp":
+            return Win32VirtualKey(name: "backspace", virtualKey: 0x08)
+        case "delete", "del":
+            return Win32VirtualKey(name: "delete", virtualKey: 0x2E)
+        case "insert", "ins":
+            return Win32VirtualKey(name: "insert", virtualKey: 0x2D)
+        case "home":
+            return Win32VirtualKey(name: "home", virtualKey: 0x24)
+        case "end":
+            return Win32VirtualKey(name: "end", virtualKey: 0x23)
+        case "pageup", "pgup":
+            return Win32VirtualKey(name: "pageup", virtualKey: 0x21)
+        case "pagedown", "pgdn":
+            return Win32VirtualKey(name: "pagedown", virtualKey: 0x22)
+        case "left", "arrowleft":
+            return Win32VirtualKey(name: "left", virtualKey: 0x25)
+        case "up", "arrowup":
+            return Win32VirtualKey(name: "up", virtualKey: 0x26)
+        case "right", "arrowright":
+            return Win32VirtualKey(name: "right", virtualKey: 0x27)
+        case "down", "arrowdown":
+            return Win32VirtualKey(name: "down", virtualKey: 0x28)
+        default:
+            return nil
+        }
+    }
+
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {
         guard !bounds.isEmpty else {
             throw Win11DesktopError.emptyCaptureRegion(bounds)
@@ -442,6 +549,11 @@ private final class WindowCollector {
     init(includeInvisible: Bool) {
         self.includeInvisible = includeInvisible
     }
+}
+
+private struct Win32VirtualKey {
+    let name: String
+    let virtualKey: BYTE
 }
 
 private let displayEnumerationCallback: MONITORENUMPROC = { monitor, _, _, context in

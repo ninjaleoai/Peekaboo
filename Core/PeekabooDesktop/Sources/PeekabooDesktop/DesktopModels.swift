@@ -17,6 +17,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case clickMouse
     case scrollMouse
     case dragMouse
+    case sendHotkey
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {
@@ -265,6 +266,16 @@ public struct DesktopDragResult: Codable, Equatable, Sendable {
         self.endPoint = endPoint
         self.button = button
         self.steps = steps
+    }
+}
+
+public struct DesktopHotkeyResult: Codable, Equatable, Sendable {
+    public let keys: [String]
+    public let holdDurationMilliseconds: Int
+
+    public init(keys: [String], holdDurationMilliseconds: Int) {
+        self.keys = keys
+        self.holdDurationMilliseconds = holdDurationMilliseconds
     }
 }
 

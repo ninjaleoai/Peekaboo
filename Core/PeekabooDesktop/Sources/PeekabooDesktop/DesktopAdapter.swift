@@ -18,6 +18,7 @@ public protocol DesktopAdapter: Sendable {
         to endPoint: DesktopPoint,
         button: DesktopMouseButton,
         steps: Int) throws -> DesktopDragResult
+    func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -41,6 +42,7 @@ public protocol DesktopAsyncAdapter: Sendable {
         to endPoint: DesktopPoint,
         button: DesktopMouseButton,
         steps: Int) async throws -> DesktopDragResult
+    func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -113,6 +115,10 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         steps: Int) async throws -> DesktopDragResult
     {
         try self.adapter.drag(from: startPoint, to: endPoint, button: button, steps: steps)
+    }
+
+    public func hotkey(keys: [String], holdDurationMilliseconds: Int) async throws -> DesktopHotkeyResult {
+        try self.adapter.hotkey(keys: keys, holdDurationMilliseconds: holdDurationMilliseconds)
     }
 }
 

@@ -48,7 +48,7 @@ public enum DesktopCommandRunner {
     {
         guard let subcommand = args.first else {
             throw DesktopAdapterError.invalidArgument(
-                "Missing input subcommand: position, move, click, scroll, or drag")
+                "Missing input subcommand: position, move, click, scroll, drag, or hotkey")
         }
 
         switch subcommand {
@@ -112,6 +112,17 @@ public enum DesktopCommandRunner {
                 to: self.parsePoint(endValue),
                 button: button,
                 steps: steps)))
+        case "hotkey", "press":
+            let keysValue = try self.value(after: "--keys", in: args) ??
+                self.value(after: "--key", in: args)
+            guard let keysValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --keys key1,key2 for input hotkey")
+            }
+            let holdDuration = try self.value(after: "--hold-ms", in: args)
+                .map(self.parseNonNegativeMilliseconds) ?? 0
+            try stdout(self.success(adapter.hotkey(
+                keys: self.parseKeys(keysValue),
+                holdDurationMilliseconds: holdDuration)))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
@@ -346,6 +357,25 @@ public enum DesktopCommandRunner {
         }
     }
 
+    private static func parseKeys(_ value: String) throws -> [String] {
+        let keys = value
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+
+        guard !keys.isEmpty, keys.allSatisfy({ !$0.isEmpty }) else {
+            throw DesktopAdapterError.invalidArgument("Keys must be a comma-separated list")
+        }
+
+        return keys
+    }
+
+    private static func parseNonNegativeMilliseconds(_ value: String) throws -> Int {
+        guard let milliseconds = Int(value), milliseconds >= 0 else {
+            throw DesktopAdapterError.invalidArgument("Hold duration must be a non-negative integer")
+        }
+        return milliseconds
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -369,6 +399,7 @@ public enum DesktopCommandRunner {
           input click --point <x,y> [--button left|right|middle] [--count <n>]
           input scroll --point <x,y> --direction <up|down|left|right> [--amount <n>]
           input drag --from <x,y> --to <x,y> [--button left|right|middle] [--steps <n>]
+          input hotkey --keys <key1,key2> [--hold-ms <n>]
         """
     }
 

@@ -207,6 +207,10 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("Mouse drag is not implemented by this adapter")
     }
 
+    public func hotkey(keys _: [String], holdDurationMilliseconds _: Int) async throws -> DesktopHotkeyResult {
+        throw DesktopAdapterError.unsupportedPlatform("Hotkey input is not implemented by this adapter")
+    }
+
     private static func write(_ data: Data, to outputPath: String) throws {
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(

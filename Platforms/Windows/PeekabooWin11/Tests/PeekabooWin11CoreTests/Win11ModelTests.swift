@@ -34,6 +34,7 @@ final class Win11ModelTests: XCTestCase {
                 .clickMouse,
                 .scrollMouse,
                 .dragMouse,
+                .sendHotkey,
             ])
         #endif
 
@@ -49,6 +50,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.clickMouse))
         XCTAssertTrue(info.capabilities.contains(.scrollMouse))
         XCTAssertTrue(info.capabilities.contains(.dragMouse))
+        XCTAssertTrue(info.capabilities.contains(.sendHotkey))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -80,6 +82,7 @@ final class Win11ModelTests: XCTestCase {
             to: DesktopPoint(x: 0, y: 0),
             button: .left,
             steps: 1))
+        XCTAssertThrowsError(try adapter.hotkey(keys: ["shift"], holdDurationMilliseconds: 0))
         #endif
     }
 
@@ -115,6 +118,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input click --point"))
         XCTAssertTrue(output.contains("input scroll --point"))
         XCTAssertTrue(output.contains("input drag --from"))
+        XCTAssertTrue(output.contains("input hotkey --keys"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -295,6 +299,28 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(result.steps, 1)
         #else
         throw XCTSkip("Native Windows drag smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanSendModifierOnlyHotkey() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let result = try adapter.hotkey(keys: ["shift"], holdDurationMilliseconds: 0)
+
+        XCTAssertEqual(result.keys, ["shift"])
+        XCTAssertEqual(result.holdDurationMilliseconds, 0)
+        #else
+        throw XCTSkip("Native Windows hotkey smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterRejectsUnknownHotkey() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+
+        XCTAssertThrowsError(try adapter.hotkey(keys: ["not-a-key"], holdDurationMilliseconds: 0))
+        #else
+        throw XCTSkip("Native Windows hotkey validation test only runs on Windows.")
         #endif
     }
 }

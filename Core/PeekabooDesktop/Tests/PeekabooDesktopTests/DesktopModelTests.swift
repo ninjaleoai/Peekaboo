@@ -79,6 +79,9 @@ final class DesktopModelTests: XCTestCase {
             to: DesktopPoint(x: 17, y: 18),
             button: .left,
             steps: 5)
+        let hotkey = try await bridge.hotkey(
+            keys: ["ctrl", "shift", "escape"],
+            holdDurationMilliseconds: 25)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -103,6 +106,9 @@ final class DesktopModelTests: XCTestCase {
             endPoint: DesktopPoint(x: 17, y: 18),
             button: .left,
             steps: 5))
+        XCTAssertEqual(hotkey, DesktopHotkeyResult(
+            keys: ["ctrl", "shift", "escape"],
+            holdDurationMilliseconds: 25))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -337,6 +343,40 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Steps must be a positive integer"))
     }
 
+    func testDesktopCommandRunnerRoutesInputHotkey() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "hotkey",
+            "--keys",
+            "ctrl, shift, escape",
+            "--hold-ms",
+            "25",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"keys\""))
+        XCTAssertTrue(result.stdout.contains("\"ctrl\""))
+        XCTAssertTrue(result.stdout.contains("\"shift\""))
+        XCTAssertTrue(result.stdout.contains("\"escape\""))
+        XCTAssertTrue(result.stdout.contains("\"holdDurationMilliseconds\" : 25"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidInputHotkeyList() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "hotkey",
+            "--keys",
+            "ctrl,,escape",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Keys must be a comma-separated list"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -348,6 +388,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input click --point"))
         XCTAssertTrue(result.stdout.contains("input scroll --point"))
         XCTAssertTrue(result.stdout.contains("input drag --from"))
+        XCTAssertTrue(result.stdout.contains("input hotkey --keys"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -479,6 +520,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
         steps: Int) throws -> DesktopDragResult
     {
         DesktopDragResult(startPoint: startPoint, endPoint: endPoint, button: button, steps: steps)
+    }
+
+    func hotkey(keys: [String], holdDurationMilliseconds: Int) throws -> DesktopHotkeyResult {
+        DesktopHotkeyResult(keys: keys, holdDurationMilliseconds: holdDurationMilliseconds)
     }
 }
 
