@@ -18,6 +18,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .captureAreaBMP,
                 .captureWindowBMP,
                 .captureFrontmostBMP,
+                .readCursorPosition,
+                .moveCursor,
             ])
     }
 
@@ -121,6 +123,23 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
 
         return try self.captureArea(bounds, outputPath: outputPath)
+    }
+
+    public func cursorPosition() throws -> Win11Point {
+        var point = POINT()
+        guard GetCursorPos(&point) else {
+            throw Win11DesktopError.nativeCallFailed("GetCursorPos")
+        }
+
+        return Win11Point(x: Int(point.x), y: Int(point.y))
+    }
+
+    public func moveCursor(to point: Win11Point) throws -> Win11Point {
+        guard SetCursorPos(Int32(clamping: point.x), Int32(clamping: point.y)) else {
+            throw Win11DesktopError.nativeCallFailed("SetCursorPos")
+        }
+
+        return try self.cursorPosition()
     }
 
     private static func captureRegion(bounds: Win11Rect, outputPath: String) throws -> Win11CaptureResult {

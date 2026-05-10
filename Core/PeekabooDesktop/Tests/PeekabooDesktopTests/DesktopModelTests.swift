@@ -64,6 +64,8 @@ final class DesktopModelTests: XCTestCase {
             outputPath: "area.bmp")
         let window = try await bridge.captureWindow(windowIdentifier: 20, outputPath: "window.bmp")
         let frontmost = try await bridge.captureFrontmost(outputPath: "frontmost.bmp")
+        let cursor = try await bridge.cursorPosition()
+        let movedCursor = try await bridge.moveCursor(to: DesktopPoint(x: 9, y: 10))
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -73,6 +75,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(area.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
         XCTAssertEqual(window.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
         XCTAssertEqual(frontmost.bounds, DesktopRect(x: 1, y: 2, width: 3, height: 4))
+        XCTAssertEqual(cursor, DesktopPoint(x: 7, y: 8))
+        XCTAssertEqual(movedCursor, DesktopPoint(x: 9, y: 10))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -166,12 +170,38 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"x\" : 1"))
     }
 
+    func testDesktopCommandRunnerRoutesInputPosition() {
+        let result = self.runDesktopCommand(["peekaboo-desktop", "input", "position"])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"x\" : 7"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 8"))
+    }
+
+    func testDesktopCommandRunnerRoutesInputMove() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "move",
+            "--point",
+            "9,10",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"x\" : 9"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 10"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
         XCTAssertEqual(result.status, 0)
         XCTAssertTrue(result.stdout.contains("capture window --id <window-id> --path"))
         XCTAssertTrue(result.stdout.contains("capture frontmost --path"))
+        XCTAssertTrue(result.stdout.contains("input position"))
+        XCTAssertTrue(result.stdout.contains("input move --point"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -270,6 +300,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
             bounds: DesktopRect(x: 1, y: 2, width: 3, height: 4),
             format: .bmp,
             byteCount: 21)
+    }
+
+    func cursorPosition() throws -> DesktopPoint {
+        DesktopPoint(x: 7, y: 8)
+    }
+
+    func moveCursor(to point: DesktopPoint) throws -> DesktopPoint {
+        point
     }
 }
 

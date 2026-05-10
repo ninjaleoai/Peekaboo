@@ -174,6 +174,14 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             byteCount: result.imageData.count)
     }
 
+    public func cursorPosition() async throws -> DesktopPoint {
+        throw DesktopAdapterError.unsupportedPlatform("Cursor position is not implemented by this adapter")
+    }
+
+    public func moveCursor(to _: DesktopPoint) async throws -> DesktopPoint {
+        throw DesktopAdapterError.unsupportedPlatform("Cursor movement is not implemented by this adapter")
+    }
+
     private static func write(_ data: Data, to outputPath: String) throws {
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(

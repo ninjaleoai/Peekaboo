@@ -24,12 +24,13 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - full-screen or display BMP capture through Win32 GDI
 - rectangular-area BMP capture through the same GDI capture path
 - region-backed foreground-window BMP capture through the same GDI capture path
+- cursor position reads and cursor movement through Win32 cursor APIs
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
 adapter construction; the shared package owns the platform-neutral
 `platform-info`, `list`, `capture screen`, `capture area`, `capture window`,
-and `capture frontmost` command contract.
+`capture frontmost`, `input position`, and `input move` command contract.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -83,6 +84,8 @@ public protocol DesktopAdapter: Sendable {
     func captureArea(_ rect: DesktopRect, outputPath: String) throws -> DesktopCaptureResult
     func captureWindow(windowIdentifier: UInt64, outputPath: String) throws -> DesktopCaptureResult
     func captureFrontmost(outputPath: String) throws -> DesktopCaptureResult
+    func cursorPosition() throws -> DesktopPoint
+    func moveCursor(to point: DesktopPoint) throws -> DesktopPoint
 }
 ```
 
@@ -127,6 +130,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   capture window --id <window-id> --path .\window.bmp
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   capture frontmost --path .\frontmost.bmp
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 input position
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 input move --point 100,100
 ```
 
 The first Windows window captures are region-backed: the adapter resolves the
@@ -138,5 +143,8 @@ BMP. This does not yet provide off-screen semantic window rendering.
 1. Continue routing the remaining main macOS CLI capture read paths through the
    same desktop adapter contract where the existing output behavior can be
    preserved.
-2. Add Windows implementations for input and UI Automation after capture and
-   enumeration have stable test coverage.
+2. Broaden the new Windows input path from cursor position/move to click,
+   scroll, drag, hotkey, and typing once each verb has a small shared command
+   contract and native smoke coverage.
+3. Add Windows UI Automation after capture/enumeration and basic input have
+   stable test coverage.

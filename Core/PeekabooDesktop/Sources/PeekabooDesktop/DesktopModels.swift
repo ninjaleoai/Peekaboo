@@ -12,6 +12,8 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case captureWindowPNG
     case captureFrontmostBMP
     case captureFrontmostPNG
+    case readCursorPosition
+    case moveCursor
 }
 
 public struct DesktopPlatformInfo: Codable, Equatable, Sendable {

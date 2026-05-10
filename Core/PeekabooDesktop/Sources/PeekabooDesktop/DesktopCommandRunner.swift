@@ -26,6 +26,8 @@ public enum DesktopCommandRunner {
                 try self.runList(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
             case "capture":
                 try self.runCapture(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
+            case "input":
+                try self.runInput(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
             case "help", "--help", "-h":
                 stdout(self.helpText(commandName: commandName, adapter: adapter))
             default:
@@ -36,6 +38,30 @@ public enum DesktopCommandRunner {
             let message = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
             stderr(message)
             return 1
+        }
+    }
+
+    private static func runInput(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        guard let subcommand = args.first else {
+            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position or move")
+        }
+
+        switch subcommand {
+        case "position", "cursor-position":
+            try stdout(self.success(adapter.cursorPosition()))
+        case "move", "move-cursor":
+            let pointValue = try self.value(after: "--point", in: args) ??
+                self.value(after: "--to", in: args)
+            guard let pointValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --point x,y for input move")
+            }
+            try stdout(self.success(adapter.moveCursor(to: self.parsePoint(pointValue))))
+        default:
+            throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
     }
 
@@ -202,6 +228,21 @@ public enum DesktopCommandRunner {
         return rect
     }
 
+    private static func parsePoint(_ value: String) throws -> DesktopPoint {
+        let parts = value
+            .split(separator: ",", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+        guard parts.count == 2,
+              let x = Int(parts[0]),
+              let y = Int(parts[1])
+        else {
+            throw DesktopAdapterError.invalidArgument("Point must be x,y")
+        }
+
+        return DesktopPoint(x: x, y: y)
+    }
+
     private static func success<T: Encodable>(_ data: T) throws -> String {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
@@ -220,6 +261,8 @@ public enum DesktopCommandRunner {
           capture area --rect <x,y,width,height> --path <\(capturePath)>
           capture window --id <window-id> --path <\(capturePath)>
           capture frontmost --path <\(capturePath)>
+          input position
+          input move --point <x,y>
         """
     }
 

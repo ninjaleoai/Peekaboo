@@ -28,6 +28,8 @@ final class Win11ModelTests: XCTestCase {
                 .captureAreaBMP,
                 .captureWindowBMP,
                 .captureFrontmostBMP,
+                .readCursorPosition,
+                .moveCursor,
             ])
         #endif
 
@@ -38,6 +40,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.captureAreaBMP))
         XCTAssertTrue(info.capabilities.contains(.captureWindowBMP))
         XCTAssertTrue(info.capabilities.contains(.captureFrontmostBMP))
+        XCTAssertTrue(info.capabilities.contains(.readCursorPosition))
+        XCTAssertTrue(info.capabilities.contains(.moveCursor))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -54,6 +58,8 @@ final class Win11ModelTests: XCTestCase {
             outputPath: "area.bmp"))
         XCTAssertThrowsError(try adapter.captureWindow(windowIdentifier: 1, outputPath: "window.bmp"))
         XCTAssertThrowsError(try adapter.captureFrontmost(outputPath: "frontmost.bmp"))
+        XCTAssertThrowsError(try adapter.cursorPosition())
+        XCTAssertThrowsError(try adapter.moveCursor(to: Win11Point(x: 0, y: 0)))
         #endif
     }
 
@@ -84,6 +90,8 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("capture area --rect"))
         XCTAssertTrue(output.contains("capture window --id"))
         XCTAssertTrue(output.contains("capture frontmost --path"))
+        XCTAssertTrue(output.contains("input position"))
+        XCTAssertTrue(output.contains("input move --point"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -205,6 +213,18 @@ final class Win11ModelTests: XCTestCase {
         }
         #else
         throw XCTSkip("Native Windows frontmost capture smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanReadAndMoveCursor() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let position = try adapter.cursorPosition()
+        let moved = try adapter.moveCursor(to: position)
+
+        XCTAssertEqual(moved, position)
+        #else
+        throw XCTSkip("Native Windows cursor smoke test only runs on Windows.")
         #endif
     }
 }
