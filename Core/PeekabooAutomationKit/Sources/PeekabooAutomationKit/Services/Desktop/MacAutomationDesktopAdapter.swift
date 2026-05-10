@@ -190,6 +190,14 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("Mouse click is not implemented by this adapter")
     }
 
+    public func scroll(
+        at _: DesktopPoint,
+        direction _: DesktopScrollDirection,
+        amount _: Int) async throws -> DesktopScrollResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform("Mouse scroll is not implemented by this adapter")
+    }
+
     private static func write(_ data: Data, to outputPath: String) throws {
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(

@@ -32,6 +32,7 @@ final class Win11ModelTests: XCTestCase {
                 .readCursorPosition,
                 .moveCursor,
                 .clickMouse,
+                .scrollMouse,
             ])
         #endif
 
@@ -45,6 +46,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.readCursorPosition))
         XCTAssertTrue(info.capabilities.contains(.moveCursor))
         XCTAssertTrue(info.capabilities.contains(.clickMouse))
+        XCTAssertTrue(info.capabilities.contains(.scrollMouse))
         XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
     }
 
@@ -67,6 +69,10 @@ final class Win11ModelTests: XCTestCase {
             at: DesktopPoint(x: 0, y: 0),
             button: .left,
             clickCount: 1))
+        XCTAssertThrowsError(try adapter.scroll(
+            at: DesktopPoint(x: 0, y: 0),
+            direction: .down,
+            amount: 1))
         #endif
     }
 
@@ -100,6 +106,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("input position"))
         XCTAssertTrue(output.contains("input move --point"))
         XCTAssertTrue(output.contains("input click --point"))
+        XCTAssertTrue(output.contains("input scroll --point"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
@@ -247,6 +254,20 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertEqual(result.clickCount, 1)
         #else
         throw XCTSkip("Native Windows click smoke test only runs on Windows.")
+        #endif
+    }
+
+    func testNativeWindowsAdapterCanScrollAtCurrentCursorPosition() throws {
+        #if os(Windows)
+        let adapter = Win32DesktopAdapter()
+        let position = try adapter.cursorPosition()
+        let result = try adapter.scroll(at: position, direction: .down, amount: 1)
+
+        XCTAssertEqual(result.point, position)
+        XCTAssertEqual(result.direction, .down)
+        XCTAssertEqual(result.amount, 1)
+        #else
+        throw XCTSkip("Native Windows scroll smoke test only runs on Windows.")
         #endif
     }
 }

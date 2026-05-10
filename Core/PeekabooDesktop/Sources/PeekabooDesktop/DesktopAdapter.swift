@@ -12,6 +12,7 @@ public protocol DesktopAdapter: Sendable {
     func cursorPosition() throws -> DesktopPoint
     func moveCursor(to point: DesktopPoint) throws -> DesktopPoint
     func click(at point: DesktopPoint, button: DesktopMouseButton, clickCount: Int) throws -> DesktopClickResult
+    func scroll(at point: DesktopPoint, direction: DesktopScrollDirection, amount: Int) throws -> DesktopScrollResult
 }
 
 public protocol DesktopAsyncAdapter: Sendable {
@@ -26,6 +27,10 @@ public protocol DesktopAsyncAdapter: Sendable {
     func cursorPosition() async throws -> DesktopPoint
     func moveCursor(to point: DesktopPoint) async throws -> DesktopPoint
     func click(at point: DesktopPoint, button: DesktopMouseButton, clickCount: Int) async throws -> DesktopClickResult
+    func scroll(
+        at point: DesktopPoint,
+        direction: DesktopScrollDirection,
+        amount: Int) async throws -> DesktopScrollResult
 }
 
 public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAdapter {
@@ -81,6 +86,14 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
         clickCount: Int) async throws -> DesktopClickResult
     {
         try self.adapter.click(at: point, button: button, clickCount: clickCount)
+    }
+
+    public func scroll(
+        at point: DesktopPoint,
+        direction: DesktopScrollDirection,
+        amount: Int) async throws -> DesktopScrollResult
+    {
+        try self.adapter.scroll(at: point, direction: direction, amount: amount)
     }
 }
 

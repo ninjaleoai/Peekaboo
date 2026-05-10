@@ -70,6 +70,10 @@ final class DesktopModelTests: XCTestCase {
             at: DesktopPoint(x: 11, y: 12),
             button: .right,
             clickCount: 2)
+        let scroll = try await bridge.scroll(
+            at: DesktopPoint(x: 13, y: 14),
+            direction: .down,
+            amount: 3)
 
         XCTAssertEqual(info.nativeBackend, "Stub")
         XCTAssertEqual(displays.map(\.index), [0])
@@ -85,6 +89,10 @@ final class DesktopModelTests: XCTestCase {
             point: DesktopPoint(x: 11, y: 12),
             button: .right,
             clickCount: 2))
+        XCTAssertEqual(scroll, DesktopScrollResult(
+            point: DesktopPoint(x: 13, y: 14),
+            direction: .down,
+            amount: 3))
     }
 
     func testDesktopCommandRunnerRoutesPlatformInfo() {
@@ -239,6 +247,43 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Click count must be a positive integer"))
     }
 
+    func testDesktopCommandRunnerRoutesInputScroll() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "scroll",
+            "--point",
+            "13,14",
+            "--direction",
+            "down",
+            "--amount",
+            "3",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"x\" : 13"))
+        XCTAssertTrue(result.stdout.contains("\"y\" : 14"))
+        XCTAssertTrue(result.stdout.contains("\"direction\" : \"down\""))
+        XCTAssertTrue(result.stdout.contains("\"amount\" : 3"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidInputScrollDirection() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "input",
+            "scroll",
+            "--point",
+            "13,14",
+            "--direction",
+            "diagonal",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Scroll direction must be up, down, left, or right"))
+    }
+
     func testDesktopCommandRunnerHelpIncludesWindowCapture() {
         let result = self.runDesktopCommand(["peekaboo-desktop", "--help"])
 
@@ -248,6 +293,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("input position"))
         XCTAssertTrue(result.stdout.contains("input move --point"))
         XCTAssertTrue(result.stdout.contains("input click --point"))
+        XCTAssertTrue(result.stdout.contains("input scroll --point"))
     }
 
     func testDesktopCommandRunnerReportsInvalidCommands() {
@@ -362,6 +408,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
         clickCount: Int) throws -> DesktopClickResult
     {
         DesktopClickResult(point: point, button: button, clickCount: clickCount)
+    }
+
+    func scroll(
+        at point: DesktopPoint,
+        direction: DesktopScrollDirection,
+        amount: Int) throws -> DesktopScrollResult
+    {
+        DesktopScrollResult(point: point, direction: direction, amount: amount)
     }
 }
 

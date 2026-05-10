@@ -47,7 +47,7 @@ public enum DesktopCommandRunner {
         stdout: OutputHandler) throws
     {
         guard let subcommand = args.first else {
-            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position, move, or click")
+            throw DesktopAdapterError.invalidArgument("Missing input subcommand: position, move, click, or scroll")
         }
 
         switch subcommand {
@@ -74,6 +74,23 @@ public enum DesktopCommandRunner {
                 at: self.parsePoint(pointValue),
                 button: button,
                 clickCount: clickCount)))
+        case "scroll", "mouse-scroll":
+            let pointValue = try self.value(after: "--point", in: args) ??
+                self.value(after: "--at", in: args)
+            guard let pointValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --point x,y for input scroll")
+            }
+            let directionValue = try self.value(after: "--direction", in: args) ??
+                self.value(after: "--dir", in: args)
+            guard let directionValue else {
+                throw DesktopAdapterError.invalidArgument("Missing --direction up|down|left|right for input scroll")
+            }
+            let amount = try self.value(after: "--amount", in: args)
+                .map(self.parsePositiveAmount) ?? 1
+            try stdout(self.success(adapter.scroll(
+                at: self.parsePoint(pointValue),
+                direction: self.parseScrollDirection(directionValue),
+                amount: amount)))
         default:
             throw DesktopAdapterError.invalidArgument("Unknown input subcommand: \(subcommand)")
         }
@@ -271,10 +288,33 @@ public enum DesktopCommandRunner {
     }
 
     private static func parseClickCount(_ value: String) throws -> Int {
-        guard let clickCount = Int(value), clickCount > 0 else {
+        do {
+            return try self.parsePositiveAmount(value)
+        } catch {
             throw DesktopAdapterError.invalidArgument("Click count must be a positive integer")
         }
-        return clickCount
+    }
+
+    private static func parseScrollDirection(_ value: String) throws -> DesktopScrollDirection {
+        switch value.lowercased() {
+        case "up":
+            return .up
+        case "down":
+            return .down
+        case "left":
+            return .left
+        case "right":
+            return .right
+        default:
+            throw DesktopAdapterError.invalidArgument("Scroll direction must be up, down, left, or right")
+        }
+    }
+
+    private static func parsePositiveAmount(_ value: String) throws -> Int {
+        guard let amount = Int(value), amount > 0 else {
+            throw DesktopAdapterError.invalidArgument("Amount must be a positive integer")
+        }
+        return amount
     }
 
     private static func success<T: Encodable>(_ data: T) throws -> String {
@@ -298,6 +338,7 @@ public enum DesktopCommandRunner {
           input position
           input move --point <x,y>
           input click --point <x,y> [--button left|right|middle] [--count <n>]
+          input scroll --point <x,y> --direction <up|down|left|right> [--amount <n>]
         """
     }
 

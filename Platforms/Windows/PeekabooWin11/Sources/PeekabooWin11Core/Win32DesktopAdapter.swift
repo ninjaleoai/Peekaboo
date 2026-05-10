@@ -22,6 +22,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .readCursorPosition,
                 .moveCursor,
                 .clickMouse,
+                .scrollMouse,
             ])
     }
 
@@ -175,6 +176,45 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return (DWORD(MOUSEEVENTF_RIGHTDOWN), DWORD(MOUSEEVENTF_RIGHTUP))
         case .middle:
             return (DWORD(MOUSEEVENTF_MIDDLEDOWN), DWORD(MOUSEEVENTF_MIDDLEUP))
+        }
+    }
+
+    public func scroll(
+        at point: DesktopPoint,
+        direction: DesktopScrollDirection,
+        amount: Int) throws -> DesktopScrollResult
+    {
+        guard amount > 0 else {
+            throw Win11DesktopError.invalidArgument("Amount must be a positive integer")
+        }
+
+        _ = try self.moveCursor(to: point)
+        let scroll = Self.mouseScrollEvent(direction: direction, amount: amount)
+        mouse_event(scroll.flags, 0, 0, DWORD(bitPattern: scroll.delta), 0)
+
+        return DesktopScrollResult(
+            point: try self.cursorPosition(),
+            direction: direction,
+            amount: amount)
+    }
+
+    private static func mouseScrollEvent(
+        direction: DesktopScrollDirection,
+        amount: Int) -> (flags: DWORD, delta: Int32)
+    {
+        let wheelDelta = 120
+        let detents = min(amount, Int(Int32.max) / wheelDelta)
+        let delta = Int32(detents * wheelDelta)
+
+        switch direction {
+        case .up:
+            return (DWORD(MOUSEEVENTF_WHEEL), delta)
+        case .down:
+            return (DWORD(MOUSEEVENTF_WHEEL), -delta)
+        case .right:
+            return (DWORD(MOUSEEVENTF_HWHEEL), delta)
+        case .left:
+            return (DWORD(MOUSEEVENTF_HWHEEL), -delta)
         }
     }
 
