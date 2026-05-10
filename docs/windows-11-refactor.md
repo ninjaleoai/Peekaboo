@@ -41,7 +41,11 @@ changing existing macOS runtime behavior. The main macOS CLI now uses that
 adapter for the `list apps`, `list screens`, and `list windows` read paths
 while preserving the existing JSON payload shapes. The neutral window model
 now carries the cross-platform fields needed by CLI output, including z-order
-index, screen, Space, off-screen, layer, alpha, and on-screen metadata.
+index, screen, Space, off-screen, layer, alpha, and on-screen metadata. The
+first capture read path is also routed through the adapter: compatible
+`image --mode screen` PNG captures now use `DesktopAsyncAdapter.captureScreen`,
+while Retina, forced-engine, JPG, window, area, and frontmost captures stay on
+the existing macOS observation pipeline.
 
 ## Why This Seam
 
@@ -102,8 +106,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 capture 
 
 ## Next Integration Steps
 
-1. Continue routing the main macOS CLI capture read paths through the same
-   desktop adapter contract where the existing output behavior can be
+1. Continue routing the remaining main macOS CLI capture read paths through the
+   same desktop adapter contract where the existing output behavior can be
    preserved.
 2. Add Windows implementations for input and UI Automation after capture and
    enumeration have stable test coverage.

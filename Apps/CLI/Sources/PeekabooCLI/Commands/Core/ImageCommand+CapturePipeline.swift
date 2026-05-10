@@ -3,6 +3,7 @@ import Commander
 import CoreGraphics
 import Foundation
 import PeekabooCore
+import PeekabooDesktop
 import PeekabooFoundation
 
 @MainActor
@@ -89,6 +90,11 @@ extension ImageCommand {
     }
 
     private func captureScreens() async throws -> [ImageCapturedFile] {
+        let desktop = self.services.desktop
+        if await self.canUseDesktopScreenCapture(adapter: desktop) {
+            return try await self.captureDesktopScreens(adapter: desktop)
+        }
+
         if let index = self.screenIndex {
             let observation = try await self.captureObservation(
                 target: .screen(index: index),
@@ -122,6 +128,119 @@ extension ImageCommand {
         }
 
         return savedFiles
+    }
+
+    private func canUseDesktopScreenCapture(adapter: any DesktopAsyncAdapter) async -> Bool {
+        guard self.format == .png,
+              !self.retina,
+              self.captureEngine == nil,
+              self.configuredCaptureEnginePreference == nil
+        else {
+            return false
+        }
+
+        let platformInfo = await adapter.platformInfo()
+        return platformInfo.capabilities.contains(.captureScreenPNG)
+    }
+
+    private func captureDesktopScreens(adapter: any DesktopAsyncAdapter) async throws -> [ImageCapturedFile] {
+        let displays = try await adapter.listDisplays()
+        let snapshot = await self.desktopSnapshot(adapter: adapter, displays: displays)
+
+        if let index = self.screenIndex {
+            let capture = try await self.captureDesktopScreen(
+                adapter: adapter,
+                displayIndex: index,
+                preferredName: "screen\(index)",
+                index: nil,
+                stateSnapshot: snapshot)
+            return [capture]
+        }
+
+        let indexes = displays.isEmpty
+            ? [0]
+            : displays.sorted { $0.index < $1.index }.map(\.index)
+
+        var savedFiles: [ImageCapturedFile] = []
+        for (ordinal, displayIndex) in indexes.indexed() {
+            let capture = try await self.captureDesktopScreen(
+                adapter: adapter,
+                displayIndex: displayIndex,
+                preferredName: "screen\(displayIndex)",
+                index: ordinal,
+                stateSnapshot: snapshot)
+            savedFiles.append(capture)
+        }
+
+        return savedFiles
+    }
+
+    private func captureDesktopScreen(
+        adapter: any DesktopAsyncAdapter,
+        displayIndex: Int,
+        preferredName: String,
+        index: Int?,
+        stateSnapshot: DesktopStateSnapshotSummary?
+    ) async throws -> ImageCapturedFile {
+        let outputURL = self.makeOutputURL(preferredName: preferredName, index: index)
+        try FileManager.default.createDirectory(
+            at: outputURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+
+        let start = ContinuousClock.now
+        let result = try await adapter.captureScreen(
+            displayIndex: displayIndex,
+            outputPath: outputURL.path)
+        let span = Self.desktopCaptureSpan(start: start, result: result)
+
+        return ImageCapturedFile(
+            file: SavedFile(
+                path: result.path,
+                item_label: preferredName,
+                mime_type: result.format.mimeType),
+            observation: ImageObservationDiagnostics(
+                spans: [span],
+                stateSnapshot: stateSnapshot,
+                target: DesktopObservationTargetDiagnostics(
+                    requestedKind: "screen",
+                    resolvedKind: "screen",
+                    source: "desktop-adapter",
+                    bounds: result.bounds.cgRect)))
+    }
+
+    private func desktopSnapshot(
+        adapter: any DesktopAsyncAdapter,
+        displays: [DesktopDisplay]
+    ) async -> DesktopStateSnapshotSummary {
+        let applications = (try? await adapter.listApplications()) ?? []
+        let windows = (try? await adapter.listWindows(includeInvisible: true)) ?? []
+        let frontmostApplication = applications.first(where: \.isActive)?.applicationIdentity
+        let frontmostWindow = windows.first(where: \.isForeground)?.windowIdentity
+        let snapshot = DesktopStateSnapshot(
+            displays: displays.map(\.displayIdentity),
+            runningApplications: applications.map(\.applicationIdentity),
+            windows: windows.map(\.windowIdentity),
+            frontmostApplication: frontmostApplication,
+            frontmostWindow: frontmostWindow)
+
+        return DesktopStateSnapshotSummary(snapshot)
+    }
+
+    private static func desktopCaptureSpan(
+        start: ContinuousClock.Instant,
+        result: DesktopCaptureResult
+    ) -> ObservationSpan {
+        let duration = start.duration(to: ContinuousClock.now)
+        let milliseconds = Double(duration.components.seconds * 1000)
+            + Double(duration.components.attoseconds) / 1_000_000_000_000_000
+        return ObservationSpan(
+            name: "capture.screen",
+            durationMS: milliseconds,
+            metadata: [
+                "byte_count": "\(result.byteCount)",
+                "format": result.format.rawValue,
+                "source": "desktop-adapter",
+            ])
     }
 
     private func captureApplicationWindow(_ target: ImageWindowObservationTarget) async throws -> [ImageCapturedFile] {
@@ -260,5 +379,51 @@ extension ImageCommand {
             target: target,
             outputURL: url
         ))
+    }
+}
+
+private extension DesktopCaptureFormat {
+    var mimeType: String {
+        switch self {
+        case .bmp:
+            "image/bmp"
+        case .png:
+            "image/png"
+        }
+    }
+}
+
+private extension DesktopDisplay {
+    var displayIdentity: DisplayIdentity {
+        DisplayIdentity(
+            index: self.index,
+            name: self.name,
+            bounds: self.bounds.cgRect,
+            scaleFactor: CGFloat(self.scaleFactor))
+    }
+}
+
+private extension DesktopApplication {
+    var applicationIdentity: ApplicationIdentity {
+        ApplicationIdentity(
+            processIdentifier: Int32(clamping: self.processIdentifier),
+            bundleIdentifier: self.bundleIdentifier,
+            name: self.executableName)
+    }
+}
+
+private extension DesktopWindow {
+    var windowIdentity: WindowIdentity {
+        WindowIdentity(
+            windowID: Int(clamping: self.windowIdentifier),
+            title: self.title,
+            bounds: self.bounds.cgRect,
+            index: self.index)
+    }
+}
+
+private extension DesktopRect {
+    var cgRect: CGRect {
+        CGRect(x: self.x, y: self.y, width: self.width, height: self.height)
     }
 }

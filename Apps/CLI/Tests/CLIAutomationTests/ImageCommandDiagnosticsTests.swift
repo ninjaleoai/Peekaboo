@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import PeekabooCore
 import Testing
 @testable import PeekabooCLI
 
@@ -38,6 +39,52 @@ extension ImageCommandTests {
         #expect(response.data.observations.count == 1)
         #expect(response.data.observations[0].spans.contains { $0.name == "capture.screen" })
         #expect(response.data.observations[0].state_snapshot != nil)
+        try? FileManager.default.removeItem(atPath: path)
+    }
+
+    @Test(.tags(.imageCapture))
+    func `Compatible screen captures route through desktop adapter`() async throws {
+        let captureResult = Self.makeScreenCaptureResult(size: CGSize(width: 1200, height: 800), scale: 1.0)
+        let captureService = StubScreenCaptureService(permissionGranted: true)
+        var requestedDisplayIndex: Int?
+        var requestedScale: CaptureScalePreference?
+        captureService.captureScreenHandler = { displayIndex, scale in
+            requestedDisplayIndex = displayIndex
+            requestedScale = scale
+            return captureResult
+        }
+
+        let services = TestServicesFactory.makePeekabooServices(
+            screens: [Self.makeScreenInfo(scale: 2.0)],
+            screenCapture: captureService
+        )
+        let path = Self.makeTempCapturePath("desktop-adapter.png")
+
+        let result = try await InProcessCommandRunner.run(
+            [
+                "image",
+                "--mode", "screen",
+                "--path", path,
+                "--json",
+            ],
+            services: services
+        )
+
+        #expect(result.exitStatus == 0)
+        #expect(requestedDisplayIndex == 0)
+        #expect(requestedScale == .logical1x)
+
+        let response = try JSONDecoder().decode(
+            CodableJSONResponse<ImageCaptureResult>.self,
+            from: Data(result.combinedOutput.utf8)
+        )
+        let captureSpan = try #require(
+            response.data.observations[0].spans.first { $0.name == "capture.screen" }
+        )
+        #expect(captureSpan.metadata["source"] == "desktop-adapter")
+        #expect(response.data.files[0].path == path)
+        #expect(response.data.files[0].mime_type == "image/png")
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == captureResult.imageData)
         try? FileManager.default.removeItem(atPath: path)
     }
 }
