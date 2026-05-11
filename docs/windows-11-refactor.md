@@ -59,6 +59,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
   metadata in bounded snapshots
+- Table-pattern and TableItem-pattern UI Automation traversal direction and
+  header count metadata in bounded snapshots
 - Selection-pattern UI Automation multi-select, required-selection, and
   selected item count metadata in bounded snapshots
 - Transform-pattern UI Automation movement, resize, and rotation capability
@@ -465,10 +467,11 @@ identifier, class name, access key, accelerator key, framework ID, help text,
 item status, item type, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
 off-screen, and clickable-point status. When UIA exposes a clickable point,
-snapshots include its physical screen coordinates. Elements also report common supported UIA patterns,
-including invoke, value, range value, scroll, expand/collapse, window,
-selection item, text, toggle, grid, grid item, scroll item, and legacy
-IAccessible. When an element supports the UIA Value pattern, snapshots also
+snapshots include its physical screen coordinates. Elements also report common
+supported UIA patterns, including invoke, value, range value, scroll,
+expand/collapse, window, selection item, text, toggle, grid, grid item, table,
+table item, scroll item, and legacy IAccessible. When an element supports the
+UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
 element supports the
 UIA RangeValue pattern, snapshots include the current numeric value, minimum,
@@ -488,6 +491,10 @@ keyboard shortcut, default action, role ID, and state ID when UIA reports them.
 When an element supports the UIA Grid pattern, snapshots include row and
 column counts; GridItem elements include row, column, row span, and column
 span when UIA reports them.
+When an element supports the UIA Table pattern, snapshots include the primary
+row-or-column traversal direction plus row and column header counts when UIA
+reports them; TableItem elements include row and column header counts for the
+cell when UIA reports them.
 When an element supports the UIA Dock pattern, snapshots include the current
 dock position: top, left, bottom, right, fill, or none.
 When an element supports the UIA Toggle pattern, snapshots also include the

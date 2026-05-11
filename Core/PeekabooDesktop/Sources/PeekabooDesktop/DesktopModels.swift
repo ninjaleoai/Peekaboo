@@ -354,6 +354,8 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case legacyIAccessible
     case grid
     case gridItem
+    case table
+    case tableItem
     case transform
     case scrollItem
 }
@@ -424,6 +426,12 @@ public enum DesktopUIAutomationSupportedTextSelection: String, Codable, Equatabl
     case multiple
 }
 
+public enum DesktopUIAutomationRowOrColumnMajor: String, Codable, Equatable, Sendable {
+    case rowMajor
+    case columnMajor
+    case indeterminate
+}
+
 public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let index: Int
     public let parentIndex: Int?
@@ -486,6 +494,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let gridItemColumn: Int?
     public let gridItemRowSpan: Int?
     public let gridItemColumnSpan: Int?
+    public let tableRowOrColumnMajor: DesktopUIAutomationRowOrColumnMajor?
+    public let tableRowHeaderCount: Int?
+    public let tableColumnHeaderCount: Int?
+    public let tableItemRowHeaderCount: Int?
+    public let tableItemColumnHeaderCount: Int?
     public let selectionCanSelectMultiple: Bool?
     public let selectionIsRequired: Bool?
     public let selectionSelectedItemCount: Int?
@@ -566,6 +579,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         gridItemColumn: Int? = nil,
         gridItemRowSpan: Int? = nil,
         gridItemColumnSpan: Int? = nil,
+        tableRowOrColumnMajor: DesktopUIAutomationRowOrColumnMajor? = nil,
+        tableRowHeaderCount: Int? = nil,
+        tableColumnHeaderCount: Int? = nil,
+        tableItemRowHeaderCount: Int? = nil,
+        tableItemColumnHeaderCount: Int? = nil,
         selectionCanSelectMultiple: Bool? = nil,
         selectionIsRequired: Bool? = nil,
         selectionSelectedItemCount: Int? = nil,
@@ -645,6 +663,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.gridItemColumn = gridItemColumn
         self.gridItemRowSpan = gridItemRowSpan
         self.gridItemColumnSpan = gridItemColumnSpan
+        self.tableRowOrColumnMajor = tableRowOrColumnMajor
+        self.tableRowHeaderCount = tableRowHeaderCount
+        self.tableColumnHeaderCount = tableColumnHeaderCount
+        self.tableItemRowHeaderCount = tableItemRowHeaderCount
+        self.tableItemColumnHeaderCount = tableItemColumnHeaderCount
         self.selectionCanSelectMultiple = selectionCanSelectMultiple
         self.selectionIsRequired = selectionIsRequired
         self.selectionSelectedItemCount = selectionSelectedItemCount

@@ -271,6 +271,8 @@ final class DesktopModelTests: XCTestCase {
                 .legacyIAccessible,
                 .grid,
                 .gridItem,
+                .table,
+                .tableItem,
                 .transform,
                 .scrollItem,
             ])
@@ -333,6 +335,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.gridItemColumn, 0)
         XCTAssertEqual(snapshot.elements.first?.gridItemRowSpan, 1)
         XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
+        XCTAssertEqual(snapshot.elements.first?.tableRowOrColumnMajor, .rowMajor)
+        XCTAssertEqual(snapshot.elements.first?.tableRowHeaderCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.tableColumnHeaderCount, 2)
+        XCTAssertEqual(snapshot.elements.first?.tableItemRowHeaderCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.tableItemColumnHeaderCount, 1)
         XCTAssertEqual(snapshot.elements.first?.selectionCanSelectMultiple, true)
         XCTAssertEqual(snapshot.elements.first?.selectionIsRequired, false)
         XCTAssertEqual(snapshot.elements.first?.selectionSelectedItemCount, 0)
@@ -851,6 +858,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumn\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumnSpan\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"tableRowOrColumnMajor\" : \"rowMajor\""))
+        XCTAssertTrue(result.stdout.contains("\"tableRowHeaderCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"tableColumnHeaderCount\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"tableItemRowHeaderCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"tableItemColumnHeaderCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canResize\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
@@ -946,6 +958,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"tableRowOrColumnMajor\" : \"rowMajor\""))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
         XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
@@ -2860,6 +2873,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .legacyIAccessible,
                         .grid,
                         .gridItem,
+                        .table,
+                        .tableItem,
                         .transform,
                         .scrollItem,
                     ],
@@ -2901,6 +2916,11 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     gridItemColumn: 0,
                     gridItemRowSpan: 1,
                     gridItemColumnSpan: 2,
+                    tableRowOrColumnMajor: .rowMajor,
+                    tableRowHeaderCount: 1,
+                    tableColumnHeaderCount: 2,
+                    tableItemRowHeaderCount: 1,
+                    tableItemColumnHeaderCount: 1,
                     selectionCanSelectMultiple: true,
                     selectionIsRequired: false,
                     selectionSelectedItemCount: isSelected ? 1 : 0,

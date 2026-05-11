@@ -2821,6 +2821,21 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 gridItemColumnSpan: Self.optionalInt(
                     hasValue: nativeElement.hasGridItemColumnSpan,
                     value: nativeElement.gridItemColumnSpan),
+                tableRowOrColumnMajor: Self.uiAutomationRowOrColumnMajor(
+                    hasValue: nativeElement.hasTableRowOrColumnMajor,
+                    value: nativeElement.tableRowOrColumnMajor),
+                tableRowHeaderCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTableRowHeaderCount,
+                    value: nativeElement.tableRowHeaderCount),
+                tableColumnHeaderCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTableColumnHeaderCount,
+                    value: nativeElement.tableColumnHeaderCount),
+                tableItemRowHeaderCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTableItemRowHeaderCount,
+                    value: nativeElement.tableItemRowHeaderCount),
+                tableItemColumnHeaderCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTableItemColumnHeaderCount,
+                    value: nativeElement.tableItemColumnHeaderCount),
                 selectionCanSelectMultiple: selectionCanSelectMultiple,
                 selectionIsRequired: selectionIsRequired,
                 selectionSelectedItemCount: selectionSelectedItemCount,
@@ -3114,6 +3129,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func uiAutomationRowOrColumnMajor(
+        hasValue: Int32,
+        value: Int32) -> DesktopUIAutomationRowOrColumnMajor?
+    {
+        guard hasValue != 0 else {
+            return nil
+        }
+        switch value {
+        case 0:
+            return .rowMajor
+        case 1:
+            return .columnMajor
+        case 2:
+            return .indeterminate
+        default:
+            return nil
+        }
+    }
+
     private static func uiAutomationPatterns(from mask: UInt64) -> [DesktopUIAutomationPattern] {
         var patterns: [DesktopUIAutomationPattern] = []
         if Self.hasPatternBit(mask, 0) {
@@ -3157,6 +3191,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 11) {
             patterns.append(.gridItem)
+        }
+        if Self.hasPatternBit(mask, 16) {
+            patterns.append(.table)
+        }
+        if Self.hasPatternBit(mask, 17) {
+            patterns.append(.tableItem)
         }
         if Self.hasPatternBit(mask, 12) {
             patterns.append(.transform)
