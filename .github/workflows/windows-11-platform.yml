@@ -51,6 +51,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: peekaboo-win11-${{ github.sha }}
-          path: .artifacts\windows\peekaboo-win11.zip
+          path: |
+            .artifacts\windows\peekaboo-win11.zip
+            .artifacts\windows\peekaboo-win11.zip.sha256
           if-no-files-found: error
           retention-days: 14

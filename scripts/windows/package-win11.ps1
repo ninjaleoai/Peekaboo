@@ -20,6 +20,7 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 $outputRootPath = [System.IO.Path]::GetFullPath($OutputRoot)
 $stagingPath = Join-Path $outputRootPath "peekaboo-win11"
 $zipPath = Join-Path $outputRootPath "peekaboo-win11.zip"
+$checksumPath = "$zipPath.sha256"
 
 if (-not (Test-Path $packagePath)) {
     throw "Windows package path not found: $packagePath"
@@ -31,6 +32,7 @@ if (-not (Get-Command swift -ErrorAction SilentlyContinue)) {
 
 Remove-Item $stagingPath -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+Remove-Item $checksumPath -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $stagingPath -Force | Out-Null
 
 if (-not $SkipBuild) {
@@ -89,7 +91,11 @@ surface and current integration notes.
 '@ | Set-Content -Path (Join-Path $stagingPath "README.md") -Encoding UTF8
 
 Compress-Archive -Path (Join-Path $stagingPath "*") -DestinationPath $zipPath -Force
+$zipHash = Get-FileHash -Algorithm SHA256 -Path $zipPath
+$checksumLine = "{0}  {1}" -f $zipHash.Hash.ToLowerInvariant(), (Split-Path -Leaf $zipPath)
+$checksumLine | Set-Content -Path $checksumPath -Encoding UTF8
 
 Write-Host "Packaged peekaboo-win11:"
 Write-Host "  Staging: $stagingPath"
 Write-Host "  Archive: $zipPath"
+Write-Host "  Checksum: $checksumPath"
