@@ -866,7 +866,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            value: text)
+            value: text,
+            valueWasVerified: Self.textResultWasVerified(
+                result: text,
+                maxLength: maxLength,
+                source: source,
+                element: element))
     }
 
     public func setUIAutomationElementRangeValue(
@@ -4525,6 +4530,34 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return nil
         }
         return resultRow == row && resultColumn == column
+    }
+
+    private static func textResultWasVerified(
+        result: String,
+        maxLength: Int,
+        source: DesktopUIAutomationTextSource,
+        element: DesktopUIAutomationElementSnapshot) -> Bool?
+    {
+        let observed: String?
+        switch source {
+        case .document:
+            observed = element.text
+        case .selected:
+            observed = element.selectedText
+        case .visible:
+            observed = element.visibleText
+        }
+
+        guard let observed else {
+            return nil
+        }
+        if String(observed.prefix(maxLength)) == result {
+            return true
+        }
+        if observed.utf8.count < 255 {
+            return false
+        }
+        return nil
     }
 
     private static func zoomByUnitWasVerified(

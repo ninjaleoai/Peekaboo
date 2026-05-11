@@ -512,6 +512,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(getText.action, .getText)
         XCTAssertEqual(getText.elementIndex, 0)
         XCTAssertEqual(getText.value, "Example text")
+        XCTAssertEqual(getText.valueWasVerified, true)
         XCTAssertEqual(setRangeValue.action, .setRangeValue)
         XCTAssertEqual(setRangeValue.elementIndex, 0)
         XCTAssertEqual(setRangeValue.value, "42.5")
@@ -1478,6 +1479,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"getText\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"visible\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationGetTextIndex() {
@@ -3126,6 +3128,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         case .visible:
             text = element.visibleText ?? ""
         }
+        let boundedText = String(text.prefix(maxLength))
 
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
@@ -3135,7 +3138,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
             element: element,
-            value: String(text.prefix(maxLength)))
+            value: boundedText,
+            valueWasVerified: true)
     }
 
     func setUIAutomationElementRangeValue(

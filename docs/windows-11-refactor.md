@@ -713,10 +713,11 @@ before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
 result can include post-action element metadata and whether the requested value
 was observed. `automation get-text` reads Text-pattern document, selected, or
 visible ranges with a caller-provided max length capped at 4096 characters and
-returns the text in the action `value`. `automation set-range-value` targets
-RangeValue-pattern elements, rejecting known read-only and out-of-range values
-before calling UIA `SetValue`, then verifies the refreshed numeric value when
-UIA reports one.
+returns the text in the action `value`; the action is marked verified when the
+bounded result matches Text-pattern metadata already visible in the pre-action
+snapshot. `automation set-range-value` targets RangeValue-pattern elements,
+rejecting known read-only and out-of-range values before calling UIA `SetValue`,
+then verifies the refreshed numeric value when UIA reports one.
 `automation set-scroll-percent` does the same for Scroll-pattern elements,
 rejecting known unscrollable requested axes before calling UIA
 `SetScrollPercent`, then verifies refreshed scroll percentages for requested
