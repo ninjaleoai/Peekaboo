@@ -82,6 +82,41 @@ if (-not $helpText.Contains("automation snapshot")) {
     throw "Packaged help output did not include the automation command surface."
 }
 
+$platformOutput = & $executablePath platform-info 2>&1
+$platformExitCode = $LASTEXITCODE
+if ($platformExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe platform-info exited with $platformExitCode. Output: $platformOutput"
+}
+
+$platformText = $platformOutput -join "`n"
+try {
+    $platformEnvelope = $platformText | ConvertFrom-Json
+} catch {
+    throw "Packaged platform-info output was not valid JSON. Output: $platformText"
+}
+
+if ($platformEnvelope.ok -ne $true) {
+    throw "Packaged platform-info did not return ok=true. Output: $platformText"
+}
+if ($platformEnvelope.data.name -ne "Windows") {
+    throw "Packaged platform-info returned unexpected platform name: $($platformEnvelope.data.name)"
+}
+if ($platformEnvelope.data.minimumSystemVersion -ne "Windows 11") {
+    $version = $platformEnvelope.data.minimumSystemVersion
+    throw "Packaged platform-info returned unexpected minimum system version: $version"
+}
+if ($platformEnvelope.data.nativeBackend -ne "Win32") {
+    throw "Packaged platform-info returned unexpected native backend: $($platformEnvelope.data.nativeBackend)"
+}
+
+$platformCapabilities = @($platformEnvelope.data.capabilities)
+if (-not ($platformCapabilities -contains "captureScreenBMP")) {
+    throw "Packaged platform-info did not advertise BMP screen capture."
+}
+if (-not ($platformCapabilities -contains "inspectUIAutomation")) {
+    throw "Packaged platform-info did not advertise UI Automation inspection."
+}
+
 Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"

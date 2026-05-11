@@ -155,7 +155,7 @@ model and command-runner seam in
 maps the existing macOS service models into the same neutral contract without
 changing macOS runtime behavior. The Windows CI packages and verifies
 `peekaboo-win11.exe` and its checksum as a workflow artifact for branch and PR
-validation. See
+validation, including packaged `--help` and `platform-info` smoke checks. See
 [`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the current
 Windows command surface, build steps, and remaining integration notes.
 

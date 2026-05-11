@@ -33,7 +33,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - focused text typing through Win32 keyboard input APIs
 - release-mode `peekaboo-win11.exe` packaging as a Windows workflow artifact
 - SHA-256 checksum publishing for the packaged Windows workflow artifact
-- packaged CLI verification for checksum, archive contents, and `--help`
+- packaged CLI verification for checksum, archive contents, `--help`, and
+  `platform-info`
 - native UI Automation availability probing through the Windows UI Automation
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
