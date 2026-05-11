@@ -295,6 +295,9 @@ final class DesktopModelTests: XCTestCase {
                 .textChild,
                 .toggle,
                 .legacyIAccessible,
+                .itemContainer,
+                .synchronizedInput,
+                .objectModel,
                 .grid,
                 .gridItem,
                 .spreadsheet,
@@ -309,6 +312,7 @@ final class DesktopModelTests: XCTestCase {
                 .styles,
                 .drag,
                 .dropTarget,
+                .customNavigation,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -916,6 +920,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"realize\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
+        XCTAssertTrue(result.stdout.contains("\"itemContainer\""))
+        XCTAssertTrue(result.stdout.contains("\"synchronizedInput\""))
+        XCTAssertTrue(result.stdout.contains("\"objectModel\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
@@ -927,6 +934,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"styles\""))
         XCTAssertTrue(result.stdout.contains("\"drag\""))
         XCTAssertTrue(result.stdout.contains("\"dropTarget\""))
+        XCTAssertTrue(result.stdout.contains("\"customNavigation\""))
         XCTAssertTrue(result.stdout.contains("\"spreadsheet\""))
         XCTAssertTrue(result.stdout.contains("\"spreadsheetItem\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
@@ -3240,6 +3248,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
             .textChild,
             .toggle,
             .legacyIAccessible,
+            .itemContainer,
+            .synchronizedInput,
+            .objectModel,
             .grid,
             .gridItem,
             .spreadsheet,
@@ -3257,6 +3268,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         supportedPatterns.append(.styles)
         supportedPatterns.append(.drag)
         supportedPatterns.append(.dropTarget)
+        supportedPatterns.append(.customNavigation)
         supportedPatterns.append(.scrollItem)
 
         DesktopUIAutomationSnapshot(

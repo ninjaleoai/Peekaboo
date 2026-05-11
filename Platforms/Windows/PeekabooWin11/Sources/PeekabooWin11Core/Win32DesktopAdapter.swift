@@ -3794,6 +3794,15 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if Self.hasPatternBit(mask, 9) {
             patterns.append(.legacyIAccessible)
         }
+        if Self.hasPatternBit(mask, 30) {
+            patterns.append(.itemContainer)
+        }
+        if Self.hasPatternBit(mask, 31) {
+            patterns.append(.synchronizedInput)
+        }
+        if Self.hasPatternBit(mask, 32) {
+            patterns.append(.objectModel)
+        }
         if Self.hasPatternBit(mask, 10) {
             patterns.append(.grid)
         }
@@ -3835,6 +3844,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 24) {
             patterns.append(.dropTarget)
+        }
+        if Self.hasPatternBit(mask, 33) {
+            patterns.append(.customNavigation)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)

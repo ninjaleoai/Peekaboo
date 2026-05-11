@@ -359,6 +359,9 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case textChild
     case toggle
     case legacyIAccessible
+    case itemContainer
+    case synchronizedInput
+    case objectModel
     case grid
     case gridItem
     case spreadsheet
@@ -372,6 +375,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case styles
     case drag
     case dropTarget
+    case customNavigation
     case virtualizedItem
     case scrollItem
 }

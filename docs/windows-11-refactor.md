@@ -88,6 +88,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   property metadata in bounded snapshots
 - Drag-pattern and DropTarget-pattern UI Automation effect and grabbed-state
   metadata in bounded snapshots
+- ItemContainer, SynchronizedInput, ObjectModel, and CustomNavigation UI
+  Automation pattern availability in bounded snapshots
 - VirtualizedItem-pattern UI Automation realize actions against a bounded
   snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
@@ -543,6 +545,7 @@ supported UIA patterns, including invoke, value, range value, scroll,
 expand/collapse, window, selection item, text, text2, textEdit, textChild,
 toggle, grid, grid item, spreadsheet, spreadsheet item, table, table item,
 transform, transform2, multiple view, annotation, styles, drag, drop target,
+item container, synchronized input, object model, custom navigation,
 virtualized item, scroll item, and legacy IAccessible. When an element supports
 the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an

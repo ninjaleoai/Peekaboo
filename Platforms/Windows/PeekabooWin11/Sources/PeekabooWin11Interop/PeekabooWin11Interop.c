@@ -422,6 +422,10 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TextChildPatternId, 1ULL << 27, snapshot);
     PeekabooWin11MarkPattern(element, UIA_SpreadsheetPatternId, 1ULL << 28, snapshot);
     PeekabooWin11MarkPattern(element, UIA_SpreadsheetItemPatternId, 1ULL << 29, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ItemContainerPatternId, 1ULL << 30, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_SynchronizedInputPatternId, 1ULL << 31, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_ObjectModelPatternId, 1ULL << 32, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_CustomNavigationPatternId, 1ULL << 33, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
