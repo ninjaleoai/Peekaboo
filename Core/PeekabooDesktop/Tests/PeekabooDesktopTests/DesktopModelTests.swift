@@ -275,6 +275,7 @@ final class DesktopModelTests: XCTestCase {
                 .tableItem,
                 .transform,
                 .transform2,
+                .multipleView,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -351,6 +352,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.zoomLevel, 125.0)
         XCTAssertEqual(snapshot.elements.first?.zoomMinimum, 50.0)
         XCTAssertEqual(snapshot.elements.first?.zoomMaximum, 400.0)
+        XCTAssertEqual(snapshot.elements.first?.multipleViewCurrentView, 2)
+        XCTAssertEqual(snapshot.elements.first?.multipleViewCurrentViewName, "Details")
+        XCTAssertEqual(snapshot.elements.first?.multipleViewSupportedViewCount, 3)
         XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
         XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
         XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
@@ -875,6 +879,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 125"))
         XCTAssertTrue(result.stdout.contains("\"zoomMinimum\" : 50"))
         XCTAssertTrue(result.stdout.contains("\"zoomMaximum\" : 400"))
+        XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentView\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentViewName\" : \"Details\""))
+        XCTAssertTrue(result.stdout.contains("\"multipleViewSupportedViewCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
@@ -971,6 +978,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
         XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 125"))
+        XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentViewName\" : \"Details\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
@@ -2887,6 +2895,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .tableItem,
                         .transform,
                         .transform2,
+                        .multipleView,
                         .scrollItem,
                     ],
                     availableActions: self.stubAvailableActions(
@@ -2942,6 +2951,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     zoomLevel: 125.0,
                     zoomMinimum: 50.0,
                     zoomMaximum: 400.0,
+                    multipleViewCurrentView: 2,
+                    multipleViewCurrentViewName: "Details",
+                    multipleViewSupportedViewCount: 3,
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
                     legacyValue: legacyValue,

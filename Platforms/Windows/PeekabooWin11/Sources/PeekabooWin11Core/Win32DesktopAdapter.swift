@@ -2860,6 +2860,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 zoomMaximum: Self.optionalDouble(
                     hasValue: nativeElement.hasZoomMaximum,
                     value: nativeElement.zoomMaximum),
+                multipleViewCurrentView: Self.optionalInt(
+                    hasValue: nativeElement.hasMultipleViewCurrentView,
+                    value: nativeElement.multipleViewCurrentView),
+                multipleViewCurrentViewName: nativeElement.hasMultipleViewCurrentViewName != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(
+                            &nativeElement))
+                    : nil,
+                multipleViewSupportedViewCount: Self.optionalInt(
+                    hasValue: nativeElement.hasMultipleViewSupportedViewCount,
+                    value: nativeElement.multipleViewSupportedViewCount),
                 legacyChildId: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyChildId,
                     value: nativeElement.legacyChildId),
@@ -3215,6 +3226,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 18) {
             patterns.append(.transform2)
+        }
+        if Self.hasPatternBit(mask, 19) {
+            patterns.append(.multipleView)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)

@@ -67,6 +67,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Transform2-pattern UI Automation zoom capability and level metadata in
   bounded snapshots
+- MultipleView-pattern UI Automation current-view metadata in bounded snapshots
 - Transform-pattern UI Automation move, resize, and rotate actions against a
   bounded snapshot element index
 - refreshed post-action verification metadata for observable UI Automation
@@ -472,8 +473,8 @@ off-screen, and clickable-point status. When UIA exposes a clickable point,
 snapshots include its physical screen coordinates. Elements also report common
 supported UIA patterns, including invoke, value, range value, scroll,
 expand/collapse, window, selection item, text, toggle, grid, grid item, table,
-table item, transform, transform2, scroll item, and legacy IAccessible. When an
-element supports the UIA Value pattern, snapshots also
+table item, transform, transform2, multiple view, scroll item, and legacy
+IAccessible. When an element supports the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
 element supports the
 UIA RangeValue pattern, snapshots include the current numeric value, minimum,
@@ -507,7 +508,9 @@ partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently
 selected. When an element supports the UIA Transform2 pattern, snapshots include
 whether zooming is supported plus current, minimum, and maximum zoom levels when
-UIA reports them. Elements also expose stable available actions derived from those
+UIA reports them. When an element supports the UIA MultipleView pattern,
+snapshots include the current view identifier, localized current view name, and
+supported view count when UIA reports them. Elements also expose stable available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
 element is keyboard focusable, invoke is available when the Invoke pattern is
 present, performLegacyDefaultAction is available when the Legacy IAccessible

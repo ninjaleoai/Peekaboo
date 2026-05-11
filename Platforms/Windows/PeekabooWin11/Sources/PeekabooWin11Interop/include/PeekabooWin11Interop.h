@@ -141,6 +141,11 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     double zoomMinimum;
     int32_t hasZoomMaximum;
     double zoomMaximum;
+    int32_t hasMultipleViewCurrentView;
+    int32_t multipleViewCurrentView;
+    int32_t hasMultipleViewSupportedViewCount;
+    int32_t multipleViewSupportedViewCount;
+    int32_t hasMultipleViewCurrentViewName;
     int32_t hasLegacyChildId;
     int32_t legacyChildId;
     int32_t hasLegacyRole;
@@ -170,6 +175,7 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char selectedText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char visibleText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char multipleViewCurrentViewName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyValue[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyDescription[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -404,6 +410,9 @@ const char *PeekabooWin11UIAutomationElementSelectedText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementVisibleText(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

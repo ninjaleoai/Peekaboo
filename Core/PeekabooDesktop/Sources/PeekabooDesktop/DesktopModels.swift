@@ -358,6 +358,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case tableItem
     case transform
     case transform2
+    case multipleView
     case scrollItem
 }
 
@@ -510,6 +511,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let zoomLevel: Double?
     public let zoomMinimum: Double?
     public let zoomMaximum: Double?
+    public let multipleViewCurrentView: Int?
+    public let multipleViewCurrentViewName: String?
+    public let multipleViewSupportedViewCount: Int?
     public let legacyChildId: Int?
     public let legacyName: String?
     public let legacyValue: String?
@@ -599,6 +603,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         zoomLevel: Double? = nil,
         zoomMinimum: Double? = nil,
         zoomMaximum: Double? = nil,
+        multipleViewCurrentView: Int? = nil,
+        multipleViewCurrentViewName: String? = nil,
+        multipleViewSupportedViewCount: Int? = nil,
         legacyChildId: Int? = nil,
         legacyName: String? = nil,
         legacyValue: String? = nil,
@@ -687,6 +694,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.zoomLevel = zoomLevel
         self.zoomMinimum = zoomMinimum
         self.zoomMaximum = zoomMaximum
+        self.multipleViewCurrentView = multipleViewCurrentView
+        self.multipleViewCurrentViewName = multipleViewCurrentViewName
+        self.multipleViewSupportedViewCount = multipleViewSupportedViewCount
         self.legacyChildId = legacyChildId
         self.legacyName = legacyName
         self.legacyValue = legacyValue

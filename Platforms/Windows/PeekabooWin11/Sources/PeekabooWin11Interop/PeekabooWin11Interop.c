@@ -407,6 +407,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TablePatternId, 1ULL << 16, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TableItemPatternId, 1ULL << 17, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TransformPattern2Id, 1ULL << 18, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_MultipleViewPatternId, 1ULL << 19, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1228,6 +1229,77 @@ static void PeekabooWin11CopyElementTransform2Pattern(
     }
 
     IUIAutomationTransformPattern2_Release(transformPattern);
+}
+
+static void PeekabooWin11CopyElementMultipleViewPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_MultipleViewPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationMultipleViewPattern *multipleViewPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationMultipleViewPattern,
+        (void **)&multipleViewPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || multipleViewPattern == NULL) {
+        return;
+    }
+
+    int currentView = 0;
+    HRESULT currentViewResult = IUIAutomationMultipleViewPattern_get_CurrentCurrentView(
+        multipleViewPattern,
+        &currentView);
+    if (PeekabooWin11Succeeded(currentViewResult)) {
+        snapshot->hasMultipleViewCurrentView = 1;
+        snapshot->multipleViewCurrentView = (int32_t)currentView;
+
+        BSTR viewName = NULL;
+        HRESULT viewNameResult = IUIAutomationMultipleViewPattern_GetViewName(
+            multipleViewPattern,
+            currentView,
+            &viewName);
+        if (PeekabooWin11Succeeded(viewNameResult)) {
+            snapshot->hasMultipleViewCurrentViewName = 1;
+            PeekabooWin11CopyBSTR(
+                viewName,
+                snapshot->multipleViewCurrentViewName,
+                PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+        }
+        if (viewName != NULL) {
+            SysFreeString(viewName);
+        }
+    }
+
+    SAFEARRAY *supportedViews = NULL;
+    HRESULT supportedViewsResult = IUIAutomationMultipleViewPattern_GetCurrentSupportedViews(
+        multipleViewPattern,
+        &supportedViews);
+    if (PeekabooWin11Succeeded(supportedViewsResult) && supportedViews != NULL) {
+        LONG lowerBound = 0;
+        LONG upperBound = -1;
+        HRESULT lowerBoundResult = SafeArrayGetLBound(supportedViews, 1, &lowerBound);
+        HRESULT upperBoundResult = SafeArrayGetUBound(supportedViews, 1, &upperBound);
+        if (PeekabooWin11Succeeded(lowerBoundResult) &&
+            PeekabooWin11Succeeded(upperBoundResult))
+        {
+            snapshot->hasMultipleViewSupportedViewCount = 1;
+            snapshot->multipleViewSupportedViewCount =
+                upperBound >= lowerBound ? (int32_t)(upperBound - lowerBound + 1) : 0;
+        }
+        SafeArrayDestroy(supportedViews);
+    }
+
+    IUIAutomationMultipleViewPattern_Release(multipleViewPattern);
 }
 
 static void PeekabooWin11CopyLegacyString(
@@ -2269,6 +2341,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTableItemPattern(element, snapshot);
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
     PeekabooWin11CopyElementTransform2Pattern(element, snapshot);
+    PeekabooWin11CopyElementMultipleViewPattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
@@ -3646,6 +3719,12 @@ const char *PeekabooWin11UIAutomationElementVisibleText(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->visibleText;
+}
+
+const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->multipleViewCurrentViewName;
 }
 
 const char *PeekabooWin11UIAutomationElementLegacyName(
