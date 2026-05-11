@@ -172,8 +172,8 @@ Transform2-pattern, SynchronizedInput-pattern, CustomNavigation-pattern,
 ItemContainer-pattern, Spreadsheet-pattern, Grid-pattern, and
 VirtualizedItem-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
-advertises availability only when UIA reports that the element is keyboard
-focusable.
+advertises availability only when UIA reports that the element is enabled and
+keyboard focusable.
 `automation legacy-default-action --index <n>` calls the LegacyIAccessible
 pattern default action for older MSAA-backed controls when UIA exposes a default
 action string.
@@ -667,12 +667,12 @@ when UIA reports them.
 Elements also expose stable
 available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
-element is keyboard focusable, invoke is available when the Invoke pattern is
-present, performLegacyDefaultAction is available when the Legacy IAccessible
+element is enabled and keyboard focusable, invoke is available when the Invoke
+pattern is present, performLegacyDefaultAction is available when the Legacy IAccessible
 pattern exposes a non-empty default action string, setLegacyValue is available
 when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
-element, setValue is available only when the Value pattern is present and known
-writable, getText is available when the Text pattern is present, setRangeValue
+element, setValue is available only when the Value pattern is present and the
+element is enabled and known writable, getText is available when the Text pattern is present, setRangeValue
 is available only when the RangeValue pattern is present and known writable,
 setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is

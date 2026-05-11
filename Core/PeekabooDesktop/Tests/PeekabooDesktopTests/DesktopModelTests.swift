@@ -27,6 +27,17 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(output.contains("\"nativeBackend\" : \"Win32\""))
     }
 
+    func testDisabledUIAutomationElementsOmitUnavailableActions() throws {
+        let adapter = StubDesktopAdapter(isEnabled: false)
+        let snapshot = try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4)
+        let actions = try XCTUnwrap(snapshot.elements.first?.availableActions)
+
+        XCTAssertFalse(actions.contains(.focus))
+        XCTAssertFalse(actions.contains(.setLegacyValue))
+        XCTAssertFalse(actions.contains(.setValue))
+        XCTAssertTrue(actions.contains(.invoke))
+    }
+
     func testDesktopWindowDecodesMissingShareableAsTrue() throws {
         let data = Data("""
         {
@@ -4417,7 +4428,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .scrollIntoView,
             ]
         }
-        return isEnabled ? actions : actions.filter { $0 != .setValue }
+        return isEnabled
+            ? actions
+            : actions.filter { ![.focus, .setLegacyValue, .setValue].contains($0) }
     }
 
     private func scrollPercentValue(horizontalPercent: Double?, verticalPercent: Double?) -> String {

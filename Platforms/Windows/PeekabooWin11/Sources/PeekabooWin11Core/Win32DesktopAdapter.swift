@@ -4223,7 +4223,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         canZoom: Bool?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
-        if isKeyboardFocusable == true {
+        if isKeyboardFocusable == true, isEnabled != false {
             actions.append(.focus)
         }
         if supportedPatterns.contains(.invoke) {
