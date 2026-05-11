@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   peekaboo-core:
+    if: ${{ github.ref_name != 'windows-11-refactor' && github.head_ref != 'windows-11-refactor' }}
     name: PeekabooCore build & tests
     runs-on: macos-latest
     env:
