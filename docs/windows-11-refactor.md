@@ -143,6 +143,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - SelectionItem-pattern UI Automation add-to-selection and
   remove-from-selection actions against a bounded snapshot element index
+- SelectionItem-pattern UI Automation disabled-state action suppression and
+  preflight rejection
 - SelectionItem-pattern UI Automation add/remove preflight rejection for known
   unsupported selection-container states
 
@@ -731,9 +733,10 @@ present, toggle is available when the Toggle pattern is present on an enabled
 element, expand is available for enabled collapsed or partially expanded
 ExpandCollapse elements, collapse is available for enabled expanded or
 partially expanded ExpandCollapse elements, select is available when the
-SelectionItem pattern is present, addToSelection and removeFromSelection are
-available when Selection-pattern metadata indicates the selection container can
-support the action, and scrollIntoView is available when the ScrollItem pattern
+SelectionItem pattern is present on an enabled element, addToSelection and
+removeFromSelection are available for enabled elements when Selection-pattern
+metadata indicates the selection container can support the action, and
+scrollIntoView is available when the ScrollItem pattern
 is present.
 Root snapshots should stay shallow because desktop-wide UIA traversal is
 expensive. `automation element --index <n>`
@@ -834,13 +837,14 @@ and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 disabled elements and leaf nodes before calling UIA, and return refreshed post-action element
 metadata with the latest expand/collapse state and verification of the target
 expanded or collapsed state when UIA reports one.
-`automation select` performs the UIA SelectionItem pattern and returns
-refreshed post-action element metadata with verification that the selected state
-is true when UIA reports it. `automation toggle` verifies that the refreshed
-toggle state changed when both the pre-action and post-action states are
-observable. `automation add-to-selection` and
-`automation remove-from-selection` perform the matching UIA SelectionItem
-methods and verify the refreshed selected state when UIA reports it.
+`automation select` performs the UIA SelectionItem pattern after rejecting known
+disabled elements, then returns refreshed post-action element metadata with
+verification that the selected state is true when UIA reports it. `automation
+toggle` verifies that the refreshed toggle state changed when both the
+pre-action and post-action states are observable. `automation add-to-selection`
+and `automation remove-from-selection` perform the matching UIA SelectionItem
+methods after rejecting known disabled elements, then verify the refreshed
+selected state when UIA reports it.
 
 ## Next Integration Steps
 

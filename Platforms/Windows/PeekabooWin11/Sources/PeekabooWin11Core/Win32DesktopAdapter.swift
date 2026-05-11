@@ -2276,6 +2276,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support selection item")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
 
         let nativeResult = PeekabooWin11SelectUIAutomationElement(
             Self.nativeUIAutomationScope(scope),
@@ -2357,6 +2361,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         guard element.supportedPatterns.contains(.selectionItem) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support selection item")
+        }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         if action == .addToSelection, element.selectionCanSelectMultiple == false {
             throw Win11DesktopError.invalidArgument(
@@ -4471,7 +4479,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 break
             }
         }
-        if supportedPatterns.contains(.selectionItem) {
+        if supportedPatterns.contains(.selectionItem), isEnabled != false {
             actions.append(.select)
             if selectionCanSelectMultiple == true {
                 actions.append(.addToSelection)
