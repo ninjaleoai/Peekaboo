@@ -650,13 +650,33 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(snapshot.elements.contains { element in
             element.isEnabled != nil || element.isOffscreen != nil
         })
+        let disabledSuppressedActions: [DesktopUIAutomationAction] = [
+            .focus,
+            .invoke,
+            .performLegacyDefaultAction,
+            .setLegacyValue,
+            .setValue,
+            .setRangeValue,
+            .setDockPosition,
+            .setCurrentView,
+            .setZoomLevel,
+            .zoomByUnit,
+            .move,
+            .resize,
+            .rotate,
+            .toggle,
+            .expand,
+            .collapse,
+            .select,
+            .addToSelection,
+            .removeFromSelection,
+        ]
         for element in snapshot.elements where element.isEnabled == false {
-            XCTAssertFalse(element.availableActions.contains(.focus))
-            XCTAssertFalse(element.availableActions.contains(.invoke))
-            XCTAssertFalse(element.availableActions.contains(.expand))
-            XCTAssertFalse(element.availableActions.contains(.collapse))
-            XCTAssertFalse(element.availableActions.contains(.setLegacyValue))
-            XCTAssertFalse(element.availableActions.contains(.setValue))
+            for action in disabledSuppressedActions {
+                XCTAssertFalse(
+                    element.availableActions.contains(action),
+                    "Disabled element \(element.index) unexpectedly advertises \(action.rawValue)")
+            }
         }
         #else
         throw XCTSkip("Native Windows UI Automation snapshot smoke test only runs on Windows.")
