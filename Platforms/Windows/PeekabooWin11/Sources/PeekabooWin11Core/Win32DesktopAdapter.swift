@@ -2672,6 +2672,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 className: Self.string(from: PeekabooWin11UIAutomationElementClassName(&nativeElement)),
                 localizedControlType: Self.string(
                     from: PeekabooWin11UIAutomationElementLocalizedControlType(&nativeElement)),
+                accessKey: Self.string(from: PeekabooWin11UIAutomationElementAccessKey(&nativeElement)),
+                acceleratorKey: Self.string(
+                    from: PeekabooWin11UIAutomationElementAcceleratorKey(&nativeElement)),
+                frameworkId: Self.string(from: PeekabooWin11UIAutomationElementFrameworkId(&nativeElement)),
+                helpText: Self.string(from: PeekabooWin11UIAutomationElementHelpText(&nativeElement)),
+                itemStatus: Self.string(from: PeekabooWin11UIAutomationElementItemStatus(&nativeElement)),
+                itemType: Self.string(from: PeekabooWin11UIAutomationElementItemType(&nativeElement)),
                 controlType: Int(nativeElement.controlType),
                 controlTypeName: Self.uiAutomationControlTypeName(nativeElement.controlType),
                 processIdentifier: nativeElement.processIdentifier > 0

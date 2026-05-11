@@ -432,6 +432,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let automationIdentifier: String?
     public let className: String?
     public let localizedControlType: String?
+    public let accessKey: String?
+    public let acceleratorKey: String?
+    public let frameworkId: String?
+    public let helpText: String?
+    public let itemStatus: String?
+    public let itemType: String?
     public let controlType: Int
     public let controlTypeName: String?
     public let processIdentifier: UInt32?
@@ -504,6 +510,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         automationIdentifier: String? = nil,
         className: String? = nil,
         localizedControlType: String? = nil,
+        accessKey: String? = nil,
+        acceleratorKey: String? = nil,
+        frameworkId: String? = nil,
+        helpText: String? = nil,
+        itemStatus: String? = nil,
+        itemType: String? = nil,
         controlType: Int = 0,
         controlTypeName: String? = nil,
         processIdentifier: UInt32? = nil,
@@ -575,6 +587,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.automationIdentifier = automationIdentifier
         self.className = className
         self.localizedControlType = localizedControlType
+        self.accessKey = accessKey
+        self.acceleratorKey = acceleratorKey
+        self.frameworkId = frameworkId
+        self.helpText = helpText
+        self.itemStatus = itemStatus
+        self.itemType = itemType
         self.controlType = controlType
         self.controlTypeName = controlTypeName
         self.processIdentifier = processIdentifier

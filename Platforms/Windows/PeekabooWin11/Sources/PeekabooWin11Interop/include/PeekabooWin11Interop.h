@@ -138,6 +138,12 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char automationIdentifier[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char className[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char localizedControlType[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char accessKey[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char acceleratorKey[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char frameworkId[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char helpText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char itemStatus[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char itemType[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char value[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char selectedText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -346,6 +352,24 @@ const char *PeekabooWin11UIAutomationElementClassName(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLocalizedControlType(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementAccessKey(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementAcceleratorKey(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementFrameworkId(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementHelpText(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementItemStatus(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementItemType(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementValue(

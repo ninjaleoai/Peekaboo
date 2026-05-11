@@ -34,6 +34,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
   cursor-hit element snapshots through the UIA control view walker
+- common UI Automation element metadata for access keys, accelerator keys,
+  framework IDs, help text, item status, and item type
 - stable UI Automation action availability mapping for snapshot elements
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Window-pattern UI Automation set-window-state actions against a bounded
@@ -457,7 +459,8 @@ element, or element under the current cursor, then walks the UIA control view
 with explicit `--max-depth` and
 `--max-elements` limits. Snapshot elements include the raw control type, stable
 non-localized control type name, localized control type, name, automation
-identifier, class name, process ID, native window handle, bounds, depth, parent
+identifier, class name, access key, accelerator key, framework ID, help text,
+item status, item type, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
 and off-screen status. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,

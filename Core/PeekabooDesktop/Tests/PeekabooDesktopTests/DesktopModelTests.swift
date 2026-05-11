@@ -242,6 +242,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elementCount, 1)
         XCTAssertEqual(snapshot.elements.first?.name, "Desktop")
         XCTAssertEqual(snapshot.elements.first?.controlTypeName, "Pane")
+        XCTAssertEqual(snapshot.elements.first?.accessKey, "Alt+D")
+        XCTAssertEqual(snapshot.elements.first?.acceleratorKey, "Ctrl+Shift+D")
+        XCTAssertEqual(snapshot.elements.first?.frameworkId, "Win32")
+        XCTAssertEqual(snapshot.elements.first?.helpText, "Desktop help")
+        XCTAssertEqual(snapshot.elements.first?.itemStatus, "Ready")
+        XCTAssertEqual(snapshot.elements.first?.itemType, "Workspace")
         XCTAssertEqual(snapshot.elements.first?.isEnabled, true)
         XCTAssertEqual(snapshot.elements.first?.isKeyboardFocusable, true)
         XCTAssertEqual(snapshot.elements.first?.hasKeyboardFocus, false)
@@ -775,6 +781,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
+        XCTAssertTrue(result.stdout.contains("\"accessKey\" : \"Alt+D\""))
+        XCTAssertTrue(result.stdout.contains("\"acceleratorKey\" : \"Ctrl+Shift+D\""))
+        XCTAssertTrue(result.stdout.contains("\"frameworkId\" : \"Win32\""))
+        XCTAssertTrue(result.stdout.contains("\"helpText\" : \"Desktop help\""))
+        XCTAssertTrue(result.stdout.contains("\"itemStatus\" : \"Ready\""))
+        XCTAssertTrue(result.stdout.contains("\"itemType\" : \"Workspace\""))
         XCTAssertTrue(result.stdout.contains("\"isEnabled\" : true"))
         XCTAssertTrue(result.stdout.contains("\"isKeyboardFocusable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"hasKeyboardFocus\" : false"))
@@ -910,6 +922,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"controlTypeName\" : \"Pane\""))
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
+        XCTAssertTrue(result.stdout.contains("\"frameworkId\" : \"Win32\""))
+        XCTAssertTrue(result.stdout.contains("\"helpText\" : \"Desktop help\""))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Example value\""))
         XCTAssertTrue(result.stdout.contains("\"isValueReadOnly\" : false"))
         XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 12.5"))
@@ -2810,6 +2824,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     depth: 0,
                     name: "Desktop",
                     localizedControlType: "pane",
+                    accessKey: "Alt+D",
+                    acceleratorKey: "Ctrl+Shift+D",
+                    frameworkId: "Win32",
+                    helpText: "Desktop help",
+                    itemStatus: "Ready",
+                    itemType: "Workspace",
                     controlType: 50033,
                     controlTypeName: "Pane",
                     nativeWindowHandle: 42,

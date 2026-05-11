@@ -208,6 +208,20 @@ static BSTR PeekabooWin11CopyUTF8BSTR(const char *value) {
     return result;
 }
 
+static void PeekabooWin11CopyElementStringResult(
+    HRESULT result,
+    BSTR value,
+    char *target,
+    size_t targetSize)
+{
+    if (PeekabooWin11Succeeded(result)) {
+        PeekabooWin11CopyBSTR(value, target, targetSize);
+    }
+    if (value != NULL) {
+        SysFreeString(value);
+    }
+}
+
 static void PeekabooWin11CopyElementName(
     IUIAutomationElement *element,
     char *target,
@@ -266,6 +280,66 @@ static void PeekabooWin11CopyElementLocalizedControlType(
     if (value != NULL) {
         SysFreeString(value);
     }
+}
+
+static void PeekabooWin11CopyElementAccessKey(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentAccessKey(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
+}
+
+static void PeekabooWin11CopyElementAcceleratorKey(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentAcceleratorKey(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
+}
+
+static void PeekabooWin11CopyElementFrameworkId(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentFrameworkId(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
+}
+
+static void PeekabooWin11CopyElementHelpText(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentHelpText(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
+}
+
+static void PeekabooWin11CopyElementItemStatus(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentItemStatus(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
+}
+
+static void PeekabooWin11CopyElementItemType(
+    IUIAutomationElement *element,
+    char *target,
+    size_t targetSize)
+{
+    BSTR value = NULL;
+    HRESULT result = IUIAutomationElement_get_CurrentItemType(element, &value);
+    PeekabooWin11CopyElementStringResult(result, value, target, targetSize);
 }
 
 static HRESULT PeekabooWin11CopySnapshotRoot(
@@ -1912,6 +1986,30 @@ static void PeekabooWin11CopyElementProperties(
         element,
         snapshot->localizedControlType,
         PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementAccessKey(
+        element,
+        snapshot->accessKey,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementAcceleratorKey(
+        element,
+        snapshot->acceleratorKey,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementFrameworkId(
+        element,
+        snapshot->frameworkId,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementHelpText(
+        element,
+        snapshot->helpText,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementItemStatus(
+        element,
+        snapshot->itemStatus,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    PeekabooWin11CopyElementItemType(
+        element,
+        snapshot->itemType,
+        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
 
     CONTROLTYPEID controlType = 0;
     if (PeekabooWin11Succeeded(IUIAutomationElement_get_CurrentControlType(element, &controlType))) {
@@ -3296,6 +3394,42 @@ const char *PeekabooWin11UIAutomationElementLocalizedControlType(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->localizedControlType;
+}
+
+const char *PeekabooWin11UIAutomationElementAccessKey(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->accessKey;
+}
+
+const char *PeekabooWin11UIAutomationElementAcceleratorKey(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->acceleratorKey;
+}
+
+const char *PeekabooWin11UIAutomationElementFrameworkId(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->frameworkId;
+}
+
+const char *PeekabooWin11UIAutomationElementHelpText(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->helpText;
+}
+
+const char *PeekabooWin11UIAutomationElementItemStatus(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->itemStatus;
+}
+
+const char *PeekabooWin11UIAutomationElementItemType(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->itemType;
 }
 
 const char *PeekabooWin11UIAutomationElementValue(
