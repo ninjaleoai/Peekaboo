@@ -1093,11 +1093,19 @@ static void PeekabooWin11CopyElementTextChildPattern(
         &textContainer);
     if (PeekabooWin11Succeeded(containerResult) && textContainer != NULL) {
         BSTR containerName = NULL;
-        PeekabooWin11CopyPatternString(
-            IUIAutomationElement_get_CurrentName(textContainer, &containerName),
-            containerName,
-            &snapshot->hasTextChildContainerName,
-            snapshot->textChildContainerName);
+        HRESULT containerNameResult = IUIAutomationElement_get_CurrentName(
+            textContainer,
+            &containerName);
+        if (PeekabooWin11Succeeded(containerNameResult)) {
+            snapshot->hasTextChildContainerName = 1;
+            PeekabooWin11CopyBSTR(
+                containerName,
+                snapshot->textChildContainerName,
+                PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+        }
+        if (containerName != NULL) {
+            SysFreeString(containerName);
+        }
         IUIAutomationElement_Release(textContainer);
     }
 
