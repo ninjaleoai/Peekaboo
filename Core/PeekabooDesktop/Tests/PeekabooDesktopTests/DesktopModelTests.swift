@@ -131,6 +131,11 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             state: .maximized)
+        let closeWindow = try await bridge.closeUIAutomationWindow(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let setDockPosition = try await bridge.setUIAutomationElementDockPosition(
             scope: .root,
             maxDepth: 1,
@@ -266,6 +271,7 @@ final class DesktopModelTests: XCTestCase {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .closeWindow,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -298,6 +304,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.canMinimizeWindow, true)
         XCTAssertEqual(snapshot.elements.first?.isModalWindow, false)
         XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
+        XCTAssertEqual(snapshot.elements.first?.nativeWindowHandle, 42)
         XCTAssertEqual(snapshot.elements.first?.dockPosition, .left)
         XCTAssertEqual(snapshot.elements.first?.text, "Example text")
         XCTAssertEqual(snapshot.elements.first?.selectedText, "selected")
@@ -365,6 +372,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setWindowState.value, "maximized")
         XCTAssertEqual(setWindowState.postActionElement?.windowVisualState, .maximized)
         XCTAssertEqual(setWindowState.valueWasVerified, true)
+        XCTAssertEqual(closeWindow.action, .closeWindow)
+        XCTAssertEqual(closeWindow.elementIndex, 0)
+        XCTAssertEqual(closeWindow.value, "closed=true")
+        XCTAssertNil(closeWindow.postActionElement)
+        XCTAssertEqual(closeWindow.valueWasVerified, true)
         XCTAssertEqual(setDockPosition.action, .setDockPosition)
         XCTAssertEqual(setDockPosition.elementIndex, 0)
         XCTAssertEqual(setDockPosition.value, "right")
@@ -764,6 +776,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
+        XCTAssertTrue(result.stdout.contains("\"closeWindow\""))
         XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
@@ -1269,6 +1282,29 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationCloseWindow() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "close-window",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"closeWindow\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"closed=true\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationSetDockPosition() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1403,6 +1439,18 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("UI Automation window state must be normal"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationCloseWindowIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "close-window",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation close-window"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionValue() {
@@ -1780,6 +1828,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
+        XCTAssertTrue(result.stdout.contains("automation close-window --index"))
         XCTAssertTrue(result.stdout.contains("automation set-dock-position --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
@@ -2224,6 +2273,32 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.windowVisualState == state)
     }
 
+    func closeUIAutomationWindow(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .closeWindow,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "closed=true",
+            postActionElement: nil,
+            valueWasVerified: element.nativeWindowHandle.map { _ in true })
+    }
+
     func setUIAutomationElementDockPosition(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2643,6 +2718,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     localizedControlType: "pane",
                     controlType: 50033,
                     controlTypeName: "Pane",
+                    nativeWindowHandle: 42,
                     bounds: bounds,
                     isEnabled: true,
                     isKeyboardFocusable: true,
@@ -2741,6 +2817,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .closeWindow,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2760,6 +2837,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .closeWindow,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2779,6 +2857,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .closeWindow,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2799,6 +2878,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
+                .closeWindow,
                 .setDockPosition,
                 .move,
                 .resize,

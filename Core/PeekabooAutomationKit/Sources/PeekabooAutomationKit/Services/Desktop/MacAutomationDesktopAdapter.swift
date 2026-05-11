@@ -310,6 +310,16 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation set-window-state is not implemented by this adapter")
     }
 
+    public func closeUIAutomationWindow(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation close-window is not implemented by this adapter")
+    }
+
     public func moveUIAutomationElement(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

@@ -246,6 +246,12 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowV
     int32_t elementIndex,
     int32_t visualState);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11CloseUIAutomationWindow(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPosition(
     int32_t scope,
     int32_t maxDepth,

@@ -175,7 +175,7 @@ public enum DesktopCommandRunner {
                     "focus, " +
                     "legacy-default-action, " +
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
+                    "close-window, set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -202,6 +202,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetScrollPercent(args: args, adapter: adapter, stdout: stdout)
         case "set-window-state", "setWindowState":
             try self.runAutomationSetWindowState(args: args, adapter: adapter, stdout: stdout)
+        case "close-window", "closeWindow":
+            try self.runAutomationCloseWindow(args: args, adapter: adapter, stdout: stdout)
         case "set-dock-position", "setDockPosition":
             try self.runAutomationSetDockPosition(args: args, adapter: adapter, stdout: stdout)
         case "move":
@@ -561,6 +563,32 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             position: self.parseUIAutomationDockPosition(positionValue))))
+    }
+
+    private static func runAutomationCloseWindow(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation close-window")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.closeUIAutomationWindow(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
     }
 
     private static func runAutomationMove(
@@ -1243,6 +1271,8 @@ public enum DesktopCommandRunner {
           automation set-scroll-percent --index <n> [--horizontal <percent>] [--vertical <percent>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-window-state --index <n> --state <normal|maximized|minimized>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation close-window --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

@@ -45,6 +45,7 @@ final class Win11ModelTests: XCTestCase {
                 .setUIAutomationRangeValue,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
+                .closeUIAutomationWindow,
                 .setUIAutomationDockPosition,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
@@ -81,6 +82,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationWindowVisualState))
+        XCTAssertTrue(info.capabilities.contains(.closeUIAutomationWindow))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationDockPosition))
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
@@ -172,6 +174,11 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             state: .maximized))
+        XCTAssertThrowsError(try adapter.closeUIAutomationWindow(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0))
         XCTAssertThrowsError(try adapter.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -281,6 +288,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation set-range-value --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(output.contains("automation set-window-state --index"))
+        XCTAssertTrue(output.contains("automation close-window --index"))
         XCTAssertTrue(output.contains("automation set-dock-position --index"))
         XCTAssertTrue(output.contains("automation move --index"))
         XCTAssertTrue(output.contains("automation resize --index"))

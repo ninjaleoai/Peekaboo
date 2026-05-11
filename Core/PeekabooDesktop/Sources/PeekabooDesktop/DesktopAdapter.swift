@@ -71,6 +71,11 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    func closeUIAutomationWindow(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementDockPosition(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -208,6 +213,11 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) async throws -> DesktopUIAutomationActionResult
+    func closeUIAutomationWindow(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementDockPosition(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -480,6 +490,19 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             state: state)
+    }
+
+    public func closeUIAutomationWindow(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.closeUIAutomationWindow(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
     }
 
     public func setUIAutomationElementDockPosition(

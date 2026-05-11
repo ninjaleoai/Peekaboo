@@ -38,6 +38,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Window-pattern UI Automation set-window-state actions against a bounded
   snapshot element index
+- Window-pattern UI Automation close-window actions against a bounded snapshot
+  element index
 - Dock-pattern UI Automation dock position metadata in bounded snapshots
 - Dock-pattern UI Automation set-dock-position actions against a bounded
   snapshot element index
@@ -96,8 +98,9 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-legacy-value --index <n>`,
 `automation set-value --index <n>`,
 `automation set-range-value --index <n>`,
-`automation set-scroll-percent --index <n>`, and
-`automation set-window-state --index <n>` for Invoke-pattern,
+`automation set-scroll-percent --index <n>`,
+`automation set-window-state --index <n>`, and
+`automation close-window --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
 and Window-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
@@ -109,6 +112,8 @@ action string.
 `automation set-legacy-value --index <n>` calls the LegacyIAccessible pattern
 `SetValue` method for older MSAA-backed controls when UIA exposes legacy value
 metadata.
+`automation close-window --index <n>` calls the Window pattern `Close` method
+for Window-pattern controls.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
 covers Dock-pattern controls that can be rearranged within a docking
 container.
@@ -249,6 +254,11 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         state: DesktopUIAutomationWindowVisualState) throws -> DesktopUIAutomationActionResult
+    func closeUIAutomationWindow(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementDockPosition(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -392,6 +402,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation close-window --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-dock-position --scope foreground --index 0 --position right --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -474,10 +486,11 @@ element, setValue is available only when the Value pattern is present and known 
 setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
-available when the Window pattern is present, setDockPosition is available
-when the Dock pattern is present, move, resize, and rotate are available when
-the Transform pattern is present and UIA reports the matching capability,
-toggle is available when the
+available when the Window pattern is present, closeWindow is available when
+the Window pattern is present, setDockPosition is available when the Dock
+pattern is present, move, resize, and rotate are available when the Transform
+pattern is present and UIA reports the matching capability, toggle is available
+when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
@@ -514,7 +527,10 @@ rejecting known unscrollable requested axes before calling UIA
 axes when UIA reports them. `automation set-window-state` performs the UIA
 Window pattern visual-state action, rejects known unsupported maximize or
 minimize requests before calling UIA `SetWindowVisualState`, then verifies the
-refreshed visual state when UIA reports it. `automation set-dock-position`
+refreshed visual state when UIA reports it. `automation close-window` performs
+the UIA Window pattern close action, then verifies the original native window
+handle disappeared when a handle and refreshed bounded snapshot are available.
+`automation set-dock-position`
 performs the UIA Dock pattern action, then verifies the refreshed dock position
 when UIA reports it. `automation scroll-into-view`
 performs the UIA ScrollItem pattern action and verifies that the refreshed
