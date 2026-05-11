@@ -74,6 +74,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - MultipleView-pattern UI Automation current-view metadata in bounded snapshots
 - MultipleView-pattern UI Automation set-current-view actions against a bounded
   snapshot element index
+- VirtualizedItem-pattern UI Automation realize actions against a bounded
+  snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
   bounded snapshot element index
 - refreshed post-action verification metadata for observable UI Automation
@@ -121,11 +123,12 @@ bounded element lookup over the same snapshot traversal, and
 `automation wait-window-idle --index <n>`,
 `automation set-dock-position --index <n>`,
 `automation set-current-view --index <n>`,
-`automation set-zoom --index <n>`, and
-`automation zoom-by-unit --index <n>` for Invoke-pattern,
+`automation set-zoom --index <n>`,
+`automation zoom-by-unit --index <n>`,
+and `automation realize --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
-Window-pattern, Dock-pattern, MultipleView-pattern, and Transform2-pattern UIA
-actions.
+Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern, and
+VirtualizedItem-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -150,6 +153,8 @@ controls that expose zoomable viewports.
 `automation zoom-by-unit --index <n> --unit
 <large-increment|small-increment|large-decrement|small-decrement|none>` covers
 Transform2-pattern controls that expose unit-based viewport zoom.
+`automation realize --index <n>` covers VirtualizedItem-pattern controls whose
+placeholder element can be materialized into a full UIA element.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
 that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
@@ -342,6 +347,11 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         degrees: Double) throws -> DesktopUIAutomationActionResult
+    func realizeUIAutomationVirtualizedItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -479,6 +489,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation rotate --scope foreground --index 0 --degrees 45 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation realize --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation toggle --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation expand --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -515,8 +527,8 @@ off-screen, and clickable-point status. When UIA exposes a clickable point,
 snapshots include its physical screen coordinates. Elements also report common
 supported UIA patterns, including invoke, value, range value, scroll,
 expand/collapse, window, selection item, text, toggle, grid, grid item, table,
-table item, transform, transform2, multiple view, scroll item, and legacy
-IAccessible. When an element supports the UIA Value pattern, snapshots also
+table item, transform, transform2, multiple view, virtualized item, scroll
+item, and legacy IAccessible. When an element supports the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
 element supports the
 UIA RangeValue pattern, snapshots include the current numeric value, minimum,
@@ -570,9 +582,10 @@ is present, setCurrentView is available when the MultipleView pattern is
 present, setZoomLevel is available when the Transform2 pattern is present and
 UIA reports that zoom is supported, zoomByUnit is available under the same
 Transform2 zoom condition, move, resize, and rotate are available when the
-Transform pattern is present and UIA reports the matching capability, toggle is
-available when the Toggle pattern is present, expand is available for collapsed
-or partially expanded ExpandCollapse elements, collapse is available for expanded or
+Transform pattern is present and UIA reports the matching capability, realize
+is available when the VirtualizedItem pattern is present, toggle is available
+when the Toggle pattern is present, expand is available for collapsed or
+partially expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -631,7 +644,11 @@ refreshed bounds when the bounded lookup can observe them.
 `automation rotate --index <n>` performs the UIA Transform pattern rotate
 action after rejecting known unsupported elements, then returns refreshed
 post-action metadata without claiming value verification because the current
-snapshot model has no rotation angle field. `automation toggle --index <n>`
+snapshot model has no rotation angle field. `automation realize --index <n>`
+performs the UIA VirtualizedItem pattern realize action, then reports a
+verified result when the refreshed bounded lookup no longer reports the item
+as virtualized.
+`automation toggle --index <n>`
 performs the UIA Toggle pattern and returns pre-action metadata plus any
 refreshed post-action element, including the refreshed toggle state when UIA
 reports one.

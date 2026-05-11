@@ -42,6 +42,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case moveUIAutomationElement
     case resizeUIAutomationElement
     case rotateUIAutomationElement
+    case realizeUIAutomationVirtualizedItem
     case scrollUIAutomationItemIntoView
 }
 
@@ -362,6 +363,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case transform
     case transform2
     case multipleView
+    case virtualizedItem
     case scrollItem
 }
 
@@ -389,6 +391,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case move
     case resize
     case rotate
+    case realize
     case scrollIntoView
 }
 

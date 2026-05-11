@@ -186,6 +186,11 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             degrees: 45.0)
+        let realize = try await bridge.realizeUIAutomationVirtualizedItem(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let toggle = try await bridge.toggleUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -294,6 +299,7 @@ final class DesktopModelTests: XCTestCase {
                 .transform,
                 .transform2,
                 .multipleView,
+                .virtualizedItem,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -316,6 +322,7 @@ final class DesktopModelTests: XCTestCase {
                 .move,
                 .resize,
                 .rotate,
+                .realize,
                 .toggle,
                 .expand,
                 .select,
@@ -471,6 +478,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(rotate.value, "degrees=45.0")
         XCTAssertEqual(rotate.postActionElement?.name, "Desktop")
         XCTAssertNil(rotate.valueWasVerified)
+        XCTAssertEqual(realize.action, .realize)
+        XCTAssertEqual(realize.elementIndex, 0)
+        XCTAssertEqual(realize.value, "realized=true")
+        XCTAssertEqual(realize.postActionElement?.name, "Desktop")
+        XCTAssertEqual(realize.valueWasVerified, true)
         XCTAssertEqual(toggle.action, .toggle)
         XCTAssertEqual(toggle.elementIndex, 0)
         XCTAssertEqual(toggle.element.name, "Desktop")
@@ -863,11 +875,13 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setZoomLevel\""))
         XCTAssertTrue(result.stdout.contains("\"zoomByUnit\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
+        XCTAssertTrue(result.stdout.contains("\"realize\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
         XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
+        XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -1614,6 +1628,30 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"degrees=45.0\""))
         XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
         XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationRealize() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "realize",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"realize\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"realized=true\""))
+        XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetWindowStateValue() {
@@ -3004,7 +3042,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             scope: scope,
             maxDepth: maxDepth,
             maxElements: maxElements,
-            elementValue: element.value ?? "")
+            elementValue: element.value ?? "",
+            isVirtualized: false)
             .elements
             .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
@@ -3017,6 +3056,40 @@ private struct StubDesktopAdapter: DesktopAdapter {
             element: element,
             value: "degrees=\(degrees)",
             postActionElement: postActionElement)
+    }
+
+    func realizeUIAutomationVirtualizedItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            isVirtualized: false)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .realize,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "realized=true",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement.map { !$0.supportedPatterns.contains(.virtualizedItem) })
     }
 
     private func expandCollapseUIAutomationElement(
@@ -3073,8 +3146,35 @@ private struct StubDesktopAdapter: DesktopAdapter {
         isOffscreen: Bool = false,
         multipleViewCurrentView: Int = 2,
         zoomLevel: Double = 125.0,
-        isSelected: Bool = false) -> DesktopUIAutomationSnapshot
+        isSelected: Bool = false,
+        isVirtualized: Bool = true) -> DesktopUIAutomationSnapshot
     {
+        var supportedPatterns: [DesktopUIAutomationPattern] = [
+            .invoke,
+            .value,
+            .rangeValue,
+            .scroll,
+            .expandCollapse,
+            .window,
+            .dock,
+            .selection,
+            .selectionItem,
+            .text,
+            .toggle,
+            .legacyIAccessible,
+            .grid,
+            .gridItem,
+            .table,
+            .tableItem,
+            .transform,
+            .transform2,
+            .multipleView,
+        ]
+        if isVirtualized {
+            supportedPatterns.append(.virtualizedItem)
+        }
+        supportedPatterns.append(.scrollItem)
+
         DesktopUIAutomationSnapshot(
             nativeBackend: "StubUIA",
             scope: scope,
@@ -3105,31 +3205,11 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isOffscreen: isOffscreen,
                     hasClickablePoint: true,
                     clickablePoint: DesktopPoint(x: 12, y: 34),
-                    supportedPatterns: [
-                        .invoke,
-                        .value,
-                        .rangeValue,
-                        .scroll,
-                        .expandCollapse,
-                        .window,
-                        .dock,
-                        .selection,
-                        .selectionItem,
-                        .text,
-                        .toggle,
-                        .legacyIAccessible,
-                        .grid,
-                        .gridItem,
-                        .table,
-                        .tableItem,
-                        .transform,
-                        .transform2,
-                        .multipleView,
-                        .scrollItem,
-                    ],
+                    supportedPatterns: supportedPatterns,
                     availableActions: self.stubAvailableActions(
                         for: expandCollapseState,
-                        isSelected: isSelected),
+                        isSelected: isSelected,
+                        isVirtualized: isVirtualized),
                     value: elementValue,
                     isValueReadOnly: false,
                     rangeValue: rangeValue,
@@ -3198,11 +3278,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
 
     private func stubAvailableActions(
         for expandCollapseState: DesktopUIAutomationExpandCollapseState,
-        isSelected: Bool) -> [DesktopUIAutomationAction]
+        isSelected: Bool,
+        isVirtualized: Bool) -> [DesktopUIAutomationAction]
     {
         let selectionActions: [DesktopUIAutomationAction] = isSelected
             ? [.select, .addToSelection, .removeFromSelection]
             : [.select, .addToSelection]
+        let virtualizedActions: [DesktopUIAutomationAction] = isVirtualized ? [.realize] : []
         switch expandCollapseState {
         case .collapsed:
             return [
@@ -3223,6 +3305,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .move,
                 .resize,
                 .rotate,
+            ] + virtualizedActions + [
                 .toggle,
                 .expand,
             ] + selectionActions + [
@@ -3247,6 +3330,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .move,
                 .resize,
                 .rotate,
+            ] + virtualizedActions + [
                 .toggle,
                 .collapse,
             ] + selectionActions + [
@@ -3271,6 +3355,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .move,
                 .resize,
                 .rotate,
+            ] + virtualizedActions + [
                 .toggle,
                 .expand,
                 .collapse,
@@ -3296,6 +3381,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .move,
                 .resize,
                 .rotate,
+            ] + virtualizedActions + [
                 .toggle,
             ] + selectionActions + [
                 .scrollIntoView,

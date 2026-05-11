@@ -54,6 +54,7 @@ final class Win11ModelTests: XCTestCase {
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
+                .realizeUIAutomationVirtualizedItem,
                 .scrollUIAutomationItemIntoView,
                 .toggleUIAutomation,
                 .expandCollapseUIAutomation,
@@ -95,6 +96,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
+        XCTAssertTrue(info.capabilities.contains(.realizeUIAutomationVirtualizedItem))
         XCTAssertTrue(info.capabilities.contains(.scrollUIAutomationItemIntoView))
         XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
         XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
@@ -311,6 +313,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation move --index"))
         XCTAssertTrue(output.contains("automation resize --index"))
         XCTAssertTrue(output.contains("automation rotate --index"))
+        XCTAssertTrue(output.contains("automation realize --index"))
         XCTAssertTrue(output.contains("automation toggle --index"))
         XCTAssertTrue(output.contains("automation expand --index"))
         XCTAssertTrue(output.contains("automation collapse --index"))

@@ -177,7 +177,7 @@ public enum DesktopCommandRunner {
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, " +
-                    "move, resize, rotate, toggle, expand, collapse, select, " +
+                    "move, resize, rotate, realize, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -222,6 +222,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationResize(args: args, adapter: adapter, stdout: stdout)
         case "rotate":
             try self.runAutomationRotate(args: args, adapter: adapter, stdout: stdout)
+        case "realize", "realise":
+            try self.runAutomationRealize(args: args, adapter: adapter, stdout: stdout)
         case "toggle":
             try self.runAutomationToggle(args: args, adapter: adapter, stdout: stdout)
         case "expand":
@@ -817,6 +819,31 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             degrees: degrees)))
+    }
+
+    private static func runAutomationRealize(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation realize")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.realizeUIAutomationVirtualizedItem(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
     }
 
     private static func runAutomationToggle(
@@ -1477,6 +1504,8 @@ public enum DesktopCommandRunner {
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation rotate --index <n> --degrees <number>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation realize --index <n> [--scope root|foreground|focused|cursor]
+            [--max-depth <n>] [--max-elements <n>]
           automation toggle --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation expand --index <n> [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation collapse --index <n>

@@ -33,6 +33,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_CURRENT_VIEW 22
 #define PEEKABOO_WIN11_UIA_ACTION_SET_ZOOM_LEVEL 23
 #define PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT 24
+#define PEEKABOO_WIN11_UIA_ACTION_REALIZE_VIRTUALIZED_ITEM 25
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -411,6 +412,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TableItemPatternId, 1ULL << 17, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TransformPattern2Id, 1ULL << 18, snapshot);
     PeekabooWin11MarkPattern(element, UIA_MultipleViewPatternId, 1ULL << 19, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_VirtualizedItemPatternId, 1ULL << 20, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -2138,6 +2140,43 @@ static void PeekabooWin11TransformElement(
     IUIAutomationTransformPattern_Release(transformPattern);
 }
 
+static void PeekabooWin11RealizeVirtualizedItem(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_VirtualizedItemPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationVirtualizedItemPattern *virtualizedItemPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationVirtualizedItemPattern,
+        (void **)&virtualizedItemPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || virtualizedItemPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationVirtualizedItemPattern_Realize(
+        virtualizedItemPattern);
+    IUIAutomationVirtualizedItemPattern_Release(virtualizedItemPattern);
+}
+
 static void PeekabooWin11ToggleElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -2611,6 +2650,8 @@ static int32_t PeekabooWin11VisitElementForAction(
                 transformFirstValue,
                 transformSecondValue,
                 result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_REALIZE_VIRTUALIZED_ITEM) {
+            PeekabooWin11RealizeVirtualizedItem(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
             PeekabooWin11SetElementValue(element, value, result);
         } else {
@@ -3264,6 +3305,28 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11RotateUIAutomationElement(
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11RealizeUIAutomationVirtualizedItem(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_REALIZE_VIRTUALIZED_ITEM,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11ToggleUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -3754,6 +3817,23 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11RotateUIAutomationElement(
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)degrees;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11RealizeUIAutomationVirtualizedItem(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 25;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
     result.initializeResult = -2147467263;
     return result;
 }
