@@ -680,7 +680,7 @@ Elements also expose stable
 available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
 element is enabled and keyboard focusable, invoke is available when the Invoke
-pattern is present, performLegacyDefaultAction is available when the Legacy IAccessible
+pattern is present on an enabled element, performLegacyDefaultAction is available when the Legacy IAccessible
 pattern exposes a non-empty default action string, setLegacyValue is available
 when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
 element, setValue is available only when the Value pattern is present and the
@@ -724,12 +724,13 @@ verification because the default action's visible effect is provider-specific.
 pattern's `SetValue` method for MSAA-backed controls, then verifies the
 refreshed `legacyValue` metadata when UIA reports one.
 `automation invoke --index <n>` performs
-the UIA Invoke pattern for an element from that bounded traversal and returns
-the pre-action element metadata used for the invocation. `automation set-value`
-does the same for Value-pattern elements, rejecting known disabled or read-only
-values before calling UIA `SetValue`, then attempts a refreshed bounded lookup
-so the result can include post-action element metadata and whether the requested
-value was observed. `automation get-text` reads Text-pattern document, selected, or
+the UIA Invoke pattern for an element from that bounded traversal, rejecting
+known disabled elements before calling UIA `Invoke`, and returns the pre-action
+element metadata used for the invocation. `automation set-value` does the same
+for Value-pattern elements, rejecting known disabled or read-only values before
+calling UIA `SetValue`, then attempts a refreshed bounded lookup so the result
+can include post-action element metadata and whether the requested value was
+observed. `automation get-text` reads Text-pattern document, selected, or
 visible ranges with a caller-provided max length capped at 4096 characters and
 returns the text in the action `value`; the action is marked verified when the
 bounded result matches Text-pattern metadata already visible in the pre-action

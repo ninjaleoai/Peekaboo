@@ -555,6 +555,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support invoke")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
 
         let nativeResult = PeekabooWin11InvokeUIAutomationElement(
             Self.nativeUIAutomationScope(scope),
@@ -4226,7 +4230,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if isKeyboardFocusable == true, isEnabled != false {
             actions.append(.focus)
         }
-        if supportedPatterns.contains(.invoke) {
+        if supportedPatterns.contains(.invoke), isEnabled != false {
             actions.append(.invoke)
         }
         if supportedPatterns.contains(.legacyIAccessible),

@@ -33,9 +33,10 @@ final class DesktopModelTests: XCTestCase {
         let actions = try XCTUnwrap(snapshot.elements.first?.availableActions)
 
         XCTAssertFalse(actions.contains(.focus))
+        XCTAssertFalse(actions.contains(.invoke))
         XCTAssertFalse(actions.contains(.setLegacyValue))
         XCTAssertFalse(actions.contains(.setValue))
-        XCTAssertTrue(actions.contains(.invoke))
+        XCTAssertTrue(actions.contains(.getText))
     }
 
     func testDesktopWindowDecodesMissingShareableAsTrue() throws {
@@ -1287,6 +1288,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationInvoke() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "invoke",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationFocus() {
@@ -3065,6 +3086,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .invoke,
@@ -4477,7 +4502,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         }
         return isEnabled
             ? actions
-            : actions.filter { ![.focus, .setLegacyValue, .setValue].contains($0) }
+            : actions.filter { ![.focus, .invoke, .setLegacyValue, .setValue].contains($0) }
     }
 
     private func scrollPercentValue(horizontalPercent: Double?, verticalPercent: Double?) -> String {
