@@ -452,6 +452,27 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation zoom-by-unit is not implemented by this adapter")
     }
 
+    public func startUIAutomationSynchronizedInput(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        inputType _: DesktopUIAutomationSynchronizedInputType) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation start-synchronized-input is not implemented by this adapter")
+    }
+
+    public func cancelUIAutomationSynchronizedInput(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation cancel-synchronized-input is not implemented by this adapter")
+    }
+
     public func addUIAutomationElementToSelection(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,
