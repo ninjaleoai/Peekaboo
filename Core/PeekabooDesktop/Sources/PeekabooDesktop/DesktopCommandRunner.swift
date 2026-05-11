@@ -177,7 +177,8 @@ public enum DesktopCommandRunner {
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
-                    "navigate-custom, move, resize, rotate, realize, toggle, expand, collapse, select, " +
+                    "navigate-custom, get-spreadsheet-item, move, resize, rotate, realize, " +
+                    "toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -222,6 +223,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationCancelSynchronizedInput(args: args, adapter: adapter, stdout: stdout)
         case "navigate-custom", "navigateCustom", "custom-navigation", "customNavigation":
             try self.runAutomationNavigateCustom(args: args, adapter: adapter, stdout: stdout)
+        case "get-spreadsheet-item", "getSpreadsheetItem", "get-spreadsheet-item-by-name":
+            try self.runAutomationGetSpreadsheetItem(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -779,6 +782,40 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             direction: self.parseUIAutomationNavigationDirection(directionValue))))
+    }
+
+    private static func runAutomationGetSpreadsheetItem(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation get-spreadsheet-item")
+        }
+
+        let name = try self.value(after: "--name", in: args) ??
+            self.value(after: "--item-name", in: args)
+        guard let name, !name.isEmpty else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --name <cell-name> for automation get-spreadsheet-item")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.getUIAutomationSpreadsheetItemByName(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            name: name)))
     }
 
     private static func runAutomationCloseWindow(
@@ -1651,6 +1688,8 @@ public enum DesktopCommandRunner {
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation navigate-custom --index <n>
             --direction <parent|next-sibling|previous-sibling|first-child|last-child>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation get-spreadsheet-item --index <n> --name <cell-name>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

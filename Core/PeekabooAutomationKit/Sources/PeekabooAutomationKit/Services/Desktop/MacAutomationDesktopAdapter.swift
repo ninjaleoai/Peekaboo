@@ -484,6 +484,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation navigate-custom is not implemented by this adapter")
     }
 
+    public func getUIAutomationSpreadsheetItemByName(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        name _: String) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation get-spreadsheet-item is not implemented by this adapter")
+    }
+
     public func addUIAutomationElementToSelection(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

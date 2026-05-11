@@ -123,6 +123,12 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         direction: DesktopUIAutomationNavigationDirection) throws -> DesktopUIAutomationActionResult
+    func getUIAutomationSpreadsheetItemByName(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        name: String) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -311,6 +317,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         direction: DesktopUIAutomationNavigationDirection) async throws -> DesktopUIAutomationActionResult
+    func getUIAutomationSpreadsheetItemByName(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        name: String) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -713,6 +725,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             direction: direction)
+    }
+
+    public func getUIAutomationSpreadsheetItemByName(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        name: String) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.getUIAutomationSpreadsheetItemByName(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            name: name)
     }
 
     public func moveUIAutomationElement(
