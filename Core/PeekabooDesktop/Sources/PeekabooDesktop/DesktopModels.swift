@@ -41,6 +41,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case zoomUIAutomationElementByUnit
     case startUIAutomationSynchronizedInput
     case cancelUIAutomationSynchronizedInput
+    case navigateUIAutomationCustom
     case moveUIAutomationElement
     case resizeUIAutomationElement
     case rotateUIAutomationElement
@@ -405,6 +406,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case zoomByUnit
     case startSynchronizedInput
     case cancelSynchronizedInput
+    case navigateCustom
     case move
     case resize
     case rotate
@@ -463,6 +465,14 @@ public enum DesktopUIAutomationSynchronizedInputType: String, Codable, Equatable
     case mouseLeftButtonDown = "mouse-left-button-down"
     case mouseRightButtonUp = "mouse-right-button-up"
     case mouseRightButtonDown = "mouse-right-button-down"
+}
+
+public enum DesktopUIAutomationNavigationDirection: String, Codable, Equatable, Sendable {
+    case parent
+    case nextSibling = "next-sibling"
+    case previousSibling = "previous-sibling"
+    case firstChild = "first-child"
+    case lastChild = "last-child"
 }
 
 public enum DesktopUIAutomationSupportedTextSelection: String, Codable, Equatable, Sendable {
@@ -913,6 +923,7 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
     public let element: DesktopUIAutomationElementSnapshot
     public let value: String?
     public let postActionElement: DesktopUIAutomationElementSnapshot?
+    public let resultElement: DesktopUIAutomationElementSnapshot?
     public let valueWasVerified: Bool?
 
     public init(
@@ -925,6 +936,7 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         element: DesktopUIAutomationElementSnapshot,
         value: String? = nil,
         postActionElement: DesktopUIAutomationElementSnapshot? = nil,
+        resultElement: DesktopUIAutomationElementSnapshot? = nil,
         valueWasVerified: Bool? = nil)
     {
         self.nativeBackend = nativeBackend
@@ -936,6 +948,7 @@ public struct DesktopUIAutomationActionResult: Codable, Equatable, Sendable {
         self.element = element
         self.value = value
         self.postActionElement = postActionElement
+        self.resultElement = resultElement
         self.valueWasVerified = valueWasVerified
     }
 }

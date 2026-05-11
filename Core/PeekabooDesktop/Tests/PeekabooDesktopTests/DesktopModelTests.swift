@@ -177,6 +177,12 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let navigateCustom = try await bridge.navigateUIAutomationCustom(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            direction: .nextSibling)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -345,6 +351,7 @@ final class DesktopModelTests: XCTestCase {
                 .zoomByUnit,
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
+                .navigateCustom,
                 .move,
                 .resize,
                 .rotate,
@@ -526,6 +533,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(cancelSynchronizedInput.value, "cancelled=true")
         XCTAssertNil(cancelSynchronizedInput.postActionElement)
         XCTAssertNil(cancelSynchronizedInput.valueWasVerified)
+        XCTAssertEqual(navigateCustom.action, .navigateCustom)
+        XCTAssertEqual(navigateCustom.elementIndex, 0)
+        XCTAssertEqual(navigateCustom.value, "direction=next-sibling")
+        XCTAssertEqual(navigateCustom.resultElement?.name, "Desktop")
+        XCTAssertNil(navigateCustom.postActionElement)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -941,6 +953,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"zoomByUnit\""))
         XCTAssertTrue(result.stdout.contains("\"startSynchronizedInput\""))
         XCTAssertTrue(result.stdout.contains("\"cancelSynchronizedInput\""))
+        XCTAssertTrue(result.stdout.contains("\"navigateCustom\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"realize\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
@@ -1704,6 +1717,31 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"cancelled=true\""))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationNavigateCustom() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "navigate-custom",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--direction",
+            "next-sibling",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"navigateCustom\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"direction=next-sibling\""))
+        XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationMove() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1932,6 +1970,50 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationNavigateCustomIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "navigate-custom",
+            "--direction",
+            "parent",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationNavigateCustomDirection() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "navigate-custom",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --direction <direction>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationNavigateCustomDirection() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "navigate-custom",
+            "--index",
+            "0",
+            "--direction",
+            "sideways",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation navigation direction must be parent"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionValue() {
@@ -2314,6 +2396,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-dock-position --index"))
         XCTAssertTrue(result.stdout.contains("automation start-synchronized-input --index"))
         XCTAssertTrue(result.stdout.contains("automation cancel-synchronized-input --index"))
+        XCTAssertTrue(result.stdout.contains("automation navigate-custom --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
         XCTAssertTrue(result.stdout.contains("automation rotate --index"))
@@ -3004,6 +3087,32 @@ private struct StubDesktopAdapter: DesktopAdapter {
             value: "cancelled=true")
     }
 
+    func navigateUIAutomationCustom(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        direction: DesktopUIAutomationNavigationDirection) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .navigateCustom,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "direction=\(direction.rawValue)",
+            resultElement: element)
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -3606,6 +3715,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .zoomByUnit,
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
+                .navigateCustom,
                 .move,
                 .resize,
                 .rotate,
@@ -3633,6 +3743,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .zoomByUnit,
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
+                .navigateCustom,
                 .move,
                 .resize,
                 .rotate,
@@ -3660,6 +3771,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .zoomByUnit,
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
+                .navigateCustom,
                 .move,
                 .resize,
                 .rotate,
@@ -3688,6 +3800,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .zoomByUnit,
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
+                .navigateCustom,
                 .move,
                 .resize,
                 .rotate,

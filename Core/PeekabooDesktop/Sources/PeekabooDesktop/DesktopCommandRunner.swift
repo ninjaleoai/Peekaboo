@@ -177,7 +177,7 @@ public enum DesktopCommandRunner {
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
-                    "move, resize, rotate, realize, toggle, expand, collapse, select, " +
+                    "navigate-custom, move, resize, rotate, realize, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -220,6 +220,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationStartSynchronizedInput(args: args, adapter: adapter, stdout: stdout)
         case "cancel-synchronized-input", "cancelSynchronizedInput":
             try self.runAutomationCancelSynchronizedInput(args: args, adapter: adapter, stdout: stdout)
+        case "navigate-custom", "navigateCustom", "custom-navigation", "customNavigation":
+            try self.runAutomationNavigateCustom(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -743,6 +745,40 @@ public enum DesktopCommandRunner {
             maxDepth: maxDepth,
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
+    private static func runAutomationNavigateCustom(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation navigate-custom")
+        }
+
+        let directionValue = try self.value(after: "--direction", in: args) ??
+            self.value(after: "--dir", in: args)
+        guard let directionValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --direction <direction> for automation navigate-custom")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.navigateUIAutomationCustom(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            direction: self.parseUIAutomationNavigationDirection(directionValue))))
     }
 
     private static func runAutomationCloseWindow(
@@ -1451,6 +1487,27 @@ public enum DesktopCommandRunner {
         }
     }
 
+    private static func parseUIAutomationNavigationDirection(
+        _ value: String) throws -> DesktopUIAutomationNavigationDirection
+    {
+        switch value {
+        case "parent":
+            return .parent
+        case "next-sibling", "nextSibling":
+            return .nextSibling
+        case "previous-sibling", "previousSibling":
+            return .previousSibling
+        case "first-child", "firstChild":
+            return .firstChild
+        case "last-child", "lastChild":
+            return .lastChild
+        default:
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation navigation direction must be parent, next-sibling, " +
+                    "previous-sibling, first-child, or last-child")
+        }
+    }
+
     private static func parseUIAutomationMovePoint(_ args: [String]) throws -> (Double, Double) {
         if let pointValue = try self.value(after: "--point", in: args) ??
             self.value(after: "--position", in: args)
@@ -1591,6 +1648,9 @@ public enum DesktopCommandRunner {
                           mouse-right-button-up|mouse-right-button-down>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation cancel-synchronized-input --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation navigate-custom --index <n>
+            --direction <parent|next-sibling|previous-sibling|first-child|last-child>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

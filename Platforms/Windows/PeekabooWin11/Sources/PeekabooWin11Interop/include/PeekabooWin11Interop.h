@@ -279,6 +279,8 @@ typedef struct PeekabooWin11UIAutomationActionResult {
     int32_t actionResult;
     int32_t hasBoolResult;
     int32_t boolResult;
+    int32_t hasResultElement;
+    PeekabooWin11UIAutomationElementSnapshot resultElement;
 } PeekabooWin11UIAutomationActionResult;
 
 PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
@@ -393,6 +395,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CancelUIAutomationSynchronize
     int32_t maxDepth,
     int32_t maxElements,
     int32_t elementIndex);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11NavigateUIAutomationCustom(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t direction);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,

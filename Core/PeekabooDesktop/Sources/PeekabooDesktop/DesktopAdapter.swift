@@ -117,6 +117,12 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func navigateUIAutomationCustom(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        direction: DesktopUIAutomationNavigationDirection) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -299,6 +305,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    func navigateUIAutomationCustom(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        direction: DesktopUIAutomationNavigationDirection) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -686,6 +698,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxDepth: maxDepth,
             maxElements: maxElements,
             elementIndex: elementIndex)
+    }
+
+    public func navigateUIAutomationCustom(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        direction: DesktopUIAutomationNavigationDirection) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.navigateUIAutomationCustom(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            direction: direction)
     }
 
     public func moveUIAutomationElement(

@@ -92,6 +92,9 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   Automation pattern availability in bounded snapshots
 - SynchronizedInput-pattern UI Automation start-listening and cancel actions
   against a bounded snapshot element index
+- CustomNavigation-pattern UI Automation navigate actions against a bounded
+  snapshot element index, returning the navigated UIA element in
+  `resultElement`
 - VirtualizedItem-pattern UI Automation realize actions against a bounded
   snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
@@ -145,10 +148,12 @@ bounded element lookup over the same snapshot traversal, and
 `automation zoom-by-unit --index <n>`,
 `automation start-synchronized-input --index <n>`,
 `automation cancel-synchronized-input --index <n>`,
+`automation navigate-custom --index <n>`,
 and `automation realize --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
 Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern,
-SynchronizedInput-pattern, and VirtualizedItem-pattern UIA actions.
+SynchronizedInput-pattern, CustomNavigation-pattern, and VirtualizedItem-pattern
+UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -177,6 +182,10 @@ Transform2-pattern controls that expose unit-based viewport zoom.
 starts SynchronizedInput-pattern listening for one keyboard or mouse input
 type. `automation cancel-synchronized-input --index <n>` asks the same pattern
 to stop listening.
+`automation navigate-custom --index <n> --direction
+<parent|next-sibling|previous-sibling|first-child|last-child>` covers
+CustomNavigation-pattern controls that expose a custom logical navigation
+order, and returns the target element snapshot in the action `resultElement`.
 `automation realize --index <n>` covers VirtualizedItem-pattern controls whose
 placeholder element can be materialized into a full UIA element.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls

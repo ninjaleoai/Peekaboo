@@ -49,6 +49,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .zoomUIAutomationElementByUnit,
                 .startUIAutomationSynchronizedInput,
                 .cancelUIAutomationSynchronizedInput,
+                .navigateUIAutomationCustom,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -1476,6 +1477,54 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             value: "cancelled=true")
     }
 
+    public func navigateUIAutomationCustom(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        direction: DesktopUIAutomationNavigationDirection) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.customNavigation) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support custom navigation")
+        }
+
+        let nativeResult = PeekabooWin11NavigateUIAutomationCustom(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            Self.nativeNavigationDirection(direction))
+        try Self.validateUIAutomationNavigateCustom(nativeResult)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .navigateCustom,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "direction=\(direction.rawValue)",
+            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+    }
+
     public func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2855,6 +2904,54 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationNavigateCustom(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation navigate-custom failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support custom navigation")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationCustomNavigationPattern query failed: " +
+                    "\(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationCustomNavigationPattern.Navigate failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -3229,71 +3326,89 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
 
         return (0..<Int(snapshot.elementCount)).map { offset in
             var nativeElement = elementsPointer.advanced(by: offset).pointee
-            let bounds: DesktopRect? = nativeElement.hasBoundingRectangle != 0
-                ? DesktopRect(
-                    x: Int(nativeElement.boundsX),
-                    y: Int(nativeElement.boundsY),
-                    width: Int(nativeElement.boundsWidth),
-                    height: Int(nativeElement.boundsHeight))
-                : nil
-            let supportedPatterns = Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask)
-            let isValueReadOnly = Self.optionalBool(
-                hasValue: nativeElement.hasIsValueReadOnly,
-                value: nativeElement.isValueReadOnly)
-            let isRangeValueReadOnly = Self.optionalBool(
-                hasValue: nativeElement.hasIsRangeValueReadOnly,
-                value: nativeElement.isRangeValueReadOnly)
-            let isHorizontallyScrollable = Self.optionalBool(
-                hasValue: nativeElement.hasIsHorizontallyScrollable,
-                value: nativeElement.isHorizontallyScrollable)
-            let isVerticallyScrollable = Self.optionalBool(
-                hasValue: nativeElement.hasIsVerticallyScrollable,
-                value: nativeElement.isVerticallyScrollable)
-            let expandCollapseState = Self.uiAutomationExpandCollapseState(
-                hasValue: nativeElement.hasExpandCollapseState,
-                value: nativeElement.expandCollapseState)
-            let isKeyboardFocusable = Self.optionalBool(
-                hasValue: nativeElement.hasIsKeyboardFocusable,
-                value: nativeElement.isKeyboardFocusable)
-            let windowVisualState = Self.uiAutomationWindowVisualState(
-                hasValue: nativeElement.hasWindowVisualState,
-                value: nativeElement.windowVisualState)
-            let windowInteractionState = Self.uiAutomationWindowInteractionState(
-                hasValue: nativeElement.hasWindowInteractionState,
-                value: nativeElement.windowInteractionState)
-            let dockPosition = Self.uiAutomationDockPosition(
-                hasValue: nativeElement.hasDockPosition,
-                value: nativeElement.dockPosition)
-            let isSelected = Self.optionalBool(
-                hasValue: nativeElement.hasIsSelected,
-                value: nativeElement.isSelected)
-            let selectionCanSelectMultiple = Self.optionalBool(
-                hasValue: nativeElement.hasSelectionCanSelectMultiple,
-                value: nativeElement.selectionCanSelectMultiple)
-            let selectionIsRequired = Self.optionalBool(
-                hasValue: nativeElement.hasSelectionIsRequired,
-                value: nativeElement.selectionIsRequired)
-            let selectionSelectedItemCount = Self.optionalInt(
-                hasValue: nativeElement.hasSelectionSelectedItemCount,
-                value: nativeElement.selectionSelectedItemCount)
-            let legacyDefaultAction = nativeElement.hasLegacyDefaultAction != 0
-                ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyDefaultAction(&nativeElement))
-                : nil
-            let legacyValue = nativeElement.hasLegacyValue != 0
-                ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyValue(&nativeElement))
-                : nil
-            let isEnabled = Self.optionalBool(
-                hasValue: nativeElement.hasIsEnabled,
-                value: nativeElement.isEnabled)
-            let hasClickablePoint = Self.optionalBool(
-                hasValue: nativeElement.hasClickablePointResult,
-                value: nativeElement.hasClickablePoint)
-            let clickablePoint = nativeElement.hasClickablePoint != 0
-                ? DesktopPoint(
-                    x: Int(nativeElement.clickablePointX),
-                    y: Int(nativeElement.clickablePointY))
-                : nil
-            return DesktopUIAutomationElementSnapshot(
+            return Self.uiAutomationElement(from: &nativeElement)
+        }
+    }
+
+    private static func uiAutomationResultElement(
+        from action: PeekabooWin11UIAutomationActionResult) -> DesktopUIAutomationElementSnapshot?
+    {
+        guard action.hasResultElement != 0 else {
+            return nil
+        }
+        var nativeElement = action.resultElement
+        return Self.uiAutomationElement(from: &nativeElement)
+    }
+
+    private static func uiAutomationElement(
+        from nativeElement: inout PeekabooWin11UIAutomationElementSnapshot)
+        -> DesktopUIAutomationElementSnapshot
+    {
+        let bounds: DesktopRect? = nativeElement.hasBoundingRectangle != 0
+            ? DesktopRect(
+                x: Int(nativeElement.boundsX),
+                y: Int(nativeElement.boundsY),
+                width: Int(nativeElement.boundsWidth),
+                height: Int(nativeElement.boundsHeight))
+            : nil
+        let supportedPatterns = Self.uiAutomationPatterns(from: nativeElement.supportedPatternMask)
+        let isValueReadOnly = Self.optionalBool(
+            hasValue: nativeElement.hasIsValueReadOnly,
+            value: nativeElement.isValueReadOnly)
+        let isRangeValueReadOnly = Self.optionalBool(
+            hasValue: nativeElement.hasIsRangeValueReadOnly,
+            value: nativeElement.isRangeValueReadOnly)
+        let isHorizontallyScrollable = Self.optionalBool(
+            hasValue: nativeElement.hasIsHorizontallyScrollable,
+            value: nativeElement.isHorizontallyScrollable)
+        let isVerticallyScrollable = Self.optionalBool(
+            hasValue: nativeElement.hasIsVerticallyScrollable,
+            value: nativeElement.isVerticallyScrollable)
+        let expandCollapseState = Self.uiAutomationExpandCollapseState(
+            hasValue: nativeElement.hasExpandCollapseState,
+            value: nativeElement.expandCollapseState)
+        let isKeyboardFocusable = Self.optionalBool(
+            hasValue: nativeElement.hasIsKeyboardFocusable,
+            value: nativeElement.isKeyboardFocusable)
+        let windowVisualState = Self.uiAutomationWindowVisualState(
+            hasValue: nativeElement.hasWindowVisualState,
+            value: nativeElement.windowVisualState)
+        let windowInteractionState = Self.uiAutomationWindowInteractionState(
+            hasValue: nativeElement.hasWindowInteractionState,
+            value: nativeElement.windowInteractionState)
+        let dockPosition = Self.uiAutomationDockPosition(
+            hasValue: nativeElement.hasDockPosition,
+            value: nativeElement.dockPosition)
+        let isSelected = Self.optionalBool(
+            hasValue: nativeElement.hasIsSelected,
+            value: nativeElement.isSelected)
+        let selectionCanSelectMultiple = Self.optionalBool(
+            hasValue: nativeElement.hasSelectionCanSelectMultiple,
+            value: nativeElement.selectionCanSelectMultiple)
+        let selectionIsRequired = Self.optionalBool(
+            hasValue: nativeElement.hasSelectionIsRequired,
+            value: nativeElement.selectionIsRequired)
+        let selectionSelectedItemCount = Self.optionalInt(
+            hasValue: nativeElement.hasSelectionSelectedItemCount,
+            value: nativeElement.selectionSelectedItemCount)
+        let legacyDefaultAction = nativeElement.hasLegacyDefaultAction != 0
+            ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyDefaultAction(&nativeElement))
+            : nil
+        let legacyValue = nativeElement.hasLegacyValue != 0
+            ? Self.rawString(from: PeekabooWin11UIAutomationElementLegacyValue(&nativeElement))
+            : nil
+        let isEnabled = Self.optionalBool(
+            hasValue: nativeElement.hasIsEnabled,
+            value: nativeElement.isEnabled)
+        let hasClickablePoint = Self.optionalBool(
+            hasValue: nativeElement.hasClickablePointResult,
+            value: nativeElement.hasClickablePoint)
+        let clickablePoint = nativeElement.hasClickablePoint != 0
+            ? DesktopPoint(
+                x: Int(nativeElement.clickablePointX),
+                y: Int(nativeElement.clickablePointY))
+            : nil
+        return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
                 depth: Int(nativeElement.depth),
@@ -3622,7 +3737,6 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     value: nativeElement.legacyState),
                 isSelected: isSelected,
                 childCount: Int(nativeElement.childCount))
-        }
     }
 
     private static func uiAutomationActions(
@@ -3691,6 +3805,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.synchronizedInput) {
             actions.append(.startSynchronizedInput)
             actions.append(.cancelSynchronizedInput)
+        }
+        if supportedPatterns.contains(.customNavigation) {
+            actions.append(.navigateCustom)
         }
         if supportedPatterns.contains(.transform), canMove == true {
             actions.append(.move)
@@ -3880,6 +3997,23 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return 16
         case .mouseRightButtonDown:
             return 32
+        }
+    }
+
+    private static func nativeNavigationDirection(
+        _ direction: DesktopUIAutomationNavigationDirection) -> Int32
+    {
+        switch direction {
+        case .parent:
+            return 0
+        case .nextSibling:
+            return 1
+        case .previousSibling:
+            return 2
+        case .firstChild:
+            return 3
+        case .lastChild:
+            return 4
         }
     }
 

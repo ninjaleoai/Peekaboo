@@ -95,6 +95,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.zoomUIAutomationElementByUnit))
         XCTAssertTrue(info.capabilities.contains(.startUIAutomationSynchronizedInput))
         XCTAssertTrue(info.capabilities.contains(.cancelUIAutomationSynchronizedInput))
+        XCTAssertTrue(info.capabilities.contains(.navigateUIAutomationCustom))
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
@@ -208,6 +209,12 @@ final class Win11ModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0))
+        XCTAssertThrowsError(try adapter.navigateUIAutomationCustom(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            direction: .nextSibling))
         XCTAssertThrowsError(try adapter.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,

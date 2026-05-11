@@ -36,6 +36,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_REALIZE_VIRTUALIZED_ITEM 25
 #define PEEKABOO_WIN11_UIA_ACTION_START_SYNCHRONIZED_INPUT 26
 #define PEEKABOO_WIN11_UIA_ACTION_CANCEL_SYNCHRONIZED_INPUT 27
+#define PEEKABOO_WIN11_UIA_ACTION_NAVIGATE_CUSTOM 28
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -3136,6 +3137,57 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
 }
 
+static void PeekabooWin11NavigateCustomElement(
+    IUIAutomationElement *element,
+    int32_t direction,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_CustomNavigationPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationCustomNavigationPattern *customNavigationPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationCustomNavigationPattern,
+        (void **)&customNavigationPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || customNavigationPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationElement *resultElement = NULL;
+    result->actionResult = (int32_t)IUIAutomationCustomNavigationPattern_Navigate(
+        customNavigationPattern,
+        (enum NavigateDirection)direction,
+        &resultElement);
+    IUIAutomationCustomNavigationPattern_Release(customNavigationPattern);
+
+    if (PeekabooWin11Succeeded((HRESULT)result->actionResult) && resultElement != NULL) {
+        memset(&result->resultElement, 0, sizeof(result->resultElement));
+        result->hasResultElement = 1;
+        result->resultElement.index = -1;
+        result->resultElement.parentIndex = -1;
+        result->resultElement.depth = 0;
+        PeekabooWin11CopyElementProperties(resultElement, &result->resultElement);
+        IUIAutomationElement_Release(resultElement);
+    }
+}
+
 static int32_t PeekabooWin11AppendElementSnapshot(
     IUIAutomationTreeWalker *walker,
     IUIAutomationElement *element,
@@ -3268,6 +3320,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SynchronizedInputElement(element, dockPosition, 1, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_CANCEL_SYNCHRONIZED_INPUT) {
             PeekabooWin11SynchronizedInputElement(element, 0, 0, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_NAVIGATE_CUSTOM) {
+            PeekabooWin11NavigateCustomElement(element, dockPosition, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
             PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
@@ -3913,6 +3967,29 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CancelUIAutomationSynchronize
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11NavigateUIAutomationCustom(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t direction)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_NAVIGATE_CUSTOM,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        direction,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -4471,6 +4548,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CancelUIAutomationSynchronize
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11NavigateUIAutomationCustom(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t direction)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 28;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)direction;
     result.initializeResult = -2147467263;
     return result;
 }
