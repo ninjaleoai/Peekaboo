@@ -300,6 +300,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isTopmostWindow, false)
         XCTAssertEqual(snapshot.elements.first?.dockPosition, .left)
         XCTAssertEqual(snapshot.elements.first?.text, "Example text")
+        XCTAssertEqual(snapshot.elements.first?.selectedText, "selected")
+        XCTAssertEqual(snapshot.elements.first?.selectedTextRangeCount, 1)
         XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
         XCTAssertEqual(snapshot.elements.first?.gridRowCount, 3)
         XCTAssertEqual(snapshot.elements.first?.gridColumnCount, 2)
@@ -795,6 +797,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isModalWindow\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isTopmostWindow\" : false"))
         XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
+        XCTAssertTrue(result.stdout.contains("\"selectedText\" : \"selected\""))
+        XCTAssertTrue(result.stdout.contains("\"selectedTextRangeCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridColumnCount\" : 2"))
@@ -886,6 +890,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"normal\""))
         XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
         XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
+        XCTAssertTrue(result.stdout.contains("\"selectedText\" : \"selected\""))
+        XCTAssertTrue(result.stdout.contains("\"selectedTextRangeCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
@@ -2681,6 +2687,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isTopmostWindow: false,
                     dockPosition: dockPosition,
                     text: "Example text",
+                    selectedText: "selected",
+                    selectedTextRangeCount: 1,
                     supportedTextSelection: .single,
                     gridRowCount: 3,
                     gridColumnCount: 2,

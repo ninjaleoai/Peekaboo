@@ -463,6 +463,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isTopmostWindow: Bool?
     public let dockPosition: DesktopUIAutomationDockPosition?
     public let text: String?
+    public let selectedText: String?
+    public let selectedTextRangeCount: Int?
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
     public let gridRowCount: Int?
     public let gridColumnCount: Int?
@@ -531,6 +533,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isTopmostWindow: Bool? = nil,
         dockPosition: DesktopUIAutomationDockPosition? = nil,
         text: String? = nil,
+        selectedText: String? = nil,
+        selectedTextRangeCount: Int? = nil,
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
         gridRowCount: Int? = nil,
         gridColumnCount: Int? = nil,
@@ -598,6 +602,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isTopmostWindow = isTopmostWindow
         self.dockPosition = dockPosition
         self.text = text
+        self.selectedText = selectedText
+        self.selectedTextRangeCount = selectedTextRangeCount
         self.supportedTextSelection = supportedTextSelection
         self.gridRowCount = gridRowCount
         self.gridColumnCount = gridColumnCount

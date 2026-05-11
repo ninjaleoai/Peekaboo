@@ -2546,6 +2546,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 text: nativeElement.hasText != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementText(&nativeElement))
                     : nil,
+                selectedText: nativeElement.hasSelectedText != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementSelectedText(&nativeElement))
+                    : nil,
+                selectedTextRangeCount: Self.optionalInt(
+                    hasValue: nativeElement.hasSelectedTextRangeCount,
+                    value: nativeElement.selectedTextRangeCount),
                 supportedTextSelection: Self.uiAutomationSupportedTextSelection(
                     hasValue: nativeElement.hasSupportedTextSelection,
                     value: nativeElement.supportedTextSelection),
