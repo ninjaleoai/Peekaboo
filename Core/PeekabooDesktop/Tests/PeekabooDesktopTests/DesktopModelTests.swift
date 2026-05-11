@@ -290,6 +290,7 @@ final class DesktopModelTests: XCTestCase {
                 .selection,
                 .selectionItem,
                 .text,
+                .text2,
                 .toggle,
                 .legacyIAccessible,
                 .grid,
@@ -363,6 +364,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.visibleText, "visible")
         XCTAssertEqual(snapshot.elements.first?.visibleTextRangeCount, 1)
         XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
+        XCTAssertEqual(snapshot.elements.first?.textCaretIsActive, true)
+        XCTAssertEqual(snapshot.elements.first?.textCaretBoundingRectangleCount, 1)
         XCTAssertEqual(snapshot.elements.first?.gridRowCount, 3)
         XCTAssertEqual(snapshot.elements.first?.gridColumnCount, 2)
         XCTAssertEqual(snapshot.elements.first?.gridItemRow, 1)
@@ -902,6 +905,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"transform\""))
         XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
+        XCTAssertTrue(result.stdout.contains("\"text2\""))
         XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
         XCTAssertTrue(result.stdout.contains("\"annotation\""))
         XCTAssertTrue(result.stdout.contains("\"styles\""))
@@ -940,6 +944,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"visibleText\" : \"visible\""))
         XCTAssertTrue(result.stdout.contains("\"visibleTextRangeCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
+        XCTAssertTrue(result.stdout.contains("\"textCaretIsActive\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"textCaretBoundingRectangleCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridColumnCount\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
@@ -3202,6 +3208,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             .selection,
             .selectionItem,
             .text,
+            .text2,
             .toggle,
             .legacyIAccessible,
             .grid,
@@ -3285,6 +3292,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     visibleText: "visible",
                     visibleTextRangeCount: 1,
                     supportedTextSelection: .single,
+                    textCaretIsActive: true,
+                    textCaretBoundingRectangleCount: 1,
                     gridRowCount: 3,
                     gridColumnCount: 2,
                     gridItemRow: 1,

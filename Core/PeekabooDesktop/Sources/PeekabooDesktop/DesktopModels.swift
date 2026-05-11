@@ -354,6 +354,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case selection
     case selectionItem
     case text
+    case text2
     case toggle
     case legacyIAccessible
     case grid
@@ -511,6 +512,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let visibleText: String?
     public let visibleTextRangeCount: Int?
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
+    public let textCaretIsActive: Bool?
+    public let textCaretBoundingRectangleCount: Int?
     public let gridRowCount: Int?
     public let gridColumnCount: Int?
     public let gridItemRow: Int?
@@ -620,6 +623,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         visibleText: String? = nil,
         visibleTextRangeCount: Int? = nil,
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
+        textCaretIsActive: Bool? = nil,
+        textCaretBoundingRectangleCount: Int? = nil,
         gridRowCount: Int? = nil,
         gridColumnCount: Int? = nil,
         gridItemRow: Int? = nil,
@@ -728,6 +733,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.visibleText = visibleText
         self.visibleTextRangeCount = visibleTextRangeCount
         self.supportedTextSelection = supportedTextSelection
+        self.textCaretIsActive = textCaretIsActive
+        self.textCaretBoundingRectangleCount = textCaretBoundingRectangleCount
         self.gridRowCount = gridRowCount
         self.gridColumnCount = gridColumnCount
         self.gridItemRow = gridItemRow

@@ -3237,6 +3237,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 supportedTextSelection: Self.uiAutomationSupportedTextSelection(
                     hasValue: nativeElement.hasSupportedTextSelection,
                     value: nativeElement.supportedTextSelection),
+                textCaretIsActive: Self.optionalBool(
+                    hasValue: nativeElement.hasTextCaretIsActive,
+                    value: nativeElement.textCaretIsActive),
+                textCaretBoundingRectangleCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTextCaretBoundingRectangleCount,
+                    value: nativeElement.textCaretBoundingRectangleCount),
                 gridRowCount: Self.optionalInt(
                     hasValue: nativeElement.hasGridRowCount,
                     value: nativeElement.gridRowCount),
@@ -3738,6 +3744,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 7) {
             patterns.append(.text)
+        }
+        if Self.hasPatternBit(mask, 25) {
+            patterns.append(.text2)
         }
         if Self.hasPatternBit(mask, 8) {
             patterns.append(.toggle)

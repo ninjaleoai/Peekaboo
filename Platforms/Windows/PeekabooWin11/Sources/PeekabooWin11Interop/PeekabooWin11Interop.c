@@ -417,6 +417,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_StylesPatternId, 1ULL << 22, snapshot);
     PeekabooWin11MarkPattern(element, UIA_DragPatternId, 1ULL << 23, snapshot);
     PeekabooWin11MarkPattern(element, UIA_DropTargetPatternId, 1ULL << 24, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TextPattern2Id, 1ULL << 25, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -903,6 +904,77 @@ static void PeekabooWin11CopyElementTextPattern(
     }
 
     IUIAutomationTextPattern_Release(textPattern);
+}
+
+static void PeekabooWin11CopyTextRangeBoundingRectangleCount(
+    HRESULT result,
+    SAFEARRAY *rectangles,
+    int32_t *hasCount,
+    int32_t *count)
+{
+    if (PeekabooWin11Succeeded(result) && rectangles != NULL) {
+        LONG lowerBound = 0;
+        LONG upperBound = -1;
+        HRESULT lowerBoundResult = SafeArrayGetLBound(rectangles, 1, &lowerBound);
+        HRESULT upperBoundResult = SafeArrayGetUBound(rectangles, 1, &upperBound);
+        if (PeekabooWin11Succeeded(lowerBoundResult) &&
+            PeekabooWin11Succeeded(upperBoundResult))
+        {
+            LONG valueCount = upperBound >= lowerBound ? upperBound - lowerBound + 1 : 0;
+            *hasCount = 1;
+            *count = (int32_t)(valueCount / 4);
+        }
+    }
+    if (rectangles != NULL) {
+        SafeArrayDestroy(rectangles);
+    }
+}
+
+static void PeekabooWin11CopyElementTextPattern2(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TextPattern2Id,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTextPattern2 *textPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTextPattern2,
+        (void **)&textPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || textPattern == NULL) {
+        return;
+    }
+
+    BOOL isActive = FALSE;
+    IUIAutomationTextRange *caretRange = NULL;
+    HRESULT caretResult = IUIAutomationTextPattern2_GetCaretRange(
+        textPattern,
+        &isActive,
+        &caretRange);
+    if (PeekabooWin11Succeeded(caretResult)) {
+        snapshot->hasTextCaretIsActive = 1;
+        snapshot->textCaretIsActive = isActive ? 1 : 0;
+    }
+    if (PeekabooWin11Succeeded(caretResult) && caretRange != NULL) {
+        SAFEARRAY *rectangles = NULL;
+        PeekabooWin11CopyTextRangeBoundingRectangleCount(
+            IUIAutomationTextRange_GetBoundingRectangles(caretRange, &rectangles),
+            rectangles,
+            &snapshot->hasTextCaretBoundingRectangleCount,
+            &snapshot->textCaretBoundingRectangleCount);
+        IUIAutomationTextRange_Release(caretRange);
+    }
+
+    IUIAutomationTextPattern2_Release(textPattern);
 }
 
 static void PeekabooWin11CopyElementGridPattern(
@@ -2771,6 +2843,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementWindowPattern(element, snapshot);
     PeekabooWin11CopyElementDockPattern(element, snapshot);
     PeekabooWin11CopyElementTextPattern(element, snapshot);
+    PeekabooWin11CopyElementTextPattern2(element, snapshot);
     PeekabooWin11CopyElementGridPattern(element, snapshot);
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
     PeekabooWin11CopyElementTablePattern(element, snapshot);
