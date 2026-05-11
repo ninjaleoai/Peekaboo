@@ -860,9 +860,11 @@ selected state when UIA reports it.
 
 ## Next Integration Steps
 
-1. Continue routing the remaining main macOS CLI capture read paths through the
-   same desktop adapter contract where the existing output behavior can be
-   preserved.
-2. Continue expanding the Windows UI Automation path from basic
-   control-specific actions into richer action result verification where UIA
-   exposes observable post-action state.
+1. Continue expanding the Windows UI Automation action surface and post-action
+   verification only where UIA exposes stable, observable state.
+2. Keep shared `PeekabooDesktop` contract changes validated by the Windows 11
+   Platform workflow because the Windows package depends on that shared model
+   seam.
+3. Route additional macOS CLI paths through the shared desktop adapter only when
+   the existing macOS output behavior can be preserved and mac-specific
+   validation is intentionally in scope.
