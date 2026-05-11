@@ -2065,6 +2065,19 @@ static void PeekabooWin11CopyElementProperties(
         snapshot->isOffscreen = isOffscreen ? 1 : 0;
     }
 
+    POINT clickablePoint = {0, 0};
+    BOOL gotClickable = FALSE;
+    if (PeekabooWin11Succeeded(
+        IUIAutomationElement_GetClickablePoint(element, &clickablePoint, &gotClickable)))
+    {
+        snapshot->hasClickablePointResult = 1;
+        snapshot->hasClickablePoint = gotClickable ? 1 : 0;
+        if (gotClickable) {
+            snapshot->clickablePointX = (int32_t)clickablePoint.x;
+            snapshot->clickablePointY = (int32_t)clickablePoint.y;
+        }
+    }
+
     PeekabooWin11CopyElementPatterns(element, snapshot);
     PeekabooWin11CopyElementValuePattern(element, snapshot);
     PeekabooWin11CopyElementRangeValuePattern(element, snapshot);

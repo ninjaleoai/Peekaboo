@@ -36,6 +36,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   cursor-hit element snapshots through the UIA control view walker
 - common UI Automation element metadata for access keys, accelerator keys,
   framework IDs, help text, item status, and item type
+- UI Automation clickable-point availability and physical screen coordinate
+  metadata in bounded snapshots
 - stable UI Automation action availability mapping for snapshot elements
 - Window-pattern UI Automation state metadata for windows in bounded snapshots
 - Window-pattern UI Automation set-window-state actions against a bounded
@@ -462,7 +464,8 @@ non-localized control type name, localized control type, name, automation
 identifier, class name, access key, accelerator key, framework ID, help text,
 item status, item type, process ID, native window handle, bounds, depth, parent
 index, child count, and optional state flags for enabled, focusable, focused,
-and off-screen status. Elements also report common supported UIA patterns,
+off-screen, and clickable-point status. When UIA exposes a clickable point,
+snapshots include its physical screen coordinates. Elements also report common supported UIA patterns,
 including invoke, value, range value, scroll, expand/collapse, window,
 selection item, text, toggle, grid, grid item, scroll item, and legacy
 IAccessible. When an element supports the UIA Value pattern, snapshots also

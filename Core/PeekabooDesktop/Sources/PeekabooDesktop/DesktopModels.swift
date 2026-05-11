@@ -447,6 +447,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let isKeyboardFocusable: Bool?
     public let hasKeyboardFocus: Bool?
     public let isOffscreen: Bool?
+    public let hasClickablePoint: Bool?
+    public let clickablePoint: DesktopPoint?
     public let supportedPatterns: [DesktopUIAutomationPattern]
     public let availableActions: [DesktopUIAutomationAction]
     public let value: String?
@@ -525,6 +527,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         isKeyboardFocusable: Bool? = nil,
         hasKeyboardFocus: Bool? = nil,
         isOffscreen: Bool? = nil,
+        hasClickablePoint: Bool? = nil,
+        clickablePoint: DesktopPoint? = nil,
         supportedPatterns: [DesktopUIAutomationPattern] = [],
         availableActions: [DesktopUIAutomationAction] = [],
         value: String? = nil,
@@ -602,6 +606,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.isKeyboardFocusable = isKeyboardFocusable
         self.hasKeyboardFocus = hasKeyboardFocus
         self.isOffscreen = isOffscreen
+        self.hasClickablePoint = hasClickablePoint
+        self.clickablePoint = clickablePoint
         self.supportedPatterns = supportedPatterns
         self.availableActions = availableActions
         self.value = value

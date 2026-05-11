@@ -252,6 +252,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.isKeyboardFocusable, true)
         XCTAssertEqual(snapshot.elements.first?.hasKeyboardFocus, false)
         XCTAssertEqual(snapshot.elements.first?.isOffscreen, false)
+        XCTAssertEqual(snapshot.elements.first?.hasClickablePoint, true)
+        XCTAssertEqual(snapshot.elements.first?.clickablePoint, DesktopPoint(x: 12, y: 34))
         XCTAssertEqual(
             snapshot.elements.first?.supportedPatterns,
             [
@@ -791,6 +793,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"isKeyboardFocusable\" : true"))
         XCTAssertTrue(result.stdout.contains("\"hasKeyboardFocus\" : false"))
         XCTAssertTrue(result.stdout.contains("\"isOffscreen\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"hasClickablePoint\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"clickablePoint\" : {"))
         XCTAssertTrue(result.stdout.contains("\"supportedPatterns\" : ["))
         XCTAssertTrue(result.stdout.contains("\"availableActions\" : ["))
         XCTAssertTrue(result.stdout.contains("\"focus\""))
@@ -933,6 +937,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"normal\""))
         XCTAssertTrue(result.stdout.contains("\"windowInteractionState\" : \"readyForUserInteraction\""))
+        XCTAssertTrue(result.stdout.contains("\"clickablePoint\" : {"))
         XCTAssertTrue(result.stdout.contains("\"text\" : \"Example text\""))
         XCTAssertTrue(result.stdout.contains("\"selectedText\" : \"selected\""))
         XCTAssertTrue(result.stdout.contains("\"selectedTextRangeCount\" : 1"))
@@ -2838,6 +2843,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     isKeyboardFocusable: true,
                     hasKeyboardFocus: hasKeyboardFocus,
                     isOffscreen: isOffscreen,
+                    hasClickablePoint: true,
+                    clickablePoint: DesktopPoint(x: 12, y: 34),
                     supportedPatterns: [
                         .invoke,
                         .value,

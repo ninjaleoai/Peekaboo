@@ -2662,6 +2662,14 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             let isEnabled = Self.optionalBool(
                 hasValue: nativeElement.hasIsEnabled,
                 value: nativeElement.isEnabled)
+            let hasClickablePoint = Self.optionalBool(
+                hasValue: nativeElement.hasClickablePointResult,
+                value: nativeElement.hasClickablePoint)
+            let clickablePoint = nativeElement.hasClickablePoint != 0
+                ? DesktopPoint(
+                    x: Int(nativeElement.clickablePointX),
+                    y: Int(nativeElement.clickablePointY))
+                : nil
             return DesktopUIAutomationElementSnapshot(
                 index: Int(nativeElement.index),
                 parentIndex: nativeElement.parentIndex >= 0 ? Int(nativeElement.parentIndex) : nil,
@@ -2696,6 +2704,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 isOffscreen: Self.optionalBool(
                     hasValue: nativeElement.hasIsOffscreen,
                     value: nativeElement.isOffscreen),
+                hasClickablePoint: hasClickablePoint,
+                clickablePoint: clickablePoint,
                 supportedPatterns: supportedPatterns,
                 availableActions: Self.uiAutomationActions(
                     supportedPatterns: supportedPatterns,
