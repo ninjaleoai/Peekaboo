@@ -1313,6 +1313,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsDisabledAutomationFocus() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "focus",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationLegacyDefaultAction() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1361,6 +1381,29 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Legacy updated\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy updated\""))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationSetLegacyValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-legacy-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "Legacy updated",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains(
+            "UI Automation element index 0 value cannot be set because element is disabled"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationInvokeIndex() {
@@ -3044,6 +3087,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
