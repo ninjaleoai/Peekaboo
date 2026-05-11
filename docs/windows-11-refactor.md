@@ -45,6 +45,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Text-pattern UI Automation selected text and selected range count metadata in
   bounded snapshots
+- Text-pattern UI Automation visible text and visible range count metadata in
+  bounded snapshots
 - Legacy IAccessible-pattern UI Automation fallback metadata in bounded
   snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
@@ -446,9 +448,9 @@ supports the UIA Window pattern, snapshots include visual state, interaction
 state, whether the window can be minimized or maximized, and whether it is
 modal or topmost when UIA reports them. When an element supports the UIA Text
 pattern, snapshots include a bounded text preview from the document range,
-selected text, selected range count, and whether text selection is unsupported,
-single-range, or multi-range when UIA reports them. When an element supports
-the UIA Legacy IAccessible pattern,
+selected text, selected range count, visible text, visible range count, and
+whether text selection is unsupported, single-range, or multi-range when UIA
+reports them. When an element supports the UIA Legacy IAccessible pattern,
 snapshots include fallback MSAA child ID, name, value, description, help,
 keyboard shortcut, default action, role ID, and state ID when UIA reports them.
 When an element supports the UIA Grid pattern, snapshots include row and

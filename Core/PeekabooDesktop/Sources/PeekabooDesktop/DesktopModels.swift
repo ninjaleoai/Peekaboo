@@ -465,6 +465,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let text: String?
     public let selectedText: String?
     public let selectedTextRangeCount: Int?
+    public let visibleText: String?
+    public let visibleTextRangeCount: Int?
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
     public let gridRowCount: Int?
     public let gridColumnCount: Int?
@@ -535,6 +537,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         text: String? = nil,
         selectedText: String? = nil,
         selectedTextRangeCount: Int? = nil,
+        visibleText: String? = nil,
+        visibleTextRangeCount: Int? = nil,
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
         gridRowCount: Int? = nil,
         gridColumnCount: Int? = nil,
@@ -604,6 +608,8 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.text = text
         self.selectedText = selectedText
         self.selectedTextRangeCount = selectedTextRangeCount
+        self.visibleText = visibleText
+        self.visibleTextRangeCount = visibleTextRangeCount
         self.supportedTextSelection = supportedTextSelection
         self.gridRowCount = gridRowCount
         self.gridColumnCount = gridColumnCount

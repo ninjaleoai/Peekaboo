@@ -125,6 +125,67 @@ static void PeekabooWin11AppendUTF8Text(char *target, size_t targetSize, const c
     target[targetSize - 1] = '\0';
 }
 
+static void PeekabooWin11CopyTextRangeArrayText(
+    IUIAutomationTextRangeArray *ranges,
+    char *textTarget,
+    size_t textTargetSize,
+    int32_t *hasText,
+    int32_t *hasRangeCount,
+    int32_t *rangeCount)
+{
+    if (ranges == NULL || textTarget == NULL || hasText == NULL ||
+        hasRangeCount == NULL || rangeCount == NULL)
+    {
+        return;
+    }
+
+    int textRangeCount = 0;
+    HRESULT lengthResult = IUIAutomationTextRangeArray_get_Length(
+        ranges,
+        &textRangeCount);
+    if (!PeekabooWin11Succeeded(lengthResult) || textRangeCount < 0) {
+        return;
+    }
+
+    *hasRangeCount = 1;
+    *rangeCount = textRangeCount;
+    if (textRangeCount == 0) {
+        *hasText = 1;
+        textTarget[0] = '\0';
+        return;
+    }
+
+    for (int index = 0; index < textRangeCount; index += 1) {
+        IUIAutomationTextRange *textRange = NULL;
+        HRESULT rangeResult = IUIAutomationTextRangeArray_GetElement(
+            ranges,
+            index,
+            &textRange);
+        if (!PeekabooWin11Succeeded(rangeResult) || textRange == NULL) {
+            continue;
+        }
+
+        BSTR text = NULL;
+        HRESULT textResult = IUIAutomationTextRange_GetText(
+            textRange,
+            PEEKABOO_WIN11_UIA_TEXT_CAPACITY - 1,
+            &text);
+        if (PeekabooWin11Succeeded(textResult)) {
+            char textPart[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+            PeekabooWin11CopyBSTR(text, textPart, PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+            if (*hasText != 0) {
+                PeekabooWin11AppendUTF8Text(textTarget, textTargetSize, "\n");
+            }
+            *hasText = 1;
+            PeekabooWin11AppendUTF8Text(textTarget, textTargetSize, textPart);
+        }
+        if (text != NULL) {
+            SysFreeString(text);
+        }
+        IUIAutomationTextRange_Release(textRange);
+    }
+}
+
 static BSTR PeekabooWin11CopyUTF8BSTR(const char *value) {
     const char *source = value == NULL ? "" : value;
     int wideLength = MultiByteToWideChar(CP_UTF8, 0, source, -1, NULL, 0);
@@ -727,57 +788,29 @@ static void PeekabooWin11CopyElementTextPattern(
         textPattern,
         &selectedRanges);
     if (PeekabooWin11Succeeded(selectedRangesResult) && selectedRanges != NULL) {
-        int selectedRangeCount = 0;
-        HRESULT lengthResult = IUIAutomationTextRangeArray_get_Length(
+        PeekabooWin11CopyTextRangeArrayText(
             selectedRanges,
-            &selectedRangeCount);
-        if (PeekabooWin11Succeeded(lengthResult) && selectedRangeCount >= 0) {
-            snapshot->hasSelectedTextRangeCount = 1;
-            snapshot->selectedTextRangeCount = selectedRangeCount;
-            if (selectedRangeCount == 0) {
-                snapshot->hasSelectedText = 1;
-                snapshot->selectedText[0] = '\0';
-            }
-            for (int index = 0; index < selectedRangeCount; index += 1) {
-                IUIAutomationTextRange *selectedRange = NULL;
-                HRESULT rangeResult = IUIAutomationTextRangeArray_GetElement(
-                    selectedRanges,
-                    index,
-                    &selectedRange);
-                if (!PeekabooWin11Succeeded(rangeResult) || selectedRange == NULL) {
-                    continue;
-                }
-
-                BSTR selectedText = NULL;
-                HRESULT textResult = IUIAutomationTextRange_GetText(
-                    selectedRange,
-                    PEEKABOO_WIN11_UIA_TEXT_CAPACITY - 1,
-                    &selectedText);
-                if (PeekabooWin11Succeeded(textResult)) {
-                    char selectedTextPart[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
-                    PeekabooWin11CopyBSTR(
-                        selectedText,
-                        selectedTextPart,
-                        PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
-                    if (snapshot->hasSelectedText != 0) {
-                        PeekabooWin11AppendUTF8Text(
-                            snapshot->selectedText,
-                            PEEKABOO_WIN11_UIA_TEXT_CAPACITY,
-                            "\n");
-                    }
-                    snapshot->hasSelectedText = 1;
-                    PeekabooWin11AppendUTF8Text(
-                        snapshot->selectedText,
-                        PEEKABOO_WIN11_UIA_TEXT_CAPACITY,
-                        selectedTextPart);
-                }
-                if (selectedText != NULL) {
-                    SysFreeString(selectedText);
-                }
-                IUIAutomationTextRange_Release(selectedRange);
-            }
-        }
+            snapshot->selectedText,
+            PEEKABOO_WIN11_UIA_TEXT_CAPACITY,
+            &snapshot->hasSelectedText,
+            &snapshot->hasSelectedTextRangeCount,
+            &snapshot->selectedTextRangeCount);
         IUIAutomationTextRangeArray_Release(selectedRanges);
+    }
+
+    IUIAutomationTextRangeArray *visibleRanges = NULL;
+    HRESULT visibleRangesResult = IUIAutomationTextPattern_GetVisibleRanges(
+        textPattern,
+        &visibleRanges);
+    if (PeekabooWin11Succeeded(visibleRangesResult) && visibleRanges != NULL) {
+        PeekabooWin11CopyTextRangeArrayText(
+            visibleRanges,
+            snapshot->visibleText,
+            PEEKABOO_WIN11_UIA_TEXT_CAPACITY,
+            &snapshot->hasVisibleText,
+            &snapshot->hasVisibleTextRangeCount,
+            &snapshot->visibleTextRangeCount);
+        IUIAutomationTextRangeArray_Release(visibleRanges);
     }
 
     IUIAutomationTextPattern_Release(textPattern);
@@ -3113,6 +3146,12 @@ const char *PeekabooWin11UIAutomationElementSelectedText(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->selectedText;
+}
+
+const char *PeekabooWin11UIAutomationElementVisibleText(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->visibleText;
 }
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

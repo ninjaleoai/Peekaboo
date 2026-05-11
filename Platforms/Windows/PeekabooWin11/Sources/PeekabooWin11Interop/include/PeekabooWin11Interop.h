@@ -90,6 +90,9 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasSelectedText;
     int32_t hasSelectedTextRangeCount;
     int32_t selectedTextRangeCount;
+    int32_t hasVisibleText;
+    int32_t hasVisibleTextRangeCount;
+    int32_t visibleTextRangeCount;
     int32_t hasSupportedTextSelection;
     int32_t supportedTextSelection;
     int32_t hasGridRowCount;
@@ -138,6 +141,7 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char value[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char selectedText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char visibleText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyValue[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyDescription[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -336,6 +340,9 @@ const char *PeekabooWin11UIAutomationElementText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementSelectedText(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementVisibleText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLegacyName(
