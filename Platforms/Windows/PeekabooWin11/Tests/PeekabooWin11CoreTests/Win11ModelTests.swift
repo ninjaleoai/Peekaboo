@@ -225,6 +225,24 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             position: .right))
+        XCTAssertThrowsError(try adapter.setUIAutomationElementCurrentView(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            viewId: 4))
+        XCTAssertThrowsError(try adapter.setUIAutomationElementZoomLevel(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            zoomLevel: 150.0))
+        XCTAssertThrowsError(try adapter.zoomUIAutomationElementByUnit(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            unit: .largeIncrement))
         XCTAssertThrowsError(try adapter.addUIAutomationElementToSelection(
             scope: .root,
             maxDepth: 1,
