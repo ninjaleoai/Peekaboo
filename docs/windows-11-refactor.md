@@ -194,7 +194,8 @@ container.
 `automation set-current-view --index <n> --view-id <view-id>` covers
 MultipleView-pattern controls that expose alternate UI presentations.
 `automation set-zoom --index <n> --level <percent>` covers Transform2-pattern
-controls that expose zoomable viewports.
+controls that expose zoomable viewports, rejecting known out-of-range zoom
+levels when UIA exposes minimum or maximum zoom metadata.
 `automation zoom-by-unit --index <n> --unit
 <large-increment|small-increment|large-decrement|small-decrement|none>` covers
 Transform2-pattern controls that expose unit-based viewport zoom.
@@ -737,7 +738,8 @@ performs the UIA Dock pattern action, then verifies the refreshed dock position
 when UIA reports it. `automation set-current-view`
 performs the UIA MultipleView pattern action, then verifies the refreshed
 current view identifier when UIA reports it. `automation set-zoom` performs the
-UIA Transform2 pattern zoom action, then
+UIA Transform2 pattern zoom action after rejecting known out-of-range requested
+levels when UIA exposes zoom limits, then
 verifies the refreshed zoom level when UIA reports it. `automation zoom-by-unit`
 performs the UIA Transform2 unit zoom action, then verifies that the refreshed
 zoom level moved in the requested direction when pre/post zoom levels are

@@ -1775,6 +1775,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsKnownOutOfRangeAutomationSetZoom() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-zoom",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--level",
+            "450",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation zoom level 450.0 is above maximum 400.0"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationZoomByUnit() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -2982,6 +3004,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if let minimum = element.zoomMinimum, zoomLevel < minimum {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation zoom level \(zoomLevel) is below minimum \(minimum)")
+        }
+        if let maximum = element.zoomMaximum, zoomLevel > maximum {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation zoom level \(zoomLevel) is above maximum \(maximum)")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,

@@ -1359,6 +1359,14 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support zoom")
         }
+        if let minimum = element.zoomMinimum, zoomLevel < minimum {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation zoom level \(zoomLevel) is below minimum \(minimum)")
+        }
+        if let maximum = element.zoomMaximum, zoomLevel > maximum {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation zoom level \(zoomLevel) is above maximum \(maximum)")
+        }
 
         let nativeResult = PeekabooWin11SetUIAutomationElementZoomLevel(
             Self.nativeUIAutomationScope(scope),
