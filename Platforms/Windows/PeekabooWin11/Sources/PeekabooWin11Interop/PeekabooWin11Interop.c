@@ -414,6 +414,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_MultipleViewPatternId, 1ULL << 19, snapshot);
     PeekabooWin11MarkPattern(element, UIA_VirtualizedItemPatternId, 1ULL << 20, snapshot);
     PeekabooWin11MarkPattern(element, UIA_AnnotationPatternId, 1ULL << 21, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_StylesPatternId, 1ULL << 22, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1392,6 +1393,83 @@ static void PeekabooWin11CopyElementAnnotationPattern(
     }
 
     IUIAutomationAnnotationPattern_Release(annotationPattern);
+}
+
+static void PeekabooWin11CopyElementStylesPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_StylesPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationStylesPattern *stylesPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationStylesPattern,
+        (void **)&stylesPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || stylesPattern == NULL) {
+        return;
+    }
+
+    int styleId = 0;
+    HRESULT styleIdResult = IUIAutomationStylesPattern_get_CurrentStyleId(
+        stylesPattern,
+        &styleId);
+    if (PeekabooWin11Succeeded(styleIdResult)) {
+        snapshot->hasStyleId = 1;
+        snapshot->styleId = (int32_t)styleId;
+    }
+
+    int fillColor = 0;
+    HRESULT fillColorResult = IUIAutomationStylesPattern_get_CurrentFillColor(
+        stylesPattern,
+        &fillColor);
+    if (PeekabooWin11Succeeded(fillColorResult)) {
+        snapshot->hasStyleFillColor = 1;
+        snapshot->styleFillColor = (int32_t)fillColor;
+    }
+
+    int fillPatternColor = 0;
+    HRESULT fillPatternColorResult = IUIAutomationStylesPattern_get_CurrentFillPatternColor(
+        stylesPattern,
+        &fillPatternColor);
+    if (PeekabooWin11Succeeded(fillPatternColorResult)) {
+        snapshot->hasStyleFillPatternColor = 1;
+        snapshot->styleFillPatternColor = (int32_t)fillPatternColor;
+    }
+
+    BSTR styleName = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationStylesPattern_get_CurrentStyleName(stylesPattern, &styleName),
+        styleName,
+        &snapshot->hasStyleName,
+        snapshot->styleName);
+
+    BSTR shape = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationStylesPattern_get_CurrentShape(stylesPattern, &shape),
+        shape,
+        &snapshot->hasStyleShape,
+        snapshot->styleShape);
+
+    BSTR extendedProperties = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationStylesPattern_get_CurrentExtendedProperties(
+            stylesPattern,
+            &extendedProperties),
+        extendedProperties,
+        &snapshot->hasStyleExtendedProperties,
+        snapshot->styleExtendedProperties);
+
+    IUIAutomationStylesPattern_Release(stylesPattern);
 }
 
 static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
@@ -2574,6 +2652,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTransform2Pattern(element, snapshot);
     PeekabooWin11CopyElementMultipleViewPattern(element, snapshot);
     PeekabooWin11CopyElementAnnotationPattern(element, snapshot);
+    PeekabooWin11CopyElementStylesPattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
@@ -4154,6 +4233,24 @@ const char *PeekabooWin11UIAutomationElementAnnotationTargetName(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->annotationTargetName;
+}
+
+const char *PeekabooWin11UIAutomationElementStyleName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->styleName;
+}
+
+const char *PeekabooWin11UIAutomationElementStyleShape(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->styleShape;
+}
+
+const char *PeekabooWin11UIAutomationElementStyleExtendedProperties(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->styleExtendedProperties;
 }
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

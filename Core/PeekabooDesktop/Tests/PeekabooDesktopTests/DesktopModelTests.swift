@@ -301,6 +301,7 @@ final class DesktopModelTests: XCTestCase {
                 .multipleView,
                 .virtualizedItem,
                 .annotation,
+                .styles,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -389,6 +390,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.annotationAuthor, "Ada")
         XCTAssertEqual(snapshot.elements.first?.annotationDateTime, "2026-05-10T12:34:56Z")
         XCTAssertEqual(snapshot.elements.first?.annotationTargetName, "Paragraph 1")
+        XCTAssertEqual(snapshot.elements.first?.styleId, 70_001)
+        XCTAssertEqual(snapshot.elements.first?.styleName, "Heading 1")
+        XCTAssertEqual(snapshot.elements.first?.styleFillColor, 0x00_FF_FF)
+        XCTAssertEqual(snapshot.elements.first?.styleFillPatternColor, 0x00_00_00)
+        XCTAssertEqual(snapshot.elements.first?.styleShape, "Rectangle")
+        XCTAssertEqual(snapshot.elements.first?.styleExtendedProperties, "BorderStyle=solid")
         XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
         XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
         XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
@@ -889,6 +896,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"selection\""))
         XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
         XCTAssertTrue(result.stdout.contains("\"annotation\""))
+        XCTAssertTrue(result.stdout.contains("\"styles\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -947,6 +955,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"annotationAuthor\" : \"Ada\""))
         XCTAssertTrue(result.stdout.contains("\"annotationDateTime\" : \"2026-05-10T12:34:56Z\""))
         XCTAssertTrue(result.stdout.contains("\"annotationTargetName\" : \"Paragraph 1\""))
+        XCTAssertTrue(result.stdout.contains("\"styleId\" : 70001"))
+        XCTAssertTrue(result.stdout.contains("\"styleName\" : \"Heading 1\""))
+        XCTAssertTrue(result.stdout.contains("\"styleFillColor\" : 65535"))
+        XCTAssertTrue(result.stdout.contains("\"styleFillPatternColor\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"styleShape\" : \"Rectangle\""))
+        XCTAssertTrue(result.stdout.contains("\"styleExtendedProperties\" : \"BorderStyle=solid\""))
         XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
@@ -3186,6 +3200,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             supportedPatterns.append(.virtualizedItem)
         }
         supportedPatterns.append(.annotation)
+        supportedPatterns.append(.styles)
         supportedPatterns.append(.scrollItem)
 
         DesktopUIAutomationSnapshot(
@@ -3281,6 +3296,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     annotationAuthor: "Ada",
                     annotationDateTime: "2026-05-10T12:34:56Z",
                     annotationTargetName: "Paragraph 1",
+                    styleId: 70_001,
+                    styleName: "Heading 1",
+                    styleFillColor: 0x00_FF_FF,
+                    styleFillPatternColor: 0x00_00_00,
+                    styleShape: "Rectangle",
+                    styleExtendedProperties: "BorderStyle=solid",
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
                     legacyValue: legacyValue,

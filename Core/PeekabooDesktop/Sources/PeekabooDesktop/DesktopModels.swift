@@ -364,6 +364,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case transform2
     case multipleView
     case annotation
+    case styles
     case virtualizedItem
     case scrollItem
 }
@@ -537,6 +538,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let annotationAuthor: String?
     public let annotationDateTime: String?
     public let annotationTargetName: String?
+    public let styleId: Int?
+    public let styleName: String?
+    public let styleFillColor: Int?
+    public let styleFillPatternColor: Int?
+    public let styleShape: String?
+    public let styleExtendedProperties: String?
     public let legacyChildId: Int?
     public let legacyName: String?
     public let legacyValue: String?
@@ -634,6 +641,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         annotationAuthor: String? = nil,
         annotationDateTime: String? = nil,
         annotationTargetName: String? = nil,
+        styleId: Int? = nil,
+        styleName: String? = nil,
+        styleFillColor: Int? = nil,
+        styleFillPatternColor: Int? = nil,
+        styleShape: String? = nil,
+        styleExtendedProperties: String? = nil,
         legacyChildId: Int? = nil,
         legacyName: String? = nil,
         legacyValue: String? = nil,
@@ -730,6 +743,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.annotationAuthor = annotationAuthor
         self.annotationDateTime = annotationDateTime
         self.annotationTargetName = annotationTargetName
+        self.styleId = styleId
+        self.styleName = styleName
+        self.styleFillColor = styleFillColor
+        self.styleFillPatternColor = styleFillPatternColor
+        self.styleShape = styleShape
+        self.styleExtendedProperties = styleExtendedProperties
         self.legacyChildId = legacyChildId
         self.legacyName = legacyName
         self.legacyValue = legacyValue

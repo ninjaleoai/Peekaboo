@@ -152,6 +152,15 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasAnnotationAuthor;
     int32_t hasAnnotationDateTime;
     int32_t hasAnnotationTargetName;
+    int32_t hasStyleId;
+    int32_t styleId;
+    int32_t hasStyleFillColor;
+    int32_t styleFillColor;
+    int32_t hasStyleFillPatternColor;
+    int32_t styleFillPatternColor;
+    int32_t hasStyleName;
+    int32_t hasStyleShape;
+    int32_t hasStyleExtendedProperties;
     int32_t hasLegacyChildId;
     int32_t legacyChildId;
     int32_t hasLegacyRole;
@@ -186,6 +195,9 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char annotationAuthor[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationDateTime[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationTargetName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char styleName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char styleShape[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char styleExtendedProperties[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyValue[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyDescription[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -462,6 +474,15 @@ const char *PeekabooWin11UIAutomationElementAnnotationDateTime(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementAnnotationTargetName(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementStyleName(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementStyleShape(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementStyleExtendedProperties(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

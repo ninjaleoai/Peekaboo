@@ -3324,6 +3324,26 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                     ? Self.rawString(
                         from: PeekabooWin11UIAutomationElementAnnotationTargetName(&nativeElement))
                     : nil,
+                styleId: Self.optionalInt(
+                    hasValue: nativeElement.hasStyleId,
+                    value: nativeElement.styleId),
+                styleName: nativeElement.hasStyleName != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementStyleName(&nativeElement))
+                    : nil,
+                styleFillColor: Self.optionalInt(
+                    hasValue: nativeElement.hasStyleFillColor,
+                    value: nativeElement.styleFillColor),
+                styleFillPatternColor: Self.optionalInt(
+                    hasValue: nativeElement.hasStyleFillPatternColor,
+                    value: nativeElement.styleFillPatternColor),
+                styleShape: nativeElement.hasStyleShape != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementStyleShape(&nativeElement))
+                    : nil,
+                styleExtendedProperties: nativeElement.hasStyleExtendedProperties != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementStyleExtendedProperties(
+                            &nativeElement))
+                    : nil,
                 legacyChildId: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyChildId,
                     value: nativeElement.legacyChildId),
@@ -3732,6 +3752,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 21) {
             patterns.append(.annotation)
+        }
+        if Self.hasPatternBit(mask, 22) {
+            patterns.append(.styles)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)
