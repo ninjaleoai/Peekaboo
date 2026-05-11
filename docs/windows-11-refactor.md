@@ -33,6 +33,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - focused text typing through Win32 keyboard input APIs
 - release-mode `peekaboo-win11.exe` packaging as a Windows workflow artifact
 - SHA-256 checksum publishing for the packaged Windows workflow artifact
+- packaged CLI verification for checksum, archive contents, and `--help`
 - native UI Automation availability probing through the Windows UI Automation
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
@@ -537,6 +538,7 @@ On Windows 11 with Swift installed:
 
 ```powershell
 .\scripts\windows\package-win11.ps1
+.\scripts\windows\verify-package-win11.ps1
 ```
 
 The script builds the standalone Windows CLI in release mode and writes:
@@ -546,8 +548,8 @@ The script builds the standalone Windows CLI in release mode and writes:
 .artifacts\windows\peekaboo-win11.zip.sha256
 ```
 
-The Windows 11 Platform workflow runs the same packaging script after build and
-test, then uploads the zip and checksum as a workflow artifact named
+The Windows 11 Platform workflow runs the same packaging and verification
+scripts after build and test, then uploads the zip and checksum as a workflow artifact named
 `peekaboo-win11-<commit-sha>`.
 
 ## Run
