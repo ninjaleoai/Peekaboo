@@ -1786,6 +1786,29 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("UI Automation element index 0 cannot scroll horizontally"))
     }
 
+    func testDesktopCommandRunnerRoutesDisabledAutomationSetScrollPercent() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-scroll-percent",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--vertical",
+            "75",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setScrollPercent\""))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"horizontal=noScroll,vertical=75.0\""))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationScroll() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1918,6 +1941,29 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"maximized\""))
         XCTAssertTrue(result.stdout.contains("\"windowVisualState\" : \"maximized\""))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesDisabledAutomationSetWindowState() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-window-state",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--state",
+            "maximized",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setWindowVisualState\""))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"maximized\""))
     }
 
     func testDesktopCommandRunnerRoutesAutomationCloseWindow() {
@@ -3518,14 +3564,6 @@ private struct StubDesktopAdapter: DesktopAdapter {
             throw DesktopAdapterError.invalidArgument(
                 "UI Automation element index \(elementIndex) is not enabled")
         }
-        if horizontalPercent != nil, element.isHorizontallyScrollable == false {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation element index \(elementIndex) cannot scroll horizontally")
-        }
-        if verticalPercent != nil, element.isVerticallyScrollable == false {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation element index \(elementIndex) cannot scroll vertically")
-        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -3788,9 +3826,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
-        if element.isEnabled == false {
+        if horizontalPercent != nil, element.isHorizontallyScrollable == false {
             throw DesktopAdapterError.invalidArgument(
-                "UI Automation element index \(elementIndex) is not enabled")
+                "UI Automation element index \(elementIndex) cannot scroll horizontally")
+        }
+        if verticalPercent != nil, element.isVerticallyScrollable == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll vertically")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
@@ -3893,10 +3935,6 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
-        }
-        if element.isEnabled == false {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation element index \(elementIndex) is not enabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
