@@ -300,6 +300,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation wait-window-idle --index"))
         XCTAssertTrue(output.contains("automation set-dock-position --index"))
         XCTAssertTrue(output.contains("automation set-current-view --index"))
+        XCTAssertTrue(output.contains("automation set-zoom --index"))
         XCTAssertTrue(output.contains("automation move --index"))
         XCTAssertTrue(output.contains("automation resize --index"))
         XCTAssertTrue(output.contains("automation rotate --index"))

@@ -94,6 +94,12 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         viewId: Int) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -248,6 +254,12 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         viewId: Int) async throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -572,6 +584,21 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             viewId: viewId)
+    }
+
+    public func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.setUIAutomationElementZoomLevel(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            zoomLevel: zoomLevel)
     }
 
     public func moveUIAutomationElement(

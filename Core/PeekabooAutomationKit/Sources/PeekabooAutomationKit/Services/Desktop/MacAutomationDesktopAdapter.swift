@@ -421,6 +421,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation set-current-view is not implemented by this adapter")
     }
 
+    public func setUIAutomationElementZoomLevel(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        zoomLevel _: Double) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation set-zoom is not implemented by this adapter")
+    }
+
     public func addUIAutomationElementToSelection(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

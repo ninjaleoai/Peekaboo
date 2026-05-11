@@ -45,6 +45,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .waitForUIAutomationWindowInputIdle,
                 .setUIAutomationDockPosition,
                 .setUIAutomationCurrentView,
+                .setUIAutomationZoomLevel,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -1253,6 +1254,70 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             valueWasVerified: postActionElement?.multipleViewCurrentView.map { $0 == viewId })
     }
 
+    public func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+        guard zoomLevel.isFinite else {
+            throw Win11DesktopError.invalidArgument("UI Automation zoom level must be a finite number")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.transform2) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support transform2 zoom")
+        }
+        if element.canZoom == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support zoom")
+        }
+
+        let nativeResult = PeekabooWin11SetUIAutomationElementZoomLevel(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            zoomLevel)
+        try Self.validateUIAutomationSetZoomLevel(nativeResult)
+
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setZoomLevel,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "zoomLevel=\(zoomLevel)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.zoomLevel.map {
+                abs($0 - zoomLevel) < 0.0001
+            })
+    }
+
     public func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2387,6 +2452,53 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationSetZoomLevel(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation set-zoom failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support transform2 zoom")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationTransformPattern2 query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationTransformPattern2.Zoom failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -2838,7 +2950,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                         value: nativeElement.canResize),
                     canRotate: Self.optionalBool(
                         hasValue: nativeElement.hasCanRotate,
-                        value: nativeElement.canRotate)),
+                        value: nativeElement.canRotate),
+                    canZoom: Self.optionalBool(
+                        hasValue: nativeElement.hasCanZoom,
+                        value: nativeElement.canZoom)),
                 value: nativeElement.hasValue != 0
                     ? Self.rawString(from: PeekabooWin11UIAutomationElementValue(&nativeElement))
                     : nil,
@@ -3026,7 +3141,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         selectionSelectedItemCount: Int?,
         canMove: Bool?,
         canResize: Bool?,
-        canRotate: Bool?) -> [DesktopUIAutomationAction]
+        canRotate: Bool?,
+        canZoom: Bool?) -> [DesktopUIAutomationAction]
     {
         var actions: [DesktopUIAutomationAction] = []
         if isKeyboardFocusable == true {
@@ -3065,6 +3181,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.multipleView) {
             actions.append(.setCurrentView)
+        }
+        if supportedPatterns.contains(.transform2), canZoom == true {
+            actions.append(.setZoomLevel)
         }
         if supportedPatterns.contains(.transform), canMove == true {
             actions.append(.move)

@@ -67,6 +67,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - Transform2-pattern UI Automation zoom capability and level metadata in
   bounded snapshots
+- Transform2-pattern UI Automation set-zoom actions against a bounded snapshot
+  element index
 - MultipleView-pattern UI Automation current-view metadata in bounded snapshots
 - MultipleView-pattern UI Automation set-current-view actions against a bounded
   snapshot element index
@@ -115,10 +117,12 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-window-state --index <n>`,
 `automation close-window --index <n>`,
 `automation wait-window-idle --index <n>`,
-`automation set-dock-position --index <n>`, and
-`automation set-current-view --index <n>` for Invoke-pattern,
+`automation set-dock-position --index <n>`,
+`automation set-current-view --index <n>`, and
+`automation set-zoom --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
-Window-pattern, Dock-pattern, and MultipleView-pattern UIA actions.
+Window-pattern, Dock-pattern, MultipleView-pattern, and Transform2-pattern UIA
+actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -138,6 +142,8 @@ covers Dock-pattern controls that can be rearranged within a docking
 container.
 `automation set-current-view --index <n> --view-id <view-id>` covers
 MultipleView-pattern controls that expose alternate UI presentations.
+`automation set-zoom --index <n> --level <percent>` covers Transform2-pattern
+controls that expose zoomable viewports.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
 that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
@@ -437,6 +443,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-current-view --scope foreground --index 0 --view-id 2 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-zoom --scope foreground --index 0 --level 150 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
@@ -532,10 +540,12 @@ present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
 Window pattern is present, setDockPosition is available when the Dock pattern
-is present, move, resize, and rotate are available when the Transform pattern
-is present and UIA reports the matching capability, toggle is available when the
-Toggle pattern is present, expand is available for collapsed or partially
-expanded ExpandCollapse elements, collapse is available for expanded or
+is present, setCurrentView is available when the MultipleView pattern is
+present, setZoomLevel is available when the Transform2 pattern is present and
+UIA reports that zoom is supported, move, resize, and rotate are available when
+the Transform pattern is present and UIA reports the matching capability,
+toggle is available when the Toggle pattern is present, expand is available for
+collapsed or partially expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -579,7 +589,9 @@ idle before the timeout. `automation set-dock-position`
 performs the UIA Dock pattern action, then verifies the refreshed dock position
 when UIA reports it. `automation set-current-view`
 performs the UIA MultipleView pattern action, then verifies the refreshed
-current view identifier when UIA reports it. `automation scroll-into-view`
+current view identifier when UIA reports it. `automation set-zoom` performs the
+UIA Transform2 pattern zoom action, then
+verifies the refreshed zoom level when UIA reports it. `automation scroll-into-view`
 performs the UIA ScrollItem pattern action and verifies that the refreshed
 element is no longer off-screen when UIA reports that state.
 `automation move --index <n>` and

@@ -175,7 +175,7 @@ public enum DesktopCommandRunner {
                     "focus, " +
                     "legacy-default-action, " +
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "close-window, wait-window-idle, set-dock-position, set-current-view, " +
+                    "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
@@ -211,6 +211,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetDockPosition(args: args, adapter: adapter, stdout: stdout)
         case "set-current-view", "setCurrentView":
             try self.runAutomationSetCurrentView(args: args, adapter: adapter, stdout: stdout)
+        case "set-zoom", "setZoom", "set-zoom-level", "setZoomLevel":
+            try self.runAutomationSetZoom(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -602,6 +604,41 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             viewId: self.parseUIAutomationViewId(viewIdValue))))
+    }
+
+    private static func runAutomationSetZoom(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation set-zoom")
+        }
+
+        let zoomLevelValue = try self.value(after: "--level", in: args) ??
+            self.value(after: "--zoom-level", in: args) ??
+            self.value(after: "--value", in: args)
+        guard let zoomLevelValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --level <percent> for automation set-zoom")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.setUIAutomationElementZoomLevel(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            zoomLevel: self.parseUIAutomationZoomLevel(zoomLevelValue))))
     }
 
     private static func runAutomationCloseWindow(
@@ -1235,6 +1272,13 @@ public enum DesktopCommandRunner {
         return viewId
     }
 
+    private static func parseUIAutomationZoomLevel(_ value: String) throws -> Double {
+        guard let zoomLevel = Double(value), zoomLevel.isFinite else {
+            throw DesktopAdapterError.invalidArgument("UI Automation zoom level must be a finite number")
+        }
+        return zoomLevel
+    }
+
     private static func parseUIAutomationMovePoint(_ args: [String]) throws -> (Double, Double) {
         if let pointValue = try self.value(after: "--point", in: args) ??
             self.value(after: "--position", in: args)
@@ -1364,6 +1408,8 @@ public enum DesktopCommandRunner {
           automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-current-view --index <n> --view-id <view-id>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation set-zoom --index <n> --level <percent>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

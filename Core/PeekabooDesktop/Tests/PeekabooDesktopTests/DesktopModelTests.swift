@@ -154,6 +154,12 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             viewId: 4)
+        let setZoomLevel = try await bridge.setUIAutomationElementZoomLevel(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            zoomLevel: 150.0)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -299,6 +305,7 @@ final class DesktopModelTests: XCTestCase {
                 .waitForWindowInputIdle,
                 .setDockPosition,
                 .setCurrentView,
+                .setZoomLevel,
                 .move,
                 .resize,
                 .rotate,
@@ -430,6 +437,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setCurrentView.value, "viewId=4")
         XCTAssertEqual(setCurrentView.postActionElement?.multipleViewCurrentView, 4)
         XCTAssertEqual(setCurrentView.valueWasVerified, true)
+        XCTAssertEqual(setZoomLevel.action, .setZoomLevel)
+        XCTAssertEqual(setZoomLevel.elementIndex, 0)
+        XCTAssertEqual(setZoomLevel.value, "zoomLevel=150.0")
+        XCTAssertEqual(setZoomLevel.postActionElement?.zoomLevel, 150.0)
+        XCTAssertEqual(setZoomLevel.valueWasVerified, true)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -836,6 +848,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"waitForWindowInputIdle\""))
         XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
         XCTAssertTrue(result.stdout.contains("\"setCurrentView\""))
+        XCTAssertTrue(result.stdout.contains("\"setZoomLevel\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
@@ -1455,6 +1468,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"viewId=4\""))
         XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentView\" : 4"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationSetZoom() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-zoom",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--level",
+            "150",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setZoomLevel\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"zoomLevel=150.0\""))
+        XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 150"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
@@ -2552,6 +2591,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.multipleViewCurrentView == viewId)
     }
 
+    func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            zoomLevel: zoomLevel)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setZoomLevel,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "zoomLevel=\(zoomLevel)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.zoomLevel == zoomLevel)
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2919,6 +2993,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
         isOffscreen: Bool = false,
         multipleViewCurrentView: Int = 2,
+        zoomLevel: Double = 125.0,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
@@ -3023,7 +3098,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canResize: true,
                     canRotate: true,
                     canZoom: true,
-                    zoomLevel: 125.0,
+                    zoomLevel: zoomLevel,
                     zoomMinimum: 50.0,
                     zoomMaximum: 400.0,
                     multipleViewCurrentView: multipleViewCurrentView,
@@ -3064,6 +3139,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .waitForWindowInputIdle,
                 .setDockPosition,
                 .setCurrentView,
+                .setZoomLevel,
                 .move,
                 .resize,
                 .rotate,
@@ -3086,6 +3162,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .waitForWindowInputIdle,
                 .setDockPosition,
                 .setCurrentView,
+                .setZoomLevel,
                 .move,
                 .resize,
                 .rotate,
@@ -3108,6 +3185,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .waitForWindowInputIdle,
                 .setDockPosition,
                 .setCurrentView,
+                .setZoomLevel,
                 .move,
                 .resize,
                 .rotate,
@@ -3131,6 +3209,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .waitForWindowInputIdle,
                 .setDockPosition,
                 .setCurrentView,
+                .setZoomLevel,
                 .move,
                 .resize,
                 .rotate,
