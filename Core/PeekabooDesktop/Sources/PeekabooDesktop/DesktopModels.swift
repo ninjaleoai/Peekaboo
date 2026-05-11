@@ -363,6 +363,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case transform
     case transform2
     case multipleView
+    case annotation
     case virtualizedItem
     case scrollItem
 }
@@ -531,6 +532,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let multipleViewCurrentView: Int?
     public let multipleViewCurrentViewName: String?
     public let multipleViewSupportedViewCount: Int?
+    public let annotationTypeId: Int?
+    public let annotationTypeName: String?
+    public let annotationAuthor: String?
+    public let annotationDateTime: String?
+    public let annotationTargetName: String?
     public let legacyChildId: Int?
     public let legacyName: String?
     public let legacyValue: String?
@@ -623,6 +629,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         multipleViewCurrentView: Int? = nil,
         multipleViewCurrentViewName: String? = nil,
         multipleViewSupportedViewCount: Int? = nil,
+        annotationTypeId: Int? = nil,
+        annotationTypeName: String? = nil,
+        annotationAuthor: String? = nil,
+        annotationDateTime: String? = nil,
+        annotationTargetName: String? = nil,
         legacyChildId: Int? = nil,
         legacyName: String? = nil,
         legacyValue: String? = nil,
@@ -714,6 +725,11 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.multipleViewCurrentView = multipleViewCurrentView
         self.multipleViewCurrentViewName = multipleViewCurrentViewName
         self.multipleViewSupportedViewCount = multipleViewSupportedViewCount
+        self.annotationTypeId = annotationTypeId
+        self.annotationTypeName = annotationTypeName
+        self.annotationAuthor = annotationAuthor
+        self.annotationDateTime = annotationDateTime
+        self.annotationTargetName = annotationTargetName
         self.legacyChildId = legacyChildId
         self.legacyName = legacyName
         self.legacyValue = legacyValue

@@ -300,6 +300,7 @@ final class DesktopModelTests: XCTestCase {
                 .transform2,
                 .multipleView,
                 .virtualizedItem,
+                .annotation,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -383,6 +384,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.multipleViewCurrentView, 2)
         XCTAssertEqual(snapshot.elements.first?.multipleViewCurrentViewName, "Details")
         XCTAssertEqual(snapshot.elements.first?.multipleViewSupportedViewCount, 3)
+        XCTAssertEqual(snapshot.elements.first?.annotationTypeId, 60_000)
+        XCTAssertEqual(snapshot.elements.first?.annotationTypeName, "Comment")
+        XCTAssertEqual(snapshot.elements.first?.annotationAuthor, "Ada")
+        XCTAssertEqual(snapshot.elements.first?.annotationDateTime, "2026-05-10T12:34:56Z")
+        XCTAssertEqual(snapshot.elements.first?.annotationTargetName, "Paragraph 1")
         XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
         XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
         XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
@@ -882,6 +888,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
         XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
+        XCTAssertTrue(result.stdout.contains("\"annotation\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -935,6 +942,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentView\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentViewName\" : \"Details\""))
         XCTAssertTrue(result.stdout.contains("\"multipleViewSupportedViewCount\" : 3"))
+        XCTAssertTrue(result.stdout.contains("\"annotationTypeId\" : 60000"))
+        XCTAssertTrue(result.stdout.contains("\"annotationTypeName\" : \"Comment\""))
+        XCTAssertTrue(result.stdout.contains("\"annotationAuthor\" : \"Ada\""))
+        XCTAssertTrue(result.stdout.contains("\"annotationDateTime\" : \"2026-05-10T12:34:56Z\""))
+        XCTAssertTrue(result.stdout.contains("\"annotationTargetName\" : \"Paragraph 1\""))
         XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
@@ -3173,6 +3185,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         if isVirtualized {
             supportedPatterns.append(.virtualizedItem)
         }
+        supportedPatterns.append(.annotation)
         supportedPatterns.append(.scrollItem)
 
         DesktopUIAutomationSnapshot(
@@ -3263,6 +3276,11 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     multipleViewCurrentView: multipleViewCurrentView,
                     multipleViewCurrentViewName: "Details",
                     multipleViewSupportedViewCount: 3,
+                    annotationTypeId: 60_000,
+                    annotationTypeName: "Comment",
+                    annotationAuthor: "Ada",
+                    annotationDateTime: "2026-05-10T12:34:56Z",
+                    annotationTargetName: "Paragraph 1",
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
                     legacyValue: legacyValue,

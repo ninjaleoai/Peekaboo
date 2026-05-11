@@ -413,6 +413,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TransformPattern2Id, 1ULL << 18, snapshot);
     PeekabooWin11MarkPattern(element, UIA_MultipleViewPatternId, 1ULL << 19, snapshot);
     PeekabooWin11MarkPattern(element, UIA_VirtualizedItemPatternId, 1ULL << 20, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_AnnotationPatternId, 1ULL << 21, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1307,7 +1308,7 @@ static void PeekabooWin11CopyElementMultipleViewPattern(
     IUIAutomationMultipleViewPattern_Release(multipleViewPattern);
 }
 
-static void PeekabooWin11CopyLegacyString(
+static void PeekabooWin11CopyPatternString(
     HRESULT result,
     BSTR value,
     int32_t *hasValue,
@@ -1320,6 +1321,77 @@ static void PeekabooWin11CopyLegacyString(
     if (value != NULL) {
         SysFreeString(value);
     }
+}
+
+static void PeekabooWin11CopyElementAnnotationPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_AnnotationPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationAnnotationPattern *annotationPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationAnnotationPattern,
+        (void **)&annotationPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || annotationPattern == NULL) {
+        return;
+    }
+
+    int annotationTypeId = 0;
+    HRESULT typeIdResult = IUIAutomationAnnotationPattern_get_CurrentAnnotationTypeId(
+        annotationPattern,
+        &annotationTypeId);
+    if (PeekabooWin11Succeeded(typeIdResult)) {
+        snapshot->hasAnnotationTypeId = 1;
+        snapshot->annotationTypeId = (int32_t)annotationTypeId;
+    }
+
+    BSTR typeName = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationAnnotationPattern_get_CurrentAnnotationTypeName(annotationPattern, &typeName),
+        typeName,
+        &snapshot->hasAnnotationTypeName,
+        snapshot->annotationTypeName);
+
+    BSTR author = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationAnnotationPattern_get_CurrentAuthor(annotationPattern, &author),
+        author,
+        &snapshot->hasAnnotationAuthor,
+        snapshot->annotationAuthor);
+
+    BSTR dateTime = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationAnnotationPattern_get_CurrentDateTime(annotationPattern, &dateTime),
+        dateTime,
+        &snapshot->hasAnnotationDateTime,
+        snapshot->annotationDateTime);
+
+    IUIAutomationElement *targetElement = NULL;
+    HRESULT targetResult = IUIAutomationAnnotationPattern_get_CurrentTarget(
+        annotationPattern,
+        &targetElement);
+    if (PeekabooWin11Succeeded(targetResult) && targetElement != NULL) {
+        BSTR targetName = NULL;
+        PeekabooWin11CopyPatternString(
+            IUIAutomationElement_get_CurrentName(targetElement, &targetName),
+            targetName,
+            &snapshot->hasAnnotationTargetName,
+            snapshot->annotationTargetName);
+        IUIAutomationElement_Release(targetElement);
+    }
+
+    IUIAutomationAnnotationPattern_Release(annotationPattern);
 }
 
 static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
@@ -1374,42 +1446,42 @@ static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
     }
 
     BSTR name = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentName(legacyPattern, &name),
         name,
         &snapshot->hasLegacyName,
         snapshot->legacyName);
 
     BSTR value = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentValue(legacyPattern, &value),
         value,
         &snapshot->hasLegacyValue,
         snapshot->legacyValue);
 
     BSTR description = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentDescription(legacyPattern, &description),
         description,
         &snapshot->hasLegacyDescription,
         snapshot->legacyDescription);
 
     BSTR help = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentHelp(legacyPattern, &help),
         help,
         &snapshot->hasLegacyHelp,
         snapshot->legacyHelp);
 
     BSTR shortcut = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentKeyboardShortcut(legacyPattern, &shortcut),
         shortcut,
         &snapshot->hasLegacyKeyboardShortcut,
         snapshot->legacyKeyboardShortcut);
 
     BSTR defaultAction = NULL;
-    PeekabooWin11CopyLegacyString(
+    PeekabooWin11CopyPatternString(
         IUIAutomationLegacyIAccessiblePattern_get_CurrentDefaultAction(
             legacyPattern,
             &defaultAction),
@@ -2501,6 +2573,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
     PeekabooWin11CopyElementTransform2Pattern(element, snapshot);
     PeekabooWin11CopyElementMultipleViewPattern(element, snapshot);
+    PeekabooWin11CopyElementAnnotationPattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
@@ -4057,6 +4130,30 @@ const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->multipleViewCurrentViewName;
+}
+
+const char *PeekabooWin11UIAutomationElementAnnotationTypeName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->annotationTypeName;
+}
+
+const char *PeekabooWin11UIAutomationElementAnnotationAuthor(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->annotationAuthor;
+}
+
+const char *PeekabooWin11UIAutomationElementAnnotationDateTime(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->annotationDateTime;
+}
+
+const char *PeekabooWin11UIAutomationElementAnnotationTargetName(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->annotationTargetName;
 }
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

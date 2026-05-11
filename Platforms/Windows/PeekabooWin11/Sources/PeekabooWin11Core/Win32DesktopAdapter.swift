@@ -3305,6 +3305,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 multipleViewSupportedViewCount: Self.optionalInt(
                     hasValue: nativeElement.hasMultipleViewSupportedViewCount,
                     value: nativeElement.multipleViewSupportedViewCount),
+                annotationTypeId: Self.optionalInt(
+                    hasValue: nativeElement.hasAnnotationTypeId,
+                    value: nativeElement.annotationTypeId),
+                annotationTypeName: nativeElement.hasAnnotationTypeName != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementAnnotationTypeName(&nativeElement))
+                    : nil,
+                annotationAuthor: nativeElement.hasAnnotationAuthor != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementAnnotationAuthor(&nativeElement))
+                    : nil,
+                annotationDateTime: nativeElement.hasAnnotationDateTime != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementAnnotationDateTime(&nativeElement))
+                    : nil,
+                annotationTargetName: nativeElement.hasAnnotationTargetName != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementAnnotationTargetName(&nativeElement))
+                    : nil,
                 legacyChildId: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyChildId,
                     value: nativeElement.legacyChildId),
@@ -3710,6 +3729,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 20) {
             patterns.append(.virtualizedItem)
+        }
+        if Self.hasPatternBit(mask, 21) {
+            patterns.append(.annotation)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)
