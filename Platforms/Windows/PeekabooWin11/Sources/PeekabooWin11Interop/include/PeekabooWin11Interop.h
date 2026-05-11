@@ -111,6 +111,11 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t textEditHasConversionTarget;
     int32_t hasTextEditConversionTargetBoundingRectangleCount;
     int32_t textEditConversionTargetBoundingRectangleCount;
+    int32_t hasTextChildContainerName;
+    int32_t hasTextChildTextRange;
+    int32_t textChildHasTextRange;
+    int32_t hasTextChildRangeBoundingRectangleCount;
+    int32_t textChildRangeBoundingRectangleCount;
     int32_t hasGridRowCount;
     int32_t gridRowCount;
     int32_t hasGridColumnCount;
@@ -212,6 +217,7 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char text[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char selectedText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char visibleText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char textChildContainerName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char multipleViewCurrentViewName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationTypeName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationAuthor[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -483,6 +489,9 @@ const char *PeekabooWin11UIAutomationElementSelectedText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementVisibleText(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementTextChildContainerName(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(

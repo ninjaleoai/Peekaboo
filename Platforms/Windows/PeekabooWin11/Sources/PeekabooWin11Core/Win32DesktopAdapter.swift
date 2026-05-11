@@ -3255,6 +3255,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 textEditConversionTargetBoundingRectangleCount: Self.optionalInt(
                     hasValue: nativeElement.hasTextEditConversionTargetBoundingRectangleCount,
                     value: nativeElement.textEditConversionTargetBoundingRectangleCount),
+                textChildContainerName: nativeElement.hasTextChildContainerName != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementTextChildContainerName(
+                            &nativeElement))
+                    : nil,
+                textChildHasTextRange: Self.optionalBool(
+                    hasValue: nativeElement.hasTextChildTextRange,
+                    value: nativeElement.textChildHasTextRange),
+                textChildRangeBoundingRectangleCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTextChildRangeBoundingRectangleCount,
+                    value: nativeElement.textChildRangeBoundingRectangleCount),
                 gridRowCount: Self.optionalInt(
                     hasValue: nativeElement.hasGridRowCount,
                     value: nativeElement.gridRowCount),
@@ -3762,6 +3773,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 26) {
             patterns.append(.textEdit)
+        }
+        if Self.hasPatternBit(mask, 27) {
+            patterns.append(.textChild)
         }
         if Self.hasPatternBit(mask, 8) {
             patterns.append(.toggle)

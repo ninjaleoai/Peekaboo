@@ -356,6 +356,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case text
     case text2
     case textEdit
+    case textChild
     case toggle
     case legacyIAccessible
     case grid
@@ -519,6 +520,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let textEditActiveCompositionBoundingRectangleCount: Int?
     public let textEditHasConversionTarget: Bool?
     public let textEditConversionTargetBoundingRectangleCount: Int?
+    public let textChildContainerName: String?
+    public let textChildHasTextRange: Bool?
+    public let textChildRangeBoundingRectangleCount: Int?
     public let gridRowCount: Int?
     public let gridColumnCount: Int?
     public let gridItemRow: Int?
@@ -634,6 +638,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         textEditActiveCompositionBoundingRectangleCount: Int? = nil,
         textEditHasConversionTarget: Bool? = nil,
         textEditConversionTargetBoundingRectangleCount: Int? = nil,
+        textChildContainerName: String? = nil,
+        textChildHasTextRange: Bool? = nil,
+        textChildRangeBoundingRectangleCount: Int? = nil,
         gridRowCount: Int? = nil,
         gridColumnCount: Int? = nil,
         gridItemRow: Int? = nil,
@@ -748,6 +755,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.textEditActiveCompositionBoundingRectangleCount = textEditActiveCompositionBoundingRectangleCount
         self.textEditHasConversionTarget = textEditHasConversionTarget
         self.textEditConversionTargetBoundingRectangleCount = textEditConversionTargetBoundingRectangleCount
+        self.textChildContainerName = textChildContainerName
+        self.textChildHasTextRange = textChildHasTextRange
+        self.textChildRangeBoundingRectangleCount = textChildRangeBoundingRectangleCount
         self.gridRowCount = gridRowCount
         self.gridColumnCount = gridColumnCount
         self.gridItemRow = gridItemRow

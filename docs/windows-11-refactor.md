@@ -59,6 +59,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   count metadata in bounded snapshots
 - TextEdit-pattern UI Automation active-composition and conversion-target range
   metadata in bounded snapshots
+- TextChild-pattern UI Automation text-container and enclosing-range metadata in
+  bounded snapshots
 - Legacy IAccessible-pattern UI Automation fallback metadata in bounded
   snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
@@ -536,8 +538,8 @@ index, child count, and optional state flags for enabled, focusable, focused,
 off-screen, and clickable-point status. When UIA exposes a clickable point,
 snapshots include its physical screen coordinates. Elements also report common
 supported UIA patterns, including invoke, value, range value, scroll,
-expand/collapse, window, selection item, text, text2, textEdit, toggle, grid,
-grid item, table, table item, transform, transform2, multiple view,
+expand/collapse, window, selection item, text, text2, textEdit, textChild,
+toggle, grid, grid item, table, table item, transform, transform2, multiple view,
 annotation, styles, drag, drop target, virtualized item, scroll item, and
 legacy IAccessible. When an element supports the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
@@ -559,6 +561,9 @@ rectangle count when UIA reports them.
 When an element supports the UIA TextEdit pattern, snapshots include whether
 active-composition and conversion-target ranges are present plus each range's
 bounding rectangle count when UIA reports them.
+When an element supports the UIA TextChild pattern, snapshots include the
+nearest text container name plus whether UIA returned an enclosing text range
+and that range's bounding rectangle count when UIA reports them.
 When an element supports the UIA Legacy IAccessible pattern,
 snapshots include fallback MSAA child ID, name, value, description, help,
 keyboard shortcut, default action, role ID, and state ID when UIA reports them.
