@@ -2544,8 +2544,8 @@ static void PeekabooWin11ScrollElement(
 
     result->actionResult = (int32_t)IUIAutomationScrollPattern_Scroll(
         scrollPattern,
-        (ScrollAmount)horizontalAmount,
-        (ScrollAmount)verticalAmount);
+        (enum ScrollAmount)horizontalAmount,
+        (enum ScrollAmount)verticalAmount);
     IUIAutomationScrollPattern_Release(scrollPattern);
 }
 
