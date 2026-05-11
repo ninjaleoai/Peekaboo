@@ -575,17 +575,21 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(getSpreadsheetItem.action, .getSpreadsheetItem)
         XCTAssertEqual(getSpreadsheetItem.elementIndex, 0)
         XCTAssertEqual(getSpreadsheetItem.value, "name=Revenue")
-        XCTAssertEqual(getSpreadsheetItem.resultElement?.name, "Desktop")
+        XCTAssertEqual(getSpreadsheetItem.resultElement?.name, "Revenue")
+        XCTAssertEqual(getSpreadsheetItem.valueWasVerified, true)
         XCTAssertNil(getSpreadsheetItem.postActionElement)
         XCTAssertEqual(findItem.action, .findItemByProperty)
         XCTAssertEqual(findItem.elementIndex, 0)
         XCTAssertEqual(findItem.value, "property=name,value=Revenue")
-        XCTAssertEqual(findItem.resultElement?.name, "Desktop")
+        XCTAssertEqual(findItem.resultElement?.name, "Revenue")
+        XCTAssertEqual(findItem.valueWasVerified, true)
         XCTAssertNil(findItem.postActionElement)
         XCTAssertEqual(getGridItem.action, .getGridItem)
         XCTAssertEqual(getGridItem.elementIndex, 0)
         XCTAssertEqual(getGridItem.value, "row=1,column=0")
-        XCTAssertEqual(getGridItem.resultElement?.name, "Desktop")
+        XCTAssertEqual(getGridItem.resultElement?.gridItemRow, 1)
+        XCTAssertEqual(getGridItem.resultElement?.gridItemColumn, 0)
+        XCTAssertEqual(getGridItem.valueWasVerified, true)
         XCTAssertNil(getGridItem.postActionElement)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
@@ -1888,6 +1892,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"name=Revenue\""))
         XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationFindItemByProperty() {
@@ -1915,6 +1920,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"property=name,value=Revenue\""))
         XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationGetGridItem() {
@@ -1942,6 +1948,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"row=1,column=0\""))
         XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationMove() {
@@ -3530,6 +3537,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let resultElement = self.stubResultElement(name: name)
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .getSpreadsheetItem,
@@ -3539,7 +3547,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "name=\(name)",
-            resultElement: element)
+            resultElement: resultElement,
+            valueWasVerified: resultElement.name == name)
     }
 
     func findUIAutomationItemByProperty(
@@ -3557,6 +3566,16 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let resultElement: DesktopUIAutomationElementSnapshot
+        switch property {
+        case .name:
+            resultElement = self.stubResultElement(name: value)
+        case .automationId:
+            resultElement = self.stubResultElement(automationIdentifier: value)
+        }
+        let valueWasVerified = property == .name
+            ? resultElement.name == value
+            : resultElement.automationIdentifier == value
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .findItemByProperty,
@@ -3566,7 +3585,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "property=\(property.rawValue),value=\(value)",
-            resultElement: element)
+            resultElement: resultElement,
+            valueWasVerified: valueWasVerified)
     }
 
     func getUIAutomationGridItem(
@@ -3584,6 +3604,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        let resultElement = self.stubResultElement(gridItemRow: row, gridItemColumn: column)
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .getGridItem,
@@ -3593,7 +3614,27 @@ private struct StubDesktopAdapter: DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "row=\(row),column=\(column)",
-            resultElement: element)
+            resultElement: resultElement,
+            valueWasVerified: resultElement.gridItemRow == row &&
+                resultElement.gridItemColumn == column)
+    }
+
+    private func stubResultElement(
+        name: String? = "Desktop",
+        automationIdentifier: String? = nil,
+        gridItemRow: Int? = nil,
+        gridItemColumn: Int? = nil) -> DesktopUIAutomationElementSnapshot
+    {
+        DesktopUIAutomationElementSnapshot(
+            index: 1,
+            parentIndex: 0,
+            depth: 1,
+            name: name,
+            automationIdentifier: automationIdentifier,
+            controlTypeName: "DataItem",
+            supportedPatterns: gridItemRow == nil ? [] : [.gridItem],
+            gridItemRow: gridItemRow,
+            gridItemColumn: gridItemColumn)
     }
 
     func toggleUIAutomationElement(

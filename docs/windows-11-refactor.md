@@ -748,10 +748,15 @@ listening-state property in the bounded snapshot.
 `automation find-item --index <n> --property <name|automation-id> --value
 <value>` performs the UIA ItemContainer pattern's `FindItemByProperty` method
 from the start of the container and returns the matching item in
-`resultElement`.
+`resultElement`; the action is marked verified when that element reports a
+matching Name or AutomationId property.
+`automation get-spreadsheet-item --index <n> --name <cell-name>` performs the
+UIA Spreadsheet pattern's named cell lookup and marks the action verified when
+the returned cell reports the requested name.
 `automation get-grid-item --index <n> --row <row> --column <column>` performs
 the UIA Grid pattern's `GetItem` method for zero-based coordinates and returns
-the resulting grid item in `resultElement`.
+the resulting grid item in `resultElement`; the action is marked verified when
+that item reports the requested GridItem row and column metadata.
 `automation move --index <n>` and
 `automation resize --index <n>` perform the UIA Transform pattern move and
 resize actions after rejecting known unsupported elements, then verify the

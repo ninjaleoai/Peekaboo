@@ -1625,6 +1625,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             name)
         try Self.validateUIAutomationGetSpreadsheetItem(nativeResult)
 
+        let resultElement = Self.uiAutomationResultElement(from: nativeResult)
+
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .getSpreadsheetItem,
@@ -1634,7 +1636,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "name=\(name)",
-            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+            resultElement: resultElement,
+            valueWasVerified: Self.spreadsheetItemWasVerified(
+                resultElement: resultElement,
+                name: name))
     }
 
     public func findUIAutomationItemByProperty(
@@ -1678,6 +1683,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             value)
         try Self.validateUIAutomationFindItemByProperty(nativeResult)
 
+        let resultElement = Self.uiAutomationResultElement(from: nativeResult)
+
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .findItemByProperty,
@@ -1687,7 +1694,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "property=\(property.rawValue),value=\(value)",
-            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+            resultElement: resultElement,
+            valueWasVerified: Self.itemContainerResultWasVerified(
+                resultElement: resultElement,
+                property: property,
+                value: value))
     }
 
     public func getUIAutomationGridItem(
@@ -1743,6 +1754,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             nativeColumn)
         try Self.validateUIAutomationGetGridItem(nativeResult)
 
+        let resultElement = Self.uiAutomationResultElement(from: nativeResult)
+
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .getGridItem,
@@ -1752,7 +1765,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "row=\(row),column=\(column)",
-            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+            resultElement: resultElement,
+            valueWasVerified: Self.gridItemWasVerified(
+                resultElement: resultElement,
+                row: row,
+                column: column))
     }
 
     public func moveUIAutomationElement(
@@ -4475,6 +4492,39 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         case .visible:
             return 3
         }
+    }
+
+    private static func spreadsheetItemWasVerified(
+        resultElement: DesktopUIAutomationElementSnapshot?,
+        name: String) -> Bool?
+    {
+        resultElement?.name.map { $0 == name }
+    }
+
+    private static func itemContainerResultWasVerified(
+        resultElement: DesktopUIAutomationElementSnapshot?,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) -> Bool?
+    {
+        switch property {
+        case .name:
+            return resultElement?.name.map { $0 == value }
+        case .automationId:
+            return resultElement?.automationIdentifier.map { $0 == value }
+        }
+    }
+
+    private static func gridItemWasVerified(
+        resultElement: DesktopUIAutomationElementSnapshot?,
+        row: Int,
+        column: Int) -> Bool?
+    {
+        guard let resultRow = resultElement?.gridItemRow,
+              let resultColumn = resultElement?.gridItemColumn
+        else {
+            return nil
+        }
+        return resultRow == row && resultColumn == column
     }
 
     private static func zoomByUnitWasVerified(
