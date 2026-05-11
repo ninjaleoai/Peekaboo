@@ -32,6 +32,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_WAIT_FOR_WINDOW_INPUT_IDLE 21
 #define PEEKABOO_WIN11_UIA_ACTION_SET_CURRENT_VIEW 22
 #define PEEKABOO_WIN11_UIA_ACTION_SET_ZOOM_LEVEL 23
+#define PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT 24
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1954,6 +1955,45 @@ static void PeekabooWin11SetElementZoomLevel(
     IUIAutomationTransformPattern2_Release(transformPattern);
 }
 
+static void PeekabooWin11ZoomElementByUnit(
+    IUIAutomationElement *element,
+    int32_t zoomUnit,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TransformPattern2Id,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationTransformPattern2 *transformPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTransformPattern2,
+        (void **)&transformPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || transformPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationTransformPattern2_ZoomByUnit(
+        transformPattern,
+        (enum ZoomUnit)zoomUnit);
+    IUIAutomationTransformPattern2_Release(transformPattern);
+}
+
 static void PeekabooWin11FocusElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -2553,6 +2593,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SetElementCurrentView(element, (int32_t)transformFirstValue, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_ZOOM_LEVEL) {
             PeekabooWin11SetElementZoomLevel(element, transformFirstValue, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT) {
+            PeekabooWin11ZoomElementByUnit(element, dockPosition, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
             PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
@@ -3128,6 +3170,29 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementZoomLev
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11ZoomUIAutomationElementByUnit(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t zoomUnit)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        zoomUnit,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -3609,6 +3674,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementZoomLev
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)zoomLevel;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ZoomUIAutomationElementByUnit(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t zoomUnit)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 24;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)zoomUnit;
     result.initializeResult = -2147467263;
     return result;
 }

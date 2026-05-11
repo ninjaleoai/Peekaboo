@@ -48,6 +48,9 @@ final class Win11ModelTests: XCTestCase {
                 .closeUIAutomationWindow,
                 .waitForUIAutomationWindowInputIdle,
                 .setUIAutomationDockPosition,
+                .setUIAutomationCurrentView,
+                .setUIAutomationZoomLevel,
+                .zoomUIAutomationElementByUnit,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -86,6 +89,9 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.closeUIAutomationWindow))
         XCTAssertTrue(info.capabilities.contains(.waitForUIAutomationWindowInputIdle))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationDockPosition))
+        XCTAssertTrue(info.capabilities.contains(.setUIAutomationCurrentView))
+        XCTAssertTrue(info.capabilities.contains(.setUIAutomationZoomLevel))
+        XCTAssertTrue(info.capabilities.contains(.zoomUIAutomationElementByUnit))
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
@@ -301,6 +307,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation set-dock-position --index"))
         XCTAssertTrue(output.contains("automation set-current-view --index"))
         XCTAssertTrue(output.contains("automation set-zoom --index"))
+        XCTAssertTrue(output.contains("automation zoom-by-unit --index"))
         XCTAssertTrue(output.contains("automation move --index"))
         XCTAssertTrue(output.contains("automation resize --index"))
         XCTAssertTrue(output.contains("automation rotate --index"))

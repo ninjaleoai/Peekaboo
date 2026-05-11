@@ -38,6 +38,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case setUIAutomationDockPosition
     case setUIAutomationCurrentView
     case setUIAutomationZoomLevel
+    case zoomUIAutomationElementByUnit
     case moveUIAutomationElement
     case resizeUIAutomationElement
     case rotateUIAutomationElement
@@ -384,6 +385,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case setDockPosition
     case setCurrentView
     case setZoomLevel
+    case zoomByUnit
     case move
     case resize
     case rotate
@@ -424,6 +426,14 @@ public enum DesktopUIAutomationDockPosition: String, Codable, Equatable, Sendabl
     case right
     case fill
     case none
+}
+
+public enum DesktopUIAutomationZoomUnit: String, Codable, Equatable, Sendable {
+    case none
+    case largeDecrement = "large-decrement"
+    case smallDecrement = "small-decrement"
+    case largeIncrement = "large-increment"
+    case smallIncrement = "small-increment"
 }
 
 public enum DesktopUIAutomationSupportedTextSelection: String, Codable, Equatable, Sendable {

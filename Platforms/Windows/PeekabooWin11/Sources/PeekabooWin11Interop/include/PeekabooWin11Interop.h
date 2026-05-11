@@ -316,6 +316,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementZoomLev
     int32_t elementIndex,
     double zoomLevel);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11ZoomUIAutomationElementByUnit(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t zoomUnit);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,

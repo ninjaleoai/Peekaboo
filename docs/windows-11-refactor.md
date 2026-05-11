@@ -69,6 +69,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   bounded snapshots
 - Transform2-pattern UI Automation set-zoom actions against a bounded snapshot
   element index
+- Transform2-pattern UI Automation zoom-by-unit actions against a bounded
+  snapshot element index
 - MultipleView-pattern UI Automation current-view metadata in bounded snapshots
 - MultipleView-pattern UI Automation set-current-view actions against a bounded
   snapshot element index
@@ -118,8 +120,9 @@ bounded element lookup over the same snapshot traversal, and
 `automation close-window --index <n>`,
 `automation wait-window-idle --index <n>`,
 `automation set-dock-position --index <n>`,
-`automation set-current-view --index <n>`, and
-`automation set-zoom --index <n>` for Invoke-pattern,
+`automation set-current-view --index <n>`,
+`automation set-zoom --index <n>`, and
+`automation zoom-by-unit --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
 Window-pattern, Dock-pattern, MultipleView-pattern, and Transform2-pattern UIA
 actions.
@@ -144,6 +147,9 @@ container.
 MultipleView-pattern controls that expose alternate UI presentations.
 `automation set-zoom --index <n> --level <percent>` covers Transform2-pattern
 controls that expose zoomable viewports.
+`automation zoom-by-unit --index <n> --unit
+<large-increment|small-increment|large-decrement|small-decrement|none>` covers
+Transform2-pattern controls that expose unit-based viewport zoom.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
 that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
@@ -298,6 +304,24 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         position: DesktopUIAutomationDockPosition) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementCurrentView(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        viewId: Int) throws -> DesktopUIAutomationActionResult
+    func setUIAutomationElementZoomLevel(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        zoomLevel: Double) throws -> DesktopUIAutomationActionResult
+    func zoomUIAutomationElementByUnit(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        unit: DesktopUIAutomationZoomUnit) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -445,6 +469,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-zoom --scope foreground --index 0 --level 150 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation zoom-by-unit --scope foreground --index 0 --unit small-increment --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
@@ -542,10 +568,11 @@ the Window pattern is present, waitForWindowInputIdle is available when the
 Window pattern is present, setDockPosition is available when the Dock pattern
 is present, setCurrentView is available when the MultipleView pattern is
 present, setZoomLevel is available when the Transform2 pattern is present and
-UIA reports that zoom is supported, move, resize, and rotate are available when
-the Transform pattern is present and UIA reports the matching capability,
-toggle is available when the Toggle pattern is present, expand is available for
-collapsed or partially expanded ExpandCollapse elements, collapse is available for expanded or
+UIA reports that zoom is supported, zoomByUnit is available under the same
+Transform2 zoom condition, move, resize, and rotate are available when the
+Transform pattern is present and UIA reports the matching capability, toggle is
+available when the Toggle pattern is present, expand is available for collapsed
+or partially expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -591,9 +618,12 @@ when UIA reports it. `automation set-current-view`
 performs the UIA MultipleView pattern action, then verifies the refreshed
 current view identifier when UIA reports it. `automation set-zoom` performs the
 UIA Transform2 pattern zoom action, then
-verifies the refreshed zoom level when UIA reports it. `automation scroll-into-view`
-performs the UIA ScrollItem pattern action and verifies that the refreshed
-element is no longer off-screen when UIA reports that state.
+verifies the refreshed zoom level when UIA reports it. `automation zoom-by-unit`
+performs the UIA Transform2 unit zoom action, then verifies that the refreshed
+zoom level moved in the requested direction when pre/post zoom levels are
+observable. `automation scroll-into-view` performs the UIA ScrollItem pattern
+action and verifies that the refreshed element is no longer off-screen when UIA
+reports that state.
 `automation move --index <n>` and
 `automation resize --index <n>` perform the UIA Transform pattern move and
 resize actions after rejecting known unsupported elements, then verify the

@@ -160,6 +160,12 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             zoomLevel: 150.0)
+        let zoomByUnit = try await bridge.zoomUIAutomationElementByUnit(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            unit: .smallIncrement)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -306,6 +312,7 @@ final class DesktopModelTests: XCTestCase {
                 .setDockPosition,
                 .setCurrentView,
                 .setZoomLevel,
+                .zoomByUnit,
                 .move,
                 .resize,
                 .rotate,
@@ -442,6 +449,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setZoomLevel.value, "zoomLevel=150.0")
         XCTAssertEqual(setZoomLevel.postActionElement?.zoomLevel, 150.0)
         XCTAssertEqual(setZoomLevel.valueWasVerified, true)
+        XCTAssertEqual(zoomByUnit.action, .zoomByUnit)
+        XCTAssertEqual(zoomByUnit.elementIndex, 0)
+        XCTAssertEqual(zoomByUnit.value, "unit=small-increment")
+        XCTAssertEqual(zoomByUnit.postActionElement?.zoomLevel, 150.0)
+        XCTAssertEqual(zoomByUnit.valueWasVerified, true)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -849,6 +861,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
         XCTAssertTrue(result.stdout.contains("\"setCurrentView\""))
         XCTAssertTrue(result.stdout.contains("\"setZoomLevel\""))
+        XCTAssertTrue(result.stdout.contains("\"zoomByUnit\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
@@ -1493,6 +1506,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"setZoomLevel\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"zoomLevel=150.0\""))
+        XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 150"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationZoomByUnit() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "zoom-by-unit",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--unit",
+            "small-increment",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"zoomByUnit\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"unit=small-increment\""))
         XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 150"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
@@ -2626,6 +2665,46 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.zoomLevel == zoomLevel)
     }
 
+    func zoomUIAutomationElementByUnit(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        unit: DesktopUIAutomationZoomUnit) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let previousZoomLevel = element.zoomLevel ?? 125.0
+        let zoomLevel = self.zoomLevel(afterApplying: unit, to: previousZoomLevel)
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            zoomLevel: zoomLevel)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .zoomByUnit,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "unit=\(unit.rawValue)",
+            postActionElement: postActionElement,
+            valueWasVerified: self.zoomByUnitWasVerified(
+                previousZoomLevel: previousZoomLevel,
+                postActionElement: postActionElement,
+                unit: unit))
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -3140,6 +3219,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setDockPosition,
                 .setCurrentView,
                 .setZoomLevel,
+                .zoomByUnit,
                 .move,
                 .resize,
                 .rotate,
@@ -3163,6 +3243,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setDockPosition,
                 .setCurrentView,
                 .setZoomLevel,
+                .zoomByUnit,
                 .move,
                 .resize,
                 .rotate,
@@ -3186,6 +3267,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setDockPosition,
                 .setCurrentView,
                 .setZoomLevel,
+                .zoomByUnit,
                 .move,
                 .resize,
                 .rotate,
@@ -3210,6 +3292,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setDockPosition,
                 .setCurrentView,
                 .setZoomLevel,
+                .zoomByUnit,
                 .move,
                 .resize,
                 .rotate,
@@ -3224,6 +3307,42 @@ private struct StubDesktopAdapter: DesktopAdapter {
         let horizontal = horizontalPercent.map { String($0) } ?? "noScroll"
         let vertical = verticalPercent.map { String($0) } ?? "noScroll"
         return "horizontal=\(horizontal),vertical=\(vertical)"
+    }
+
+    private func zoomLevel(
+        afterApplying unit: DesktopUIAutomationZoomUnit,
+        to previousZoomLevel: Double) -> Double
+    {
+        switch unit {
+        case .none:
+            return previousZoomLevel
+        case .largeDecrement:
+            return previousZoomLevel - 50.0
+        case .smallDecrement:
+            return previousZoomLevel - 25.0
+        case .largeIncrement:
+            return previousZoomLevel + 50.0
+        case .smallIncrement:
+            return previousZoomLevel + 25.0
+        }
+    }
+
+    private func zoomByUnitWasVerified(
+        previousZoomLevel: Double,
+        postActionElement: DesktopUIAutomationElementSnapshot?,
+        unit: DesktopUIAutomationZoomUnit) -> Bool?
+    {
+        guard let postZoomLevel = postActionElement?.zoomLevel else {
+            return nil
+        }
+        switch unit {
+        case .none:
+            return postZoomLevel == previousZoomLevel
+        case .largeIncrement, .smallIncrement:
+            return postZoomLevel > previousZoomLevel
+        case .largeDecrement, .smallDecrement:
+            return postZoomLevel < previousZoomLevel
+        }
     }
 
     private func scrollPercentWasVerified(
