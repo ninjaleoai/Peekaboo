@@ -116,6 +116,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - UI Automation focus actions against a bounded snapshot element index, verified
   through refreshed keyboard-focus metadata when UIA reports it
 - Invoke-pattern UI Automation actions against a bounded snapshot element index
+- Invoke-pattern UI Automation refreshed post-action metadata when the bounded
+  lookup can observe the same element after invocation
 - Legacy IAccessible-pattern UI Automation default actions against a bounded
   snapshot element index
 - Legacy IAccessible-pattern UI Automation set-legacy-value actions against a
@@ -746,8 +748,11 @@ refreshed `legacyValue` metadata when UIA reports one.
 `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal, rejecting
 known disabled elements before calling UIA `Invoke`, and returns the pre-action
-element metadata used for the invocation. `automation set-value` does the same
-for Value-pattern elements, rejecting known disabled or read-only values before
+element metadata used for the invocation plus refreshed post-action metadata
+when the bounded lookup can observe the same element afterward. It does not
+claim value verification because the visible effect of Invoke is
+provider-specific. `automation set-value` does the same for Value-pattern
+elements, rejecting known disabled or read-only values before
 calling UIA `SetValue`, then attempts a refreshed bounded lookup so the result
 can include post-action element metadata and whether the requested value was
 observed. `automation get-text` reads Text-pattern document, selected, or

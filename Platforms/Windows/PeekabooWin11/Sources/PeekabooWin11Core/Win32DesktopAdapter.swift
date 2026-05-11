@@ -568,6 +568,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             Int32(elementIndex))
         try Self.validateUIAutomationInvoke(nativeResult)
 
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .invoke,
@@ -575,7 +581,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             maxDepth: snapshot.maxDepth,
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
-            element: element)
+            element: element,
+            postActionElement: postActionElement)
     }
 
     public func focusUIAutomationElement(

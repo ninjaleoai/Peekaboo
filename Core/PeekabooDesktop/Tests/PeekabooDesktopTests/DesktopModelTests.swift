@@ -510,6 +510,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(invoke.action, .invoke)
         XCTAssertEqual(invoke.elementIndex, 0)
         XCTAssertEqual(invoke.element.name, "Desktop")
+        XCTAssertEqual(invoke.postActionElement?.name, "Desktop")
+        XCTAssertNil(invoke.valueWasVerified)
         XCTAssertEqual(focus.action, .focus)
         XCTAssertEqual(focus.elementIndex, 0)
         XCTAssertEqual(focus.value, "focused=true")
@@ -1302,6 +1304,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"action\" : \"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"name\" : \"Desktop\""))
+        XCTAssertTrue(result.stdout.contains("\"postActionElement\""))
+        XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
     }
 
     func testDesktopCommandRunnerRejectsDisabledAutomationInvoke() {
@@ -3201,6 +3205,13 @@ private struct StubDesktopAdapter: DesktopAdapter {
             throw DesktopAdapterError.invalidArgument(
                 "UI Automation element index \(elementIndex) is not enabled")
         }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "")
+            .elements
+            .first(where: { $0.index == elementIndex })
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
             action: .invoke,
@@ -3208,7 +3219,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxDepth: snapshot.maxDepth,
             maxElements: snapshot.maxElements,
             elementIndex: elementIndex,
-            element: element)
+            element: element,
+            postActionElement: postActionElement)
     }
 
     func focusUIAutomationElement(
