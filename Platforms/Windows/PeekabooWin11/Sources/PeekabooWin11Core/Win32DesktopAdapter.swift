@@ -778,6 +778,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support value")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) value cannot be set because element is disabled")
+        }
         if element.isValueReadOnly == true {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) value is read-only")
@@ -4234,7 +4238,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.legacyIAccessible), legacyValue != nil, isEnabled != false {
             actions.append(.setLegacyValue)
         }
-        if supportedPatterns.contains(.value), isValueReadOnly == false {
+        if supportedPatterns.contains(.value), isValueReadOnly == false, isEnabled != false {
             actions.append(.setValue)
         }
         if supportedPatterns.contains(.text) {

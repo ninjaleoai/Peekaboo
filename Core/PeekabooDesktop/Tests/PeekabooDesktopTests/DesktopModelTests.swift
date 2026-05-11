@@ -1456,6 +1456,29 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-value"))
     }
 
+    func testDesktopCommandRunnerRejectsDisabledAutomationSetValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "Updated value",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains(
+            "UI Automation element index 0 value cannot be set because element is disabled"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationGetText() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -2817,11 +2840,15 @@ final class DesktopModelTests: XCTestCase {
     }
 
     private func runDesktopCommand(_ arguments: [String]) -> CommandResult {
+        self.runDesktopCommand(arguments, adapter: StubDesktopAdapter())
+    }
+
+    private func runDesktopCommand(_ arguments: [String], adapter: any DesktopAdapter) -> CommandResult {
         var stdout = ""
         var stderr = ""
         let status = DesktopCommandRunner.run(
             arguments: arguments,
-            adapter: StubDesktopAdapter(),
+            adapter: adapter,
             stdout: { stdout = $0 },
             stderr: { stderr = $0 })
 
@@ -2830,6 +2857,8 @@ final class DesktopModelTests: XCTestCase {
 }
 
 private struct StubDesktopAdapter: DesktopAdapter {
+    var isEnabled = true
+
     func platformInfo() -> DesktopPlatformInfo {
         DesktopPlatformInfo(
             name: "StubOS",
@@ -3046,6 +3075,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) value cannot be set because element is disabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
@@ -4078,8 +4111,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
         multipleViewCurrentView: Int = 2,
         zoomLevel: Double = 125.0,
         isSelected: Bool = false,
-        isVirtualized: Bool = true) -> DesktopUIAutomationSnapshot
+        isVirtualized: Bool = true,
+        isEnabled: Bool? = nil) -> DesktopUIAutomationSnapshot
     {
+        let snapshotIsEnabled = isEnabled ?? self.isEnabled
         var supportedPatterns: [DesktopUIAutomationPattern] = [
             .invoke,
             .value,
@@ -4143,7 +4178,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     controlTypeName: "Pane",
                     nativeWindowHandle: 42,
                     bounds: bounds,
-                    isEnabled: true,
+                    isEnabled: snapshotIsEnabled,
                     isKeyboardFocusable: true,
                     hasKeyboardFocus: hasKeyboardFocus,
                     isOffscreen: isOffscreen,
@@ -4152,6 +4187,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     supportedPatterns: supportedPatterns,
                     availableActions: self.stubAvailableActions(
                         for: expandCollapseState,
+                        isEnabled: snapshotIsEnabled,
                         isSelected: isSelected,
                         isVirtualized: isVirtualized),
                     value: elementValue,
@@ -4250,6 +4286,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
 
     private func stubAvailableActions(
         for expandCollapseState: DesktopUIAutomationExpandCollapseState,
+        isEnabled: Bool,
         isSelected: Bool,
         isVirtualized: Bool) -> [DesktopUIAutomationAction]
     {
@@ -4257,9 +4294,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             ? [.select, .addToSelection, .removeFromSelection]
             : [.select, .addToSelection]
         let virtualizedActions: [DesktopUIAutomationAction] = isVirtualized ? [.realize] : []
+        let actions: [DesktopUIAutomationAction]
         switch expandCollapseState {
         case .collapsed:
-            return [
+            actions = [
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
@@ -4291,7 +4329,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .scrollIntoView,
             ]
         case .expanded:
-            return [
+            actions = [
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
@@ -4323,7 +4361,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .scrollIntoView,
             ]
         case .partiallyExpanded:
-            return [
+            actions = [
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
@@ -4356,7 +4394,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .scrollIntoView,
             ]
         case .leafNode:
-            return [
+            actions = [
                 .focus,
                 .invoke,
                 .performLegacyDefaultAction,
@@ -4387,6 +4425,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .scrollIntoView,
             ]
         }
+        return isEnabled ? actions : actions.filter { $0 != .setValue }
     }
 
     private func scrollPercentValue(horizontalPercent: Double?, verticalPercent: Double?) -> String {

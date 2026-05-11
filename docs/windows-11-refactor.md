@@ -180,6 +180,8 @@ action string.
 `automation set-legacy-value --index <n>` calls the LegacyIAccessible pattern
 `SetValue` method for older MSAA-backed controls when UIA exposes legacy value
 metadata.
+`automation set-value --index <n>` calls the Value pattern `SetValue` method
+for enabled, writable controls.
 `automation get-text --index <n> --source <document|selected|visible>` covers
 Text-pattern controls that expose document, selected, or visible text ranges,
 and returns bounded text in the action `value`.
@@ -712,10 +714,10 @@ refreshed `legacyValue` metadata when UIA reports one.
 `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal and returns
 the pre-action element metadata used for the invocation. `automation set-value`
-does the same for Value-pattern elements, rejecting known read-only values
-before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
-result can include post-action element metadata and whether the requested value
-was observed. `automation get-text` reads Text-pattern document, selected, or
+does the same for Value-pattern elements, rejecting known disabled or read-only
+values before calling UIA `SetValue`, then attempts a refreshed bounded lookup
+so the result can include post-action element metadata and whether the requested
+value was observed. `automation get-text` reads Text-pattern document, selected, or
 visible ranges with a caller-provided max length capped at 4096 characters and
 returns the text in the action `value`; the action is marked verified when the
 bounded result matches Text-pattern metadata already visible in the pre-action
