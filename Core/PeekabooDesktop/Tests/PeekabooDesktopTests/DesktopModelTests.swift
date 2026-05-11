@@ -38,6 +38,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertFalse(actions.contains(.expand))
         XCTAssertFalse(actions.contains(.setLegacyValue))
         XCTAssertFalse(actions.contains(.setValue))
+        XCTAssertFalse(actions.contains(.setRangeValue))
         XCTAssertTrue(actions.contains(.getText))
     }
 
@@ -1668,6 +1669,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"42.5\""))
         XCTAssertTrue(result.stdout.contains("\"rangeValue\" : 42.5"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationSetRangeValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-range-value",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--value",
+            "42.5",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetRangeValueNumber() {
@@ -3448,6 +3471,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -4712,7 +4739,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         return isEnabled
             ? actions
             : actions.filter {
-                ![.focus, .invoke, .toggle, .expand, .collapse, .setLegacyValue, .setValue]
+                ![.focus, .invoke, .toggle, .expand, .collapse, .setLegacyValue, .setValue, .setRangeValue]
                     .contains($0)
             }
     }

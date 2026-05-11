@@ -920,6 +920,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support range value")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         if element.isRangeValueReadOnly == true {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) range value is read-only")
@@ -4399,7 +4403,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.text) {
             actions.append(.getText)
         }
-        if supportedPatterns.contains(.rangeValue), isRangeValueReadOnly == false {
+        if supportedPatterns.contains(.rangeValue), isRangeValueReadOnly == false, isEnabled != false {
             actions.append(.setRangeValue)
         }
         if supportedPatterns.contains(.scroll),

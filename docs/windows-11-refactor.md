@@ -126,6 +126,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   element index
 - RangeValue-pattern UI Automation set-range-value actions against a bounded
   snapshot element index
+- RangeValue-pattern UI Automation disabled-state action suppression and
+  preflight rejection
 - Scroll-pattern UI Automation scroll-by-amount actions against a bounded
   snapshot element index
 - Scroll-pattern UI Automation set-scroll-percent actions against a bounded
@@ -709,8 +711,8 @@ pattern exposes a non-empty default action string, setLegacyValue is available
 when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
 element, setValue is available only when the Value pattern is present and the
 element is enabled and known writable, getText is available when the Text pattern is present, setRangeValue
-is available only when the RangeValue pattern is present and known writable,
-scrollByAmount and setScrollPercent are available when the Scroll pattern is
+is available only when the RangeValue pattern is present on an enabled element
+and known writable, scrollByAmount and setScrollPercent are available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
@@ -762,8 +764,9 @@ visible ranges with a caller-provided max length capped at 4096 characters and
 returns the text in the action `value`; the action is marked verified when the
 bounded result matches Text-pattern metadata already visible in the pre-action
 snapshot. `automation set-range-value` targets RangeValue-pattern elements,
-rejecting known read-only and out-of-range values before calling UIA `SetValue`,
-then verifies the refreshed numeric value when UIA reports one.
+rejecting known disabled elements, read-only values, and out-of-range values
+before calling UIA `SetValue`, then verifies the refreshed numeric value when
+UIA reports one.
 `automation scroll` targets Scroll-pattern elements, rejects known unscrollable
 requested axes before calling UIA `Scroll`, then verifies refreshed scroll
 percentages moved in the requested direction when UIA reports them.
