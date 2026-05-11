@@ -133,6 +133,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - ScrollItem-pattern UI Automation scroll-into-view actions against a bounded
   snapshot element index
 - Toggle-pattern UI Automation actions against a bounded snapshot element index
+- Toggle-pattern UI Automation disabled-state action suppression and preflight
+  rejection
 - ExpandCollapse-pattern UI Automation expand/collapse actions against a
   bounded snapshot element index
 - SelectionItem-pattern UI Automation selection actions against a bounded
@@ -723,9 +725,9 @@ matching capability, findItemByProperty is available when the ItemContainer
 pattern is present, getSpreadsheetItem is available when the Spreadsheet pattern
 is present, getGridItem is available when the Grid pattern is present, realize
 is available when the VirtualizedItem pattern is
-present, toggle is available when the Toggle pattern is present, expand is
-available for enabled collapsed or partially expanded ExpandCollapse elements, collapse
-is available for enabled expanded or
+present, toggle is available when the Toggle pattern is present on an enabled
+element, expand is available for enabled collapsed or partially expanded
+ExpandCollapse elements, collapse is available for enabled expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -821,9 +823,9 @@ performs the UIA VirtualizedItem pattern realize action, then reports a
 verified result when the refreshed bounded lookup no longer reports the item
 as virtualized.
 `automation toggle --index <n>`
-performs the UIA Toggle pattern and returns pre-action metadata plus any
-refreshed post-action element, including the refreshed toggle state when UIA
-reports one.
+performs the UIA Toggle pattern after rejecting known disabled elements, then
+returns pre-action metadata plus any refreshed post-action element, including
+the refreshed toggle state when UIA reports one.
 `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
 disabled elements and leaf nodes before calling UIA, and return refreshed post-action element

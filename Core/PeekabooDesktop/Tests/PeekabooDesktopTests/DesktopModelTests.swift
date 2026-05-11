@@ -34,6 +34,7 @@ final class DesktopModelTests: XCTestCase {
 
         XCTAssertFalse(actions.contains(.focus))
         XCTAssertFalse(actions.contains(.invoke))
+        XCTAssertFalse(actions.contains(.toggle))
         XCTAssertFalse(actions.contains(.expand))
         XCTAssertFalse(actions.contains(.setLegacyValue))
         XCTAssertFalse(actions.contains(.setValue))
@@ -2692,6 +2693,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsDisabledAutomationToggle() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "toggle",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationExpand() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -3349,6 +3370,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
@@ -4687,7 +4712,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
         return isEnabled
             ? actions
             : actions.filter {
-                ![.focus, .invoke, .expand, .collapse, .setLegacyValue, .setValue].contains($0)
+                ![.focus, .invoke, .toggle, .expand, .collapse, .setLegacyValue, .setValue]
+                    .contains($0)
             }
     }
 

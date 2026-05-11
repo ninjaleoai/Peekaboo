@@ -2114,6 +2114,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support toggle")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
 
         let nativeResult = PeekabooWin11ToggleUIAutomationElement(
             Self.nativeUIAutomationScope(scope),
@@ -4447,7 +4451,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.virtualizedItem) {
             actions.append(.realize)
         }
-        if supportedPatterns.contains(.toggle) {
+        if supportedPatterns.contains(.toggle), isEnabled != false {
             actions.append(.toggle)
         }
         if supportedPatterns.contains(.expandCollapse), isEnabled != false {
