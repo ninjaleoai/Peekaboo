@@ -144,6 +144,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.emptyCaptureRegion(window.bounds)
         }
 
+        if let hwnd = Self.windowHandle(from: window.windowIdentifier) {
+            do {
+                return try Self.captureWindowImage(hwnd: hwnd, bounds: window.bounds, outputPath: outputPath)
+            } catch {
+                // Some providers cannot render on request; keep the existing region capture fallback.
+            }
+        }
         return try self.captureArea(window.bounds, outputPath: outputPath)
     }
 
@@ -162,6 +169,11 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.emptyCaptureRegion(bounds)
         }
 
+        do {
+            return try Self.captureWindowImage(hwnd: hwnd, bounds: bounds, outputPath: outputPath)
+        } catch {
+            // Some providers cannot render on request; keep the existing region capture fallback.
+        }
         return try self.captureArea(bounds, outputPath: outputPath)
     }
 
@@ -5299,7 +5311,58 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.nativeCallFailed("BitBlt")
         }
 
-        let data = try Self.bitmapData(bitmap: bitmap, dc: memoryDC, width: bounds.width, height: bounds.height)
+        return try Self.writeBitmapCapture(
+            bitmap: bitmap,
+            dc: memoryDC,
+            bounds: bounds,
+            outputPath: outputPath)
+    }
+
+    private static func captureWindowImage(
+        hwnd: HWND,
+        bounds: Win11Rect,
+        outputPath: String) throws -> Win11CaptureResult
+    {
+        guard !bounds.isEmpty else {
+            throw Win11DesktopError.emptyCaptureRegion(bounds)
+        }
+
+        guard let windowDC = GetWindowDC(hwnd) else {
+            throw Win11DesktopError.nativeCallFailed("GetWindowDC")
+        }
+        defer { ReleaseDC(hwnd, windowDC) }
+
+        guard let memoryDC = CreateCompatibleDC(windowDC) else {
+            throw Win11DesktopError.nativeCallFailed("CreateCompatibleDC")
+        }
+        defer { DeleteDC(memoryDC) }
+
+        guard let bitmap = CreateCompatibleBitmap(windowDC, Int32(bounds.width), Int32(bounds.height)) else {
+            throw Win11DesktopError.nativeCallFailed("CreateCompatibleBitmap")
+        }
+        defer { DeleteObject(bitmap) }
+
+        let oldObject = SelectObject(memoryDC, bitmap)
+        defer { SelectObject(memoryDC, oldObject) }
+
+        guard PrintWindow(hwnd, memoryDC, UINT(0)) else {
+            throw Win11DesktopError.nativeCallFailed("PrintWindow")
+        }
+
+        return try Self.writeBitmapCapture(
+            bitmap: bitmap,
+            dc: memoryDC,
+            bounds: bounds,
+            outputPath: outputPath)
+    }
+
+    private static func writeBitmapCapture(
+        bitmap: HBITMAP,
+        dc: HDC,
+        bounds: Win11Rect,
+        outputPath: String) throws -> Win11CaptureResult
+    {
+        let data = try Self.bitmapData(bitmap: bitmap, dc: dc, width: bounds.width, height: bounds.height)
         let outputURL = URL(fileURLWithPath: outputPath)
         try FileManager.default.createDirectory(
             at: outputURL.deletingLastPathComponent(),
@@ -5307,6 +5370,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         try data.write(to: outputURL, options: [.atomic])
 
         return Win11CaptureResult(path: outputPath, bounds: bounds, format: .bmp, byteCount: data.count)
+    }
+
+    private static func windowHandle(from identifier: UInt64) -> HWND? {
+        HWND(bitPattern: UInt(truncatingIfNeeded: identifier))
     }
 
     private static func virtualScreenBounds() -> Win11Rect {

@@ -23,7 +23,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - application enumeration from window-owning processes
 - full-screen or display BMP capture through Win32 GDI
 - rectangular-area BMP capture through the same GDI capture path
-- region-backed foreground-window BMP capture through the same GDI capture path
+- window BMP capture through `PrintWindow` with region-backed GDI fallback
+- foreground-window BMP capture through the same window capture path
 - cursor position reads and cursor movement through Win32 cursor APIs
 - point-based mouse clicks through Win32 mouse input APIs
 - point-based wheel scrolling through Win32 mouse input APIs
@@ -650,9 +651,11 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation remove-from-selection --scope foreground --index 0 --max-depth 2 --max-elements 64
 ```
 
-The first Windows window captures are region-backed: the adapter resolves the
-requested or foreground window bounds, then captures that screen rectangle to
-BMP. This does not yet provide off-screen semantic window rendering.
+Windows window captures first ask the owning window to render itself into a
+memory device context through `PrintWindow`, then fall back to the existing
+region-backed GDI capture path when a provider cannot render on request. This
+improves the path toward semantic window capture but does not yet guarantee
+off-screen rendering for every Windows app.
 
 The first Windows typing path sends keyboard-layout translated keystrokes to
 the current focus. It supports characters that `VkKeyScanW` can translate for
@@ -890,10 +893,8 @@ selected state when UIA reports it.
 
 ## Next Integration Steps
 
-1. Decide whether Windows window capture should grow beyond region-backed GDI
-   capture into semantic off-screen rendering, and keep any attempt behind a
-   fallback because Windows providers vary in how much they can render on
-   request.
+1. Harden semantic window capture only where Windows providers expose reliable
+   rendering behavior, and keep region-backed GDI capture as the fallback.
 2. Keep future UI Automation expansion focused on missing patterns with stable
    observable state, rather than adding unverified actions for every pattern UIA
    can expose.
