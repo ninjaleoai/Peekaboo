@@ -40,8 +40,12 @@
 #define PEEKABOO_WIN11_UIA_ACTION_GET_SPREADSHEET_ITEM_BY_NAME 29
 #define PEEKABOO_WIN11_UIA_ACTION_GET_GRID_ITEM 30
 #define PEEKABOO_WIN11_UIA_ACTION_FIND_ITEM_BY_PROPERTY 31
+#define PEEKABOO_WIN11_UIA_ACTION_GET_TEXT 32
 #define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_NAME 1
 #define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_AUTOMATION_ID 2
+#define PEEKABOO_WIN11_UIA_TEXT_SOURCE_DOCUMENT 1
+#define PEEKABOO_WIN11_UIA_TEXT_SOURCE_SELECTED 2
+#define PEEKABOO_WIN11_UIA_TEXT_SOURCE_VISIBLE 3
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -2211,6 +2215,206 @@ static void PeekabooWin11SetElementValue(
     IUIAutomationValuePattern_Release(valuePattern);
 }
 
+static void PeekabooWin11AppendTextRangeTextResult(
+    IUIAutomationTextRange *textRange,
+    int32_t maxLength,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    if (result == NULL) {
+        return;
+    }
+    if (textRange == NULL) {
+        result->actionResult = (int32_t)E_POINTER;
+        return;
+    }
+    if (maxLength < 1) {
+        result->actionResult = (int32_t)E_INVALIDARG;
+        return;
+    }
+    if (maxLength >= PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY) {
+        maxLength = PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY - 1;
+    }
+
+    BSTR text = NULL;
+    HRESULT textResult = IUIAutomationTextRange_GetText(
+        textRange,
+        (int)maxLength,
+        &text);
+    result->actionResult = (int32_t)textResult;
+    if (!PeekabooWin11Succeeded(textResult)) {
+        return;
+    }
+
+    char textPart[PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY];
+    PeekabooWin11CopyBSTR(text, textPart, PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY);
+    size_t resultCapacity = (size_t)maxLength + 1;
+    if (resultCapacity > PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY) {
+        resultCapacity = PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY;
+    }
+    if (result->hasTextResult != 0) {
+        PeekabooWin11AppendUTF8Text(
+            result->textResult,
+            resultCapacity,
+            "\n");
+    } else {
+        result->textResult[0] = '\0';
+    }
+    result->hasTextResult = 1;
+    PeekabooWin11AppendUTF8Text(
+        result->textResult,
+        resultCapacity,
+        textPart);
+
+    if (text != NULL) {
+        SysFreeString(text);
+    }
+}
+
+static void PeekabooWin11CopyTextRangeArrayTextResult(
+    IUIAutomationTextRangeArray *ranges,
+    int32_t maxLength,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    if (result == NULL) {
+        return;
+    }
+    if (ranges == NULL) {
+        result->actionResult = (int32_t)E_POINTER;
+        return;
+    }
+
+    int textRangeCount = 0;
+    HRESULT lengthResult = IUIAutomationTextRangeArray_get_Length(
+        ranges,
+        &textRangeCount);
+    result->actionResult = (int32_t)lengthResult;
+    if (!PeekabooWin11Succeeded(lengthResult) || textRangeCount < 0) {
+        return;
+    }
+
+    if (textRangeCount == 0) {
+        result->hasTextResult = 1;
+        result->textResult[0] = '\0';
+        result->actionResult = (int32_t)S_OK;
+        return;
+    }
+
+    for (int index = 0; index < textRangeCount; index += 1) {
+        IUIAutomationTextRange *textRange = NULL;
+        HRESULT rangeResult = IUIAutomationTextRangeArray_GetElement(
+            ranges,
+            index,
+            &textRange);
+        result->actionResult = (int32_t)rangeResult;
+        if (!PeekabooWin11Succeeded(rangeResult) || textRange == NULL) {
+            if (PeekabooWin11Succeeded(rangeResult)) {
+                result->actionResult = (int32_t)E_POINTER;
+            }
+            return;
+        }
+
+        PeekabooWin11AppendTextRangeTextResult(textRange, maxLength, result);
+        IUIAutomationTextRange_Release(textRange);
+        if (!PeekabooWin11Succeeded(result->actionResult)) {
+            return;
+        }
+    }
+
+    if (result->hasTextResult == 0) {
+        result->hasTextResult = 1;
+        result->textResult[0] = '\0';
+        result->actionResult = (int32_t)S_OK;
+    }
+}
+
+static void PeekabooWin11GetTextElement(
+    IUIAutomationElement *element,
+    int32_t source,
+    int32_t maxLength,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    if (result == NULL) {
+        return;
+    }
+    if (maxLength < 1) {
+        result->actionResult = (int32_t)E_INVALIDARG;
+        return;
+    }
+    if (maxLength >= PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY) {
+        maxLength = PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY - 1;
+    }
+
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TextPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationTextPattern *textPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTextPattern,
+        (void **)&textPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || textPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    if (source == PEEKABOO_WIN11_UIA_TEXT_SOURCE_DOCUMENT) {
+        IUIAutomationTextRange *documentRange = NULL;
+        HRESULT documentRangeResult = IUIAutomationTextPattern_get_DocumentRange(
+            textPattern,
+            &documentRange);
+        result->actionResult = (int32_t)documentRangeResult;
+        if (PeekabooWin11Succeeded(documentRangeResult) && documentRange != NULL) {
+            PeekabooWin11AppendTextRangeTextResult(documentRange, maxLength, result);
+            IUIAutomationTextRange_Release(documentRange);
+        } else if (PeekabooWin11Succeeded(documentRangeResult)) {
+            result->actionResult = (int32_t)E_POINTER;
+        }
+    } else if (source == PEEKABOO_WIN11_UIA_TEXT_SOURCE_SELECTED) {
+        IUIAutomationTextRangeArray *selectedRanges = NULL;
+        HRESULT selectedRangesResult = IUIAutomationTextPattern_GetSelection(
+            textPattern,
+            &selectedRanges);
+        result->actionResult = (int32_t)selectedRangesResult;
+        if (PeekabooWin11Succeeded(selectedRangesResult) && selectedRanges != NULL) {
+            PeekabooWin11CopyTextRangeArrayTextResult(selectedRanges, maxLength, result);
+            IUIAutomationTextRangeArray_Release(selectedRanges);
+        } else if (PeekabooWin11Succeeded(selectedRangesResult)) {
+            result->actionResult = (int32_t)E_POINTER;
+        }
+    } else if (source == PEEKABOO_WIN11_UIA_TEXT_SOURCE_VISIBLE) {
+        IUIAutomationTextRangeArray *visibleRanges = NULL;
+        HRESULT visibleRangesResult = IUIAutomationTextPattern_GetVisibleRanges(
+            textPattern,
+            &visibleRanges);
+        result->actionResult = (int32_t)visibleRangesResult;
+        if (PeekabooWin11Succeeded(visibleRangesResult) && visibleRanges != NULL) {
+            PeekabooWin11CopyTextRangeArrayTextResult(visibleRanges, maxLength, result);
+            IUIAutomationTextRangeArray_Release(visibleRanges);
+        } else if (PeekabooWin11Succeeded(visibleRangesResult)) {
+            result->actionResult = (int32_t)E_POINTER;
+        }
+    } else {
+        result->actionResult = (int32_t)E_INVALIDARG;
+    }
+
+    IUIAutomationTextPattern_Release(textPattern);
+}
+
 static void PeekabooWin11SetElementRangeValue(
     IUIAutomationElement *element,
     double value,
@@ -3562,6 +3766,12 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11RealizeVirtualizedItem(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_VALUE) {
             PeekabooWin11SetElementValue(element, value, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_GET_TEXT) {
+            PeekabooWin11GetTextElement(
+                element,
+                dockPosition,
+                (int32_t)transformFirstValue,
+                result);
         } else {
             PeekabooWin11InvokeElement(element, result);
         }
@@ -3932,6 +4142,30 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
         0,
         0,
         0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationText(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t source,
+    int32_t maxLength)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_GET_TEXT,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        source,
+        (double)maxLength,
         0.0);
 }
 
@@ -4636,6 +4870,27 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     return result;
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationText(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t source,
+    int32_t maxLength)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 32;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)source;
+    (void)maxLength;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeValue(
     int32_t scope,
     int32_t maxDepth,
@@ -5322,4 +5577,10 @@ const char *PeekabooWin11UIAutomationElementLegacyDefaultAction(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->legacyDefaultAction;
+}
+
+const char *PeekabooWin11UIAutomationActionTextResult(
+    const PeekabooWin11UIAutomationActionResult *action)
+{
+    return action == NULL ? "" : action->textResult;
 }

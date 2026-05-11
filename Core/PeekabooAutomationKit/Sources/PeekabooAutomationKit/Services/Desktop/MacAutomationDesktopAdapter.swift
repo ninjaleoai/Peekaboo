@@ -276,6 +276,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
         throw DesktopAdapterError.unsupportedPlatform("UI Automation set-value is not implemented by this adapter")
     }
 
+    public func getUIAutomationText(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        source _: DesktopUIAutomationTextSource,
+        maxLength _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform("UI Automation get-text is not implemented by this adapter")
+    }
+
     public func setUIAutomationElementRangeValue(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

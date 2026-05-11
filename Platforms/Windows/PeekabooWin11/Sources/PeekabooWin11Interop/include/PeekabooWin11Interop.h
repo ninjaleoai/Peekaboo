@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define PEEKABOO_WIN11_UIA_TEXT_CAPACITY 256
+#define PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY 4097
 
 #ifdef __cplusplus
 extern "C" {
@@ -279,6 +280,8 @@ typedef struct PeekabooWin11UIAutomationActionResult {
     int32_t actionResult;
     int32_t hasBoolResult;
     int32_t boolResult;
+    int32_t hasTextResult;
+    char textResult[PEEKABOO_WIN11_UIA_ACTION_TEXT_CAPACITY];
     int32_t hasResultElement;
     PeekabooWin11UIAutomationElementSnapshot resultElement;
 } PeekabooWin11UIAutomationActionResult;
@@ -319,6 +322,14 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementValue(
     int32_t maxElements,
     int32_t elementIndex,
     const char *value);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationText(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t source,
+    int32_t maxLength);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementRangeValue(
     int32_t scope,
@@ -595,6 +606,9 @@ const char *PeekabooWin11UIAutomationElementLegacyKeyboardShortcut(
 
 const char *PeekabooWin11UIAutomationElementLegacyDefaultAction(
     const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationActionTextResult(
+    const PeekabooWin11UIAutomationActionResult *action);
 
 #ifdef __cplusplus
 }

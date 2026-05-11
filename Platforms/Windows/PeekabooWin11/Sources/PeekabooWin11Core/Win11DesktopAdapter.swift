@@ -152,6 +152,17 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
+    public func getUIAutomationText(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        source _: DesktopUIAutomationTextSource,
+        maxLength _: Int) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
     public func setUIAutomationElementRangeValue(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

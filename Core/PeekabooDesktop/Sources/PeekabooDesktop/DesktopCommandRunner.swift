@@ -174,7 +174,8 @@ public enum DesktopCommandRunner {
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "focus, " +
                     "legacy-default-action, " +
-                    "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
+                    "set-legacy-value, set-value, get-text, set-range-value, set-scroll-percent, " +
+                    "set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
                     "navigate-custom, find-item, get-spreadsheet-item, get-grid-item, move, resize, " +
@@ -199,6 +200,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetLegacyValue(args: args, adapter: adapter, stdout: stdout)
         case "set-value", "setValue":
             try self.runAutomationSetValue(args: args, adapter: adapter, stdout: stdout)
+        case "get-text", "getText":
+            try self.runAutomationGetText(args: args, adapter: adapter, stdout: stdout)
         case "set-range-value", "setRangeValue":
             try self.runAutomationSetRangeValue(args: args, adapter: adapter, stdout: stdout)
         case "set-scroll-percent", "setScrollPercent":
@@ -419,6 +422,38 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             value: value)))
+    }
+
+    private static func runAutomationGetText(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation get-text")
+        }
+
+        let sourceValue = try self.value(after: "--source", in: args) ??
+            self.value(after: "--text-source", in: args)
+        let source = try sourceValue.map(self.parseUIAutomationTextSource) ?? .document
+        let maxLength = try self.value(after: "--max-length", in: args)
+            .map(self.parseUIAutomationTextMaxLength) ?? 1024
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.getUIAutomationText(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            source: source,
+            maxLength: maxLength)))
     }
 
     private static func runAutomationSetLegacyValue(
@@ -1566,6 +1601,24 @@ public enum DesktopCommandRunner {
         return coordinate
     }
 
+    private static func parseUIAutomationTextSource(
+        _ value: String) throws -> DesktopUIAutomationTextSource
+    {
+        guard let source = DesktopUIAutomationTextSource(rawValue: value) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation text source must be document, selected, or visible")
+        }
+        return source
+    }
+
+    private static func parseUIAutomationTextMaxLength(_ value: String) throws -> Int {
+        guard let maxLength = Int(value), (1...4096).contains(maxLength) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation text max length must be between 1 and 4096")
+        }
+        return maxLength
+    }
+
     private static func parseUIAutomationItemContainerProperty(
         _ value: String) throws -> DesktopUIAutomationItemContainerProperty
     {
@@ -1766,6 +1819,8 @@ public enum DesktopCommandRunner {
           automation set-legacy-value --index <n> --value <text>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-value --index <n> --value <text>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation get-text --index <n> [--source document|selected|visible] [--max-length <n>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-range-value --index <n> --value <number>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

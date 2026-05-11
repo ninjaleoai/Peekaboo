@@ -52,6 +52,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: String) throws -> DesktopUIAutomationActionResult
+    func getUIAutomationText(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        source: DesktopUIAutomationTextSource,
+        maxLength: Int) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementRangeValue(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -260,6 +267,13 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: String) async throws -> DesktopUIAutomationActionResult
+    func getUIAutomationText(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        source: DesktopUIAutomationTextSource,
+        maxLength: Int) async throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementRangeValue(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -575,6 +589,23 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             value: value)
+    }
+
+    public func getUIAutomationText(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        source: DesktopUIAutomationTextSource,
+        maxLength: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.getUIAutomationText(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            source: source,
+            maxLength: maxLength)
     }
 
     public func setUIAutomationElementRangeValue(

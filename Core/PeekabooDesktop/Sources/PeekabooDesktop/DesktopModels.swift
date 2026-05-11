@@ -25,6 +25,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case performUIAutomationLegacyDefaultAction
     case setUIAutomationLegacyValue
     case setUIAutomationValue
+    case getUIAutomationText
     case toggleUIAutomation
     case expandCollapseUIAutomation
     case selectUIAutomationItem
@@ -392,6 +393,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case performLegacyDefaultAction
     case setLegacyValue
     case setValue
+    case getText
     case toggle
     case expand
     case collapse
@@ -418,6 +420,12 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case rotate
     case realize
     case scrollIntoView
+}
+
+public enum DesktopUIAutomationTextSource: String, Codable, Equatable, Sendable {
+    case document
+    case selected
+    case visible
 }
 
 public enum DesktopUIAutomationItemContainerProperty: String, Codable, Equatable, Sendable {

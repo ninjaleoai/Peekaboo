@@ -112,6 +112,13 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             value: "Updated value")
+        let getText = try await bridge.getUIAutomationText(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            source: .document,
+            maxLength: 64)
         let setRangeValue = try await bridge.setUIAutomationElementRangeValue(
             scope: .root,
             maxDepth: 1,
@@ -360,6 +367,7 @@ final class DesktopModelTests: XCTestCase {
                 .performLegacyDefaultAction,
                 .setLegacyValue,
                 .setValue,
+                .getText,
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
@@ -501,6 +509,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setValue.value, "Updated value")
         XCTAssertEqual(setValue.postActionElement?.value, "Updated value")
         XCTAssertEqual(setValue.valueWasVerified, true)
+        XCTAssertEqual(getText.action, .getText)
+        XCTAssertEqual(getText.elementIndex, 0)
+        XCTAssertEqual(getText.value, "Example text")
         XCTAssertEqual(setRangeValue.action, .setRangeValue)
         XCTAssertEqual(setRangeValue.elementIndex, 0)
         XCTAssertEqual(setRangeValue.value, "42.5")
@@ -980,6 +991,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"invoke\""))
         XCTAssertTrue(result.stdout.contains("\"performLegacyDefaultAction\""))
         XCTAssertTrue(result.stdout.contains("\"setValue\""))
+        XCTAssertTrue(result.stdout.contains("\"getText\""))
         XCTAssertTrue(result.stdout.contains("\"setRangeValue\""))
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
@@ -1436,6 +1448,76 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --value <text> for automation set-value"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationGetText() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "get-text",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--source",
+            "visible",
+            "--max-length",
+            "64",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"getText\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"visible\""))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationGetTextIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "get-text",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation get-text"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationGetTextSource() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "get-text",
+            "--index",
+            "0",
+            "--source",
+            "summary",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation text source must be document, selected, or visible"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationGetTextMaxLength() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "get-text",
+            "--index",
+            "0",
+            "--max-length",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation text max length must be between 1 and 4096"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetRangeValue() {
@@ -2668,6 +2750,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation legacy-default-action --index"))
         XCTAssertTrue(result.stdout.contains("automation set-legacy-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
+        XCTAssertTrue(result.stdout.contains("automation get-text --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
@@ -3009,6 +3092,43 @@ private struct StubDesktopAdapter: DesktopAdapter {
             value: value,
             postActionElement: postActionElement,
             valueWasVerified: postActionElement?.value == value)
+    }
+
+    func getUIAutomationText(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        source: DesktopUIAutomationTextSource,
+        maxLength: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+
+        let text: String
+        switch source {
+        case .document:
+            text = element.text ?? ""
+        case .selected:
+            text = element.selectedText ?? ""
+        case .visible:
+            text = element.visibleText ?? ""
+        }
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .getText,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: String(text.prefix(maxLength)))
     }
 
     func setUIAutomationElementRangeValue(
@@ -4067,6 +4187,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .performLegacyDefaultAction,
                 .setLegacyValue,
                 .setValue,
+                .getText,
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
@@ -4098,6 +4219,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .performLegacyDefaultAction,
                 .setLegacyValue,
                 .setValue,
+                .getText,
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
@@ -4129,6 +4251,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .performLegacyDefaultAction,
                 .setLegacyValue,
                 .setValue,
+                .getText,
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,
@@ -4161,6 +4284,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .performLegacyDefaultAction,
                 .setLegacyValue,
                 .setValue,
+                .getText,
                 .setRangeValue,
                 .setScrollPercent,
                 .setWindowVisualState,

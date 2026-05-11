@@ -55,6 +55,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   bounded snapshots
 - Text-pattern UI Automation visible text and visible range count metadata in
   bounded snapshots
+- Text-pattern UI Automation get-text actions against a bounded snapshot
+  element index
 - TextPattern2-pattern UI Automation caret active-state and caret rectangle
   count metadata in bounded snapshots
 - TextEdit-pattern UI Automation active-composition and conversion-target range
@@ -146,6 +148,7 @@ bounded element lookup over the same snapshot traversal, and
 `automation legacy-default-action --index <n>`,
 `automation set-legacy-value --index <n>`,
 `automation set-value --index <n>`,
+`automation get-text --index <n>`,
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`,
 `automation set-window-state --index <n>`,
@@ -162,10 +165,11 @@ bounded element lookup over the same snapshot traversal, and
 `automation get-spreadsheet-item --index <n>`,
 `automation get-grid-item --index <n>`,
 and `automation realize --index <n>` for Invoke-pattern,
-LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
-Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern,
-SynchronizedInput-pattern, CustomNavigation-pattern, ItemContainer-pattern,
-Spreadsheet-pattern, Grid-pattern, and VirtualizedItem-pattern UIA actions.
+LegacyIAccessible-pattern, Value-pattern, Text-pattern, RangeValue-pattern,
+Scroll-pattern, Window-pattern, Dock-pattern, MultipleView-pattern,
+Transform2-pattern, SynchronizedInput-pattern, CustomNavigation-pattern,
+ItemContainer-pattern, Spreadsheet-pattern, Grid-pattern, and
+VirtualizedItem-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -175,6 +179,9 @@ action string.
 `automation set-legacy-value --index <n>` calls the LegacyIAccessible pattern
 `SetValue` method for older MSAA-backed controls when UIA exposes legacy value
 metadata.
+`automation get-text --index <n> --source <document|selected|visible>` covers
+Text-pattern controls that expose document, selected, or visible text ranges,
+and returns bounded text in the action `value`.
 `automation close-window --index <n>` calls the Window pattern `Close` method
 for Window-pattern controls.
 `automation wait-window-idle --index <n> --timeout-ms <n>` calls the Window
@@ -518,6 +525,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-value --scope focused --index 0 --value "hello" --max-depth 0 --max-elements 1
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation get-text --scope focused --index 0 --source document --max-length 1024 --max-depth 0 --max-elements 1
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-range-value --scope foreground --index 0 --value 42.5 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-scroll-percent --scope foreground --index 0 --vertical 75 --max-depth 2 --max-elements 64
@@ -656,9 +665,10 @@ element is keyboard focusable, invoke is available when the Invoke pattern is
 present, performLegacyDefaultAction is available when the Legacy IAccessible
 pattern exposes a non-empty default action string, setLegacyValue is available
 when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
-element, setValue is available only when the Value pattern is present and known writable,
-setRangeValue is available only when the RangeValue pattern is present and
-known writable, setScrollPercent is available when the Scroll pattern is
+element, setValue is available only when the Value pattern is present and known
+writable, getText is available when the Text pattern is present, setRangeValue
+is available only when the RangeValue pattern is present and known writable,
+setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
@@ -701,9 +711,12 @@ the pre-action element metadata used for the invocation. `automation set-value`
 does the same for Value-pattern elements, rejecting known read-only values
 before calling UIA `SetValue`, then attempts a refreshed bounded lookup so the
 result can include post-action element metadata and whether the requested value
-was observed. `automation set-range-value` does the same for RangeValue-pattern
-elements, rejecting known read-only and out-of-range values before calling UIA
-`SetValue`, then verifies the refreshed numeric value when UIA reports one.
+was observed. `automation get-text` reads Text-pattern document, selected, or
+visible ranges with a caller-provided max length capped at 4096 characters and
+returns the text in the action `value`. `automation set-range-value` targets
+RangeValue-pattern elements, rejecting known read-only and out-of-range values
+before calling UIA `SetValue`, then verifies the refreshed numeric value when
+UIA reports one.
 `automation set-scroll-percent` does the same for Scroll-pattern elements,
 rejecting known unscrollable requested axes before calling UIA
 `SetScrollPercent`, then verifies refreshed scroll percentages for requested
