@@ -103,6 +103,14 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t textCaretIsActive;
     int32_t hasTextCaretBoundingRectangleCount;
     int32_t textCaretBoundingRectangleCount;
+    int32_t hasTextEditActiveComposition;
+    int32_t textEditHasActiveComposition;
+    int32_t hasTextEditActiveCompositionBoundingRectangleCount;
+    int32_t textEditActiveCompositionBoundingRectangleCount;
+    int32_t hasTextEditConversionTarget;
+    int32_t textEditHasConversionTarget;
+    int32_t hasTextEditConversionTargetBoundingRectangleCount;
+    int32_t textEditConversionTargetBoundingRectangleCount;
     int32_t hasGridRowCount;
     int32_t gridRowCount;
     int32_t hasGridColumnCount;

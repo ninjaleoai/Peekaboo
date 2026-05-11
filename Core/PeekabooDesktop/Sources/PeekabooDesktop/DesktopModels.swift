@@ -355,6 +355,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case selectionItem
     case text
     case text2
+    case textEdit
     case toggle
     case legacyIAccessible
     case grid
@@ -514,6 +515,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let supportedTextSelection: DesktopUIAutomationSupportedTextSelection?
     public let textCaretIsActive: Bool?
     public let textCaretBoundingRectangleCount: Int?
+    public let textEditHasActiveComposition: Bool?
+    public let textEditActiveCompositionBoundingRectangleCount: Int?
+    public let textEditHasConversionTarget: Bool?
+    public let textEditConversionTargetBoundingRectangleCount: Int?
     public let gridRowCount: Int?
     public let gridColumnCount: Int?
     public let gridItemRow: Int?
@@ -625,6 +630,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         supportedTextSelection: DesktopUIAutomationSupportedTextSelection? = nil,
         textCaretIsActive: Bool? = nil,
         textCaretBoundingRectangleCount: Int? = nil,
+        textEditHasActiveComposition: Bool? = nil,
+        textEditActiveCompositionBoundingRectangleCount: Int? = nil,
+        textEditHasConversionTarget: Bool? = nil,
+        textEditConversionTargetBoundingRectangleCount: Int? = nil,
         gridRowCount: Int? = nil,
         gridColumnCount: Int? = nil,
         gridItemRow: Int? = nil,
@@ -735,6 +744,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.supportedTextSelection = supportedTextSelection
         self.textCaretIsActive = textCaretIsActive
         self.textCaretBoundingRectangleCount = textCaretBoundingRectangleCount
+        self.textEditHasActiveComposition = textEditHasActiveComposition
+        self.textEditActiveCompositionBoundingRectangleCount = textEditActiveCompositionBoundingRectangleCount
+        self.textEditHasConversionTarget = textEditHasConversionTarget
+        self.textEditConversionTargetBoundingRectangleCount = textEditConversionTargetBoundingRectangleCount
         self.gridRowCount = gridRowCount
         self.gridColumnCount = gridColumnCount
         self.gridItemRow = gridItemRow

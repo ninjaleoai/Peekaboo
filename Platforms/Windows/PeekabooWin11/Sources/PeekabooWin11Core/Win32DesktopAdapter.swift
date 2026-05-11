@@ -3243,6 +3243,18 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 textCaretBoundingRectangleCount: Self.optionalInt(
                     hasValue: nativeElement.hasTextCaretBoundingRectangleCount,
                     value: nativeElement.textCaretBoundingRectangleCount),
+                textEditHasActiveComposition: Self.optionalBool(
+                    hasValue: nativeElement.hasTextEditActiveComposition,
+                    value: nativeElement.textEditHasActiveComposition),
+                textEditActiveCompositionBoundingRectangleCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTextEditActiveCompositionBoundingRectangleCount,
+                    value: nativeElement.textEditActiveCompositionBoundingRectangleCount),
+                textEditHasConversionTarget: Self.optionalBool(
+                    hasValue: nativeElement.hasTextEditConversionTarget,
+                    value: nativeElement.textEditHasConversionTarget),
+                textEditConversionTargetBoundingRectangleCount: Self.optionalInt(
+                    hasValue: nativeElement.hasTextEditConversionTargetBoundingRectangleCount,
+                    value: nativeElement.textEditConversionTargetBoundingRectangleCount),
                 gridRowCount: Self.optionalInt(
                     hasValue: nativeElement.hasGridRowCount,
                     value: nativeElement.gridRowCount),
@@ -3747,6 +3759,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 25) {
             patterns.append(.text2)
+        }
+        if Self.hasPatternBit(mask, 26) {
+            patterns.append(.textEdit)
         }
         if Self.hasPatternBit(mask, 8) {
             patterns.append(.toggle)

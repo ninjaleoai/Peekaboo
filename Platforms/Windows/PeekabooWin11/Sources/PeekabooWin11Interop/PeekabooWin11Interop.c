@@ -418,6 +418,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_DragPatternId, 1ULL << 23, snapshot);
     PeekabooWin11MarkPattern(element, UIA_DropTargetPatternId, 1ULL << 24, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TextPattern2Id, 1ULL << 25, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TextEditPatternId, 1ULL << 26, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -966,8 +967,11 @@ static void PeekabooWin11CopyElementTextPattern2(
     }
     if (PeekabooWin11Succeeded(caretResult) && caretRange != NULL) {
         SAFEARRAY *rectangles = NULL;
+        HRESULT rectanglesResult = IUIAutomationTextRange_GetBoundingRectangles(
+            caretRange,
+            &rectangles);
         PeekabooWin11CopyTextRangeBoundingRectangleCount(
-            IUIAutomationTextRange_GetBoundingRectangles(caretRange, &rectangles),
+            rectanglesResult,
             rectangles,
             &snapshot->hasTextCaretBoundingRectangleCount,
             &snapshot->textCaretBoundingRectangleCount);
@@ -975,6 +979,87 @@ static void PeekabooWin11CopyElementTextPattern2(
     }
 
     IUIAutomationTextPattern2_Release(textPattern);
+}
+
+static void PeekabooWin11CopyTextEditRangeMetadata(
+    HRESULT rangeResult,
+    IUIAutomationTextRange *range,
+    int32_t *hasRange,
+    int32_t *hasRangeValue,
+    int32_t *hasBoundingRectangleCount,
+    int32_t *boundingRectangleCount)
+{
+    if (PeekabooWin11Succeeded(rangeResult)) {
+        *hasRange = 1;
+        *hasRangeValue = range != NULL ? 1 : 0;
+    }
+
+    if (PeekabooWin11Succeeded(rangeResult) && range != NULL) {
+        SAFEARRAY *rectangles = NULL;
+        HRESULT rectanglesResult = IUIAutomationTextRange_GetBoundingRectangles(
+            range,
+            &rectangles);
+        PeekabooWin11CopyTextRangeBoundingRectangleCount(
+            rectanglesResult,
+            rectangles,
+            hasBoundingRectangleCount,
+            boundingRectangleCount);
+    }
+
+    if (range != NULL) {
+        IUIAutomationTextRange_Release(range);
+    }
+}
+
+static void PeekabooWin11CopyElementTextEditPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TextEditPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTextEditPattern *textEditPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTextEditPattern,
+        (void **)&textEditPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || textEditPattern == NULL) {
+        return;
+    }
+
+    IUIAutomationTextRange *activeCompositionRange = NULL;
+    HRESULT activeCompositionResult = IUIAutomationTextEditPattern_GetActiveComposition(
+        textEditPattern,
+        &activeCompositionRange);
+    PeekabooWin11CopyTextEditRangeMetadata(
+        activeCompositionResult,
+        activeCompositionRange,
+        &snapshot->hasTextEditActiveComposition,
+        &snapshot->textEditHasActiveComposition,
+        &snapshot->hasTextEditActiveCompositionBoundingRectangleCount,
+        &snapshot->textEditActiveCompositionBoundingRectangleCount);
+
+    IUIAutomationTextRange *conversionTargetRange = NULL;
+    HRESULT conversionTargetResult = IUIAutomationTextEditPattern_GetConversionTarget(
+        textEditPattern,
+        &conversionTargetRange);
+    PeekabooWin11CopyTextEditRangeMetadata(
+        conversionTargetResult,
+        conversionTargetRange,
+        &snapshot->hasTextEditConversionTarget,
+        &snapshot->textEditHasConversionTarget,
+        &snapshot->hasTextEditConversionTargetBoundingRectangleCount,
+        &snapshot->textEditConversionTargetBoundingRectangleCount);
+
+    IUIAutomationTextEditPattern_Release(textEditPattern);
 }
 
 static void PeekabooWin11CopyElementGridPattern(
@@ -2844,6 +2929,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementDockPattern(element, snapshot);
     PeekabooWin11CopyElementTextPattern(element, snapshot);
     PeekabooWin11CopyElementTextPattern2(element, snapshot);
+    PeekabooWin11CopyElementTextEditPattern(element, snapshot);
     PeekabooWin11CopyElementGridPattern(element, snapshot);
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
     PeekabooWin11CopyElementTablePattern(element, snapshot);

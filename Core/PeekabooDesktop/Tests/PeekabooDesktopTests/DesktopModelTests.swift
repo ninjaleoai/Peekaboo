@@ -291,6 +291,7 @@ final class DesktopModelTests: XCTestCase {
                 .selectionItem,
                 .text,
                 .text2,
+                .textEdit,
                 .toggle,
                 .legacyIAccessible,
                 .grid,
@@ -366,6 +367,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.supportedTextSelection, .single)
         XCTAssertEqual(snapshot.elements.first?.textCaretIsActive, true)
         XCTAssertEqual(snapshot.elements.first?.textCaretBoundingRectangleCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.textEditHasActiveComposition, true)
+        XCTAssertEqual(snapshot.elements.first?.textEditActiveCompositionBoundingRectangleCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.textEditHasConversionTarget, false)
+        XCTAssertNil(snapshot.elements.first?.textEditConversionTargetBoundingRectangleCount)
         XCTAssertEqual(snapshot.elements.first?.gridRowCount, 3)
         XCTAssertEqual(snapshot.elements.first?.gridColumnCount, 2)
         XCTAssertEqual(snapshot.elements.first?.gridItemRow, 1)
@@ -906,6 +911,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"dock\""))
         XCTAssertTrue(result.stdout.contains("\"selection\""))
         XCTAssertTrue(result.stdout.contains("\"text2\""))
+        XCTAssertTrue(result.stdout.contains("\"textEdit\""))
         XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
         XCTAssertTrue(result.stdout.contains("\"annotation\""))
         XCTAssertTrue(result.stdout.contains("\"styles\""))
@@ -946,6 +952,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"supportedTextSelection\" : \"single\""))
         XCTAssertTrue(result.stdout.contains("\"textCaretIsActive\" : true"))
         XCTAssertTrue(result.stdout.contains("\"textCaretBoundingRectangleCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"textEditHasActiveComposition\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"textEditActiveCompositionBoundingRectangleCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"textEditHasConversionTarget\" : false"))
         XCTAssertTrue(result.stdout.contains("\"gridRowCount\" : 3"))
         XCTAssertTrue(result.stdout.contains("\"gridColumnCount\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
@@ -3209,6 +3218,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
             .selectionItem,
             .text,
             .text2,
+            .textEdit,
             .toggle,
             .legacyIAccessible,
             .grid,
@@ -3294,6 +3304,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     supportedTextSelection: .single,
                     textCaretIsActive: true,
                     textCaretBoundingRectangleCount: 1,
+                    textEditHasActiveComposition: true,
+                    textEditActiveCompositionBoundingRectangleCount: 1,
+                    textEditHasConversionTarget: false,
                     gridRowCount: 3,
                     gridColumnCount: 2,
                     gridItemRow: 1,
