@@ -48,6 +48,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertFalse(actions.contains(.move))
         XCTAssertFalse(actions.contains(.resize))
         XCTAssertFalse(actions.contains(.rotate))
+        XCTAssertFalse(actions.contains(.setDockPosition))
+        XCTAssertFalse(actions.contains(.setCurrentView))
         XCTAssertTrue(actions.contains(.getText))
     }
 
@@ -1948,6 +1950,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsDisabledAutomationSetDockPosition() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-dock-position",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--position",
+            "right",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationSetCurrentView() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1972,6 +1996,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"viewId=4\""))
         XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentView\" : 4"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationSetCurrentView() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-current-view",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--view-id",
+            "4",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetZoom() {
@@ -3880,6 +3926,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -3914,6 +3964,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
@@ -4976,6 +5030,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     .move,
                     .resize,
                     .rotate,
+                    .setDockPosition,
+                    .setCurrentView,
                 ].contains($0)
             }
     }

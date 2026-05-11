@@ -151,6 +151,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   suppression and preflight rejection
 - Transform/Transform2-pattern UI Automation disabled-state action suppression
   and preflight rejection
+- Dock/MultipleView-pattern UI Automation disabled-state action suppression and
+  preflight rejection
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -222,10 +224,10 @@ for Window-pattern controls.
 pattern `WaitForInputIdle` method and reports whether the window became idle
 before the timeout.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
-covers Dock-pattern controls that can be rearranged within a docking
+covers enabled Dock-pattern controls that can be rearranged within a docking
 container.
 `automation set-current-view --index <n> --view-id <view-id>` covers
-MultipleView-pattern controls that expose alternate UI presentations.
+enabled MultipleView-pattern controls that expose alternate UI presentations.
 `automation set-zoom --index <n> --level <percent>` covers Transform2-pattern
 controls that expose zoomable viewports on enabled elements, rejecting known
 out-of-range zoom levels when UIA exposes minimum or maximum zoom metadata.
@@ -725,11 +727,12 @@ present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
 Window pattern is present, setDockPosition is available when the Dock pattern
-is present, setCurrentView is available when the MultipleView pattern is
-present, setZoomLevel is available when the Transform2 pattern is present on an
-enabled element and UIA reports that zoom is supported, zoomByUnit is available
-under the same Transform2 zoom condition, startSynchronizedInput and
-cancelSynchronizedInput are available when the SynchronizedInput pattern is
+is present on an enabled element, setCurrentView is available when the
+MultipleView pattern is present on an enabled element, setZoomLevel is
+available when the Transform2 pattern is present on an enabled element and UIA
+reports that zoom is supported, zoomByUnit is available under the same
+Transform2 zoom condition, startSynchronizedInput and cancelSynchronizedInput
+are available when the SynchronizedInput pattern is
 present, move, resize, and rotate are available when the Transform pattern is
 present on an enabled element and UIA reports the matching capability,
 findItemByProperty is available when the ItemContainer
@@ -793,10 +796,11 @@ handle disappeared when a handle and refreshed bounded snapshot are available.
 `automation wait-window-idle` performs the UIA Window pattern input-idle wait
 with a bounded timeout and reports whether UIA observed the window becoming
 idle before the timeout. `automation set-dock-position`
-performs the UIA Dock pattern action, then verifies the refreshed dock position
-when UIA reports it. `automation set-current-view`
-performs the UIA MultipleView pattern action, then verifies the refreshed
-current view identifier when UIA reports it. `automation set-zoom` performs the
+performs the UIA Dock pattern action after rejecting known disabled elements,
+then verifies the refreshed dock position when UIA reports it.
+`automation set-current-view` performs the UIA MultipleView pattern action after
+rejecting known disabled elements, then verifies the refreshed current view
+identifier when UIA reports it. `automation set-zoom` performs the
 UIA Transform2 pattern zoom action after rejecting known disabled elements and
 known out-of-range requested levels when UIA exposes zoom limits, then verifies
 the refreshed zoom level when UIA reports it. `automation zoom-by-unit` performs

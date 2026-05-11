@@ -1337,6 +1337,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support dock")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
 
         let nativeResult = PeekabooWin11SetUIAutomationElementDockPosition(
             Self.nativeUIAutomationScope(scope),
@@ -1395,6 +1399,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         guard element.supportedPatterns.contains(.multipleView) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support multiple view")
+        }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
 
         let nativeResult = PeekabooWin11SetUIAutomationElementCurrentView(
@@ -4442,10 +4450,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             actions.append(.closeWindow)
             actions.append(.waitForWindowInputIdle)
         }
-        if supportedPatterns.contains(.dock) {
+        if supportedPatterns.contains(.dock), isEnabled != false {
             actions.append(.setDockPosition)
         }
-        if supportedPatterns.contains(.multipleView) {
+        if supportedPatterns.contains(.multipleView), isEnabled != false {
             actions.append(.setCurrentView)
         }
         if supportedPatterns.contains(.transform2), canZoom == true, isEnabled != false {
