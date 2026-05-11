@@ -145,15 +145,17 @@ Set providers via `PEEKABOO_AI_PROVIDERS` or `peekaboo config add`.
 
 ## Windows 11 fork status
 
-This fork includes an initial native Windows 11 refactor slice in
+This fork includes a native Windows 11 refactor track in
 [`Platforms/Windows/PeekabooWin11`](Platforms/Windows/PeekabooWin11). It is a
 standalone Swift package with a Win32-backed adapter for display/window/app
-enumeration and BMP screen capture, built on the shared desktop model seam in
-[`Core/PeekabooDesktop`](Core/PeekabooDesktop). `PeekabooAutomationKit` now maps
-its existing macOS service models into that shared seam and exposes an async
-macOS desktop adapter for the same contract. See
-[`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the seam and
-next integration steps.
+enumeration, BMP screen/window capture, cursor and keyboard input, and bounded
+UI Automation snapshots/actions. The package is built on the shared desktop
+model and command-runner seam in
+[`Core/PeekabooDesktop`](Core/PeekabooDesktop), while `PeekabooAutomationKit`
+maps the existing macOS service models into the same neutral contract without
+changing macOS runtime behavior. See
+[`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the current
+Windows command surface, build steps, and remaining integration notes.
 
 ## Development basics
 - Requirements: macOS 15+, Xcode 16+/Swift 6.2. Node 22+ only if you run the pnpm docs/build helper scripts (core CLI/app/MCP are Swift-only).
