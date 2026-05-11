@@ -1578,6 +1578,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             Int32(elementIndex),
             Self.nativeNavigationDirection(direction))
         try Self.validateUIAutomationNavigateCustom(nativeResult)
+        let resultElement = Self.uiAutomationResultElement(from: nativeResult)
 
         return DesktopUIAutomationActionResult(
             nativeBackend: snapshot.nativeBackend,
@@ -1588,7 +1589,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "direction=\(direction.rawValue)",
-            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+            resultElement: resultElement,
+            valueWasVerified: resultElement.map { _ in true })
     }
 
     public func getUIAutomationSpreadsheetItemByName(

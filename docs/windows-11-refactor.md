@@ -96,7 +96,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   against a bounded snapshot element index
 - CustomNavigation-pattern UI Automation navigate actions against a bounded
   snapshot element index, returning the navigated UIA element in
-  `resultElement`
+  `resultElement` and marking the result verified when UIA returns a target
+  element for the requested direction
 - ItemContainer-pattern UI Automation find-item actions against a bounded
   snapshot element index, returning the matching item UIA element in
   `resultElement`
@@ -204,7 +205,9 @@ to stop listening.
 `automation navigate-custom --index <n> --direction
 <parent|next-sibling|previous-sibling|first-child|last-child>` covers
 CustomNavigation-pattern controls that expose a custom logical navigation
-order, and returns the target element snapshot in the action `resultElement`.
+order, returns the target element snapshot in the action `resultElement`, and
+marks the result verified when UIA returns a target element for the requested
+direction.
 `automation find-item --index <n> --property <name|automation-id> --value
 <value>` covers ItemContainer-pattern controls that can search by Name or
 AutomationId, and returns the matching item element snapshot in the action
@@ -751,6 +754,9 @@ listening-state property in the bounded snapshot.
 from the start of the container and returns the matching item in
 `resultElement`; the action is marked verified when that element reports a
 matching Name or AutomationId property.
+`automation navigate-custom --index <n>` performs the UIA CustomNavigation
+pattern's `Navigate` method and marks the action verified when UIA returns a
+target element for the requested direction.
 `automation get-spreadsheet-item --index <n> --name <cell-name>` performs the
 UIA Spreadsheet pattern's named cell lookup and marks the action verified when
 the returned cell reports the requested name.

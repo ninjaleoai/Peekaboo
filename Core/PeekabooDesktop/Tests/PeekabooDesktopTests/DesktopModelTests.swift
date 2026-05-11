@@ -573,6 +573,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(navigateCustom.value, "direction=next-sibling")
         XCTAssertEqual(navigateCustom.resultElement?.name, "Desktop")
         XCTAssertNil(navigateCustom.postActionElement)
+        XCTAssertEqual(navigateCustom.valueWasVerified, true)
         XCTAssertEqual(getSpreadsheetItem.action, .getSpreadsheetItem)
         XCTAssertEqual(getSpreadsheetItem.elementIndex, 0)
         XCTAssertEqual(getSpreadsheetItem.value, "name=Revenue")
@@ -1869,6 +1870,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"direction=next-sibling\""))
         XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationGetSpreadsheetItem() {
@@ -3524,7 +3526,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "direction=\(direction.rawValue)",
-            resultElement: element)
+            resultElement: element,
+            valueWasVerified: true)
     }
 
     func getUIAutomationSpreadsheetItemByName(
