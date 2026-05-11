@@ -13,6 +13,15 @@ final class Win11ModelTests: XCTestCase {
     }
 
     func testPlatformInfoAdvertisesWin32Windows11() {
+        let unsupportedWindowsCapabilities: Set<DesktopPlatformCapability> = [
+            .captureScreenPNG,
+            .captureAreaPNG,
+            .captureWindowPNG,
+            .captureFrontmostPNG,
+        ]
+        let expectedCapabilities = DesktopPlatformCapability.allCases.filter {
+            !unsupportedWindowsCapabilities.contains($0)
+        }
         let info: Win11PlatformInfo
         #if os(Windows)
         info = Win32DesktopAdapter().platformInfo()
@@ -21,105 +30,13 @@ final class Win11ModelTests: XCTestCase {
             name: "Windows",
             minimumSystemVersion: "Windows 11",
             nativeBackend: "Win32",
-            capabilities: [
-                .enumerateApplications,
-                .enumerateDisplays,
-                .enumerateWindows,
-                .captureScreenBMP,
-                .captureAreaBMP,
-                .captureWindowBMP,
-                .captureFrontmostBMP,
-                .readCursorPosition,
-                .moveCursor,
-                .clickMouse,
-                .scrollMouse,
-                .dragMouse,
-                .sendHotkey,
-                .typeText,
-                .inspectUIAutomation,
-                .focusUIAutomationElement,
-                .invokeUIAutomation,
-                .performUIAutomationLegacyDefaultAction,
-                .setUIAutomationLegacyValue,
-                .setUIAutomationValue,
-                .getUIAutomationText,
-                .toggleUIAutomation,
-                .expandCollapseUIAutomation,
-                .selectUIAutomationItem,
-                .addUIAutomationItemToSelection,
-                .removeUIAutomationItemFromSelection,
-                .setUIAutomationRangeValue,
-                .scrollUIAutomationElement,
-                .setUIAutomationScrollPercent,
-                .setUIAutomationWindowVisualState,
-                .closeUIAutomationWindow,
-                .waitForUIAutomationWindowInputIdle,
-                .setUIAutomationDockPosition,
-                .setUIAutomationCurrentView,
-                .setUIAutomationZoomLevel,
-                .zoomUIAutomationElementByUnit,
-                .startUIAutomationSynchronizedInput,
-                .cancelUIAutomationSynchronizedInput,
-                .navigateUIAutomationCustom,
-                .findUIAutomationItemByProperty,
-                .getUIAutomationSpreadsheetItemByName,
-                .getUIAutomationGridItem,
-                .moveUIAutomationElement,
-                .resizeUIAutomationElement,
-                .rotateUIAutomationElement,
-                .realizeUIAutomationVirtualizedItem,
-                .scrollUIAutomationItemIntoView,
-            ])
+            capabilities: expectedCapabilities)
         #endif
 
         XCTAssertEqual(info.minimumSystemVersion, "Windows 11")
         XCTAssertEqual(info.nativeBackend, "Win32")
-        XCTAssertTrue(info.capabilities.contains(.enumerateWindows))
-        XCTAssertTrue(info.capabilities.contains(.captureScreenBMP))
-        XCTAssertTrue(info.capabilities.contains(.captureAreaBMP))
-        XCTAssertTrue(info.capabilities.contains(.captureWindowBMP))
-        XCTAssertTrue(info.capabilities.contains(.captureFrontmostBMP))
-        XCTAssertTrue(info.capabilities.contains(.readCursorPosition))
-        XCTAssertTrue(info.capabilities.contains(.moveCursor))
-        XCTAssertTrue(info.capabilities.contains(.clickMouse))
-        XCTAssertTrue(info.capabilities.contains(.scrollMouse))
-        XCTAssertTrue(info.capabilities.contains(.dragMouse))
-        XCTAssertTrue(info.capabilities.contains(.sendHotkey))
-        XCTAssertTrue(info.capabilities.contains(.typeText))
-        XCTAssertTrue(info.capabilities.contains(.inspectUIAutomation))
-        XCTAssertTrue(info.capabilities.contains(.focusUIAutomationElement))
-        XCTAssertTrue(info.capabilities.contains(.invokeUIAutomation))
-        XCTAssertTrue(info.capabilities.contains(.performUIAutomationLegacyDefaultAction))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationLegacyValue))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
-        XCTAssertTrue(info.capabilities.contains(.getUIAutomationText))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
-        XCTAssertTrue(info.capabilities.contains(.scrollUIAutomationElement))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationWindowVisualState))
-        XCTAssertTrue(info.capabilities.contains(.closeUIAutomationWindow))
-        XCTAssertTrue(info.capabilities.contains(.waitForUIAutomationWindowInputIdle))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationDockPosition))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationCurrentView))
-        XCTAssertTrue(info.capabilities.contains(.setUIAutomationZoomLevel))
-        XCTAssertTrue(info.capabilities.contains(.zoomUIAutomationElementByUnit))
-        XCTAssertTrue(info.capabilities.contains(.startUIAutomationSynchronizedInput))
-        XCTAssertTrue(info.capabilities.contains(.cancelUIAutomationSynchronizedInput))
-        XCTAssertTrue(info.capabilities.contains(.navigateUIAutomationCustom))
-        XCTAssertTrue(info.capabilities.contains(.findUIAutomationItemByProperty))
-        XCTAssertTrue(info.capabilities.contains(.getUIAutomationSpreadsheetItemByName))
-        XCTAssertTrue(info.capabilities.contains(.getUIAutomationGridItem))
-        XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
-        XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
-        XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
-        XCTAssertTrue(info.capabilities.contains(.realizeUIAutomationVirtualizedItem))
-        XCTAssertTrue(info.capabilities.contains(.scrollUIAutomationItemIntoView))
-        XCTAssertTrue(info.capabilities.contains(.toggleUIAutomation))
-        XCTAssertTrue(info.capabilities.contains(.expandCollapseUIAutomation))
-        XCTAssertTrue(info.capabilities.contains(.selectUIAutomationItem))
-        XCTAssertTrue(info.capabilities.contains(.addUIAutomationItemToSelection))
-        XCTAssertTrue(info.capabilities.contains(.removeUIAutomationItemFromSelection))
-        XCTAssertFalse(info.capabilities.contains(.captureScreenPNG))
+        XCTAssertEqual(info.capabilities.count, expectedCapabilities.count)
+        XCTAssertEqual(Set(info.capabilities), Set(expectedCapabilities))
     }
 
     func testUnsupportedAdapterFailsOffWindows() throws {
