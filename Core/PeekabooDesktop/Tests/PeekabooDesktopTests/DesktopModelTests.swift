@@ -297,6 +297,8 @@ final class DesktopModelTests: XCTestCase {
                 .legacyIAccessible,
                 .grid,
                 .gridItem,
+                .spreadsheet,
+                .spreadsheetItem,
                 .table,
                 .tableItem,
                 .transform,
@@ -381,6 +383,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.gridItemColumn, 0)
         XCTAssertEqual(snapshot.elements.first?.gridItemRowSpan, 1)
         XCTAssertEqual(snapshot.elements.first?.gridItemColumnSpan, 2)
+        XCTAssertEqual(snapshot.elements.first?.spreadsheetItemFormula, "=SUM(A1:A3)")
+        XCTAssertEqual(snapshot.elements.first?.spreadsheetItemAnnotationObjectCount, 1)
+        XCTAssertEqual(snapshot.elements.first?.spreadsheetItemAnnotationTypeCount, 1)
         XCTAssertEqual(snapshot.elements.first?.tableRowOrColumnMajor, .rowMajor)
         XCTAssertEqual(snapshot.elements.first?.tableRowHeaderCount, 1)
         XCTAssertEqual(snapshot.elements.first?.tableColumnHeaderCount, 2)
@@ -922,6 +927,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"styles\""))
         XCTAssertTrue(result.stdout.contains("\"drag\""))
         XCTAssertTrue(result.stdout.contains("\"dropTarget\""))
+        XCTAssertTrue(result.stdout.contains("\"spreadsheet\""))
+        XCTAssertTrue(result.stdout.contains("\"spreadsheetItem\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -968,6 +975,9 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"gridItemRow\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumn\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"gridItemColumnSpan\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"spreadsheetItemFormula\" : \"=SUM(A1:A3)\""))
+        XCTAssertTrue(result.stdout.contains("\"spreadsheetItemAnnotationObjectCount\" : 1"))
+        XCTAssertTrue(result.stdout.contains("\"spreadsheetItemAnnotationTypeCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"tableRowOrColumnMajor\" : \"rowMajor\""))
         XCTAssertTrue(result.stdout.contains("\"tableRowHeaderCount\" : 1"))
         XCTAssertTrue(result.stdout.contains("\"tableColumnHeaderCount\" : 2"))
@@ -3232,6 +3242,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
             .legacyIAccessible,
             .grid,
             .gridItem,
+            .spreadsheet,
+            .spreadsheetItem,
             .table,
             .tableItem,
             .transform,
@@ -3325,6 +3337,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     gridItemColumn: 0,
                     gridItemRowSpan: 1,
                     gridItemColumnSpan: 2,
+                    spreadsheetItemFormula: "=SUM(A1:A3)",
+                    spreadsheetItemAnnotationObjectCount: 1,
+                    spreadsheetItemAnnotationTypeCount: 1,
                     tableRowOrColumnMajor: .rowMajor,
                     tableRowHeaderCount: 1,
                     tableColumnHeaderCount: 2,

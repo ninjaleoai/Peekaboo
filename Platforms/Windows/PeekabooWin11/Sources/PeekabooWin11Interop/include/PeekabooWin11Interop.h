@@ -128,6 +128,11 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t gridItemRowSpan;
     int32_t hasGridItemColumnSpan;
     int32_t gridItemColumnSpan;
+    int32_t hasSpreadsheetItemFormula;
+    int32_t hasSpreadsheetItemAnnotationObjectCount;
+    int32_t spreadsheetItemAnnotationObjectCount;
+    int32_t hasSpreadsheetItemAnnotationTypeCount;
+    int32_t spreadsheetItemAnnotationTypeCount;
     int32_t hasTableRowOrColumnMajor;
     int32_t tableRowOrColumnMajor;
     int32_t hasTableRowHeaderCount;
@@ -218,6 +223,7 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char selectedText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char visibleText[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char textChildContainerName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char spreadsheetItemFormula[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char multipleViewCurrentViewName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationTypeName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char annotationAuthor[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -492,6 +498,9 @@ const char *PeekabooWin11UIAutomationElementVisibleText(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementTextChildContainerName(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementSpreadsheetItemFormula(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(

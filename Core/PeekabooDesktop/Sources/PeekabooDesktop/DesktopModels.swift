@@ -361,6 +361,8 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case legacyIAccessible
     case grid
     case gridItem
+    case spreadsheet
+    case spreadsheetItem
     case table
     case tableItem
     case transform
@@ -529,6 +531,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let gridItemColumn: Int?
     public let gridItemRowSpan: Int?
     public let gridItemColumnSpan: Int?
+    public let spreadsheetItemFormula: String?
+    public let spreadsheetItemAnnotationObjectCount: Int?
+    public let spreadsheetItemAnnotationTypeCount: Int?
     public let tableRowOrColumnMajor: DesktopUIAutomationRowOrColumnMajor?
     public let tableRowHeaderCount: Int?
     public let tableColumnHeaderCount: Int?
@@ -647,6 +652,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         gridItemColumn: Int? = nil,
         gridItemRowSpan: Int? = nil,
         gridItemColumnSpan: Int? = nil,
+        spreadsheetItemFormula: String? = nil,
+        spreadsheetItemAnnotationObjectCount: Int? = nil,
+        spreadsheetItemAnnotationTypeCount: Int? = nil,
         tableRowOrColumnMajor: DesktopUIAutomationRowOrColumnMajor? = nil,
         tableRowHeaderCount: Int? = nil,
         tableColumnHeaderCount: Int? = nil,
@@ -764,6 +772,9 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.gridItemColumn = gridItemColumn
         self.gridItemRowSpan = gridItemRowSpan
         self.gridItemColumnSpan = gridItemColumnSpan
+        self.spreadsheetItemFormula = spreadsheetItemFormula
+        self.spreadsheetItemAnnotationObjectCount = spreadsheetItemAnnotationObjectCount
+        self.spreadsheetItemAnnotationTypeCount = spreadsheetItemAnnotationTypeCount
         self.tableRowOrColumnMajor = tableRowOrColumnMajor
         self.tableRowHeaderCount = tableRowHeaderCount
         self.tableColumnHeaderCount = tableColumnHeaderCount

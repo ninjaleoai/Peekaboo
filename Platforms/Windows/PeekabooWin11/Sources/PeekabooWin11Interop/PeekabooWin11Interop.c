@@ -420,6 +420,8 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_TextPattern2Id, 1ULL << 25, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TextEditPatternId, 1ULL << 26, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TextChildPatternId, 1ULL << 27, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_SpreadsheetPatternId, 1ULL << 28, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_SpreadsheetItemPatternId, 1ULL << 29, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1281,6 +1283,70 @@ static void PeekabooWin11CopySafeArrayCount(
     if (values != NULL) {
         SafeArrayDestroy(values);
     }
+}
+
+static void PeekabooWin11CopyElementSpreadsheetItemPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_SpreadsheetItemPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationSpreadsheetItemPattern *spreadsheetItemPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationSpreadsheetItemPattern,
+        (void **)&spreadsheetItemPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || spreadsheetItemPattern == NULL) {
+        return;
+    }
+
+    BSTR formula = NULL;
+    HRESULT formulaResult = IUIAutomationSpreadsheetItemPattern_get_CurrentFormula(
+        spreadsheetItemPattern,
+        &formula);
+    if (PeekabooWin11Succeeded(formulaResult)) {
+        snapshot->hasSpreadsheetItemFormula = 1;
+        PeekabooWin11CopyBSTR(
+            formula,
+            snapshot->spreadsheetItemFormula,
+            PEEKABOO_WIN11_UIA_TEXT_CAPACITY);
+    }
+    if (formula != NULL) {
+        SysFreeString(formula);
+    }
+
+    IUIAutomationElementArray *annotationObjects = NULL;
+    HRESULT annotationObjectsResult =
+        IUIAutomationSpreadsheetItemPattern_GetCurrentAnnotationObjects(
+            spreadsheetItemPattern,
+            &annotationObjects);
+    PeekabooWin11CopyElementArrayCount(
+        annotationObjectsResult,
+        annotationObjects,
+        &snapshot->hasSpreadsheetItemAnnotationObjectCount,
+        &snapshot->spreadsheetItemAnnotationObjectCount);
+
+    SAFEARRAY *annotationTypes = NULL;
+    HRESULT annotationTypesResult =
+        IUIAutomationSpreadsheetItemPattern_GetCurrentAnnotationTypes(
+            spreadsheetItemPattern,
+            &annotationTypes);
+    PeekabooWin11CopySafeArrayCount(
+        annotationTypesResult,
+        annotationTypes,
+        &snapshot->hasSpreadsheetItemAnnotationTypeCount,
+        &snapshot->spreadsheetItemAnnotationTypeCount);
+
+    IUIAutomationSpreadsheetItemPattern_Release(spreadsheetItemPattern);
 }
 
 static void PeekabooWin11CopyElementTablePattern(
@@ -3004,6 +3070,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTextChildPattern(element, snapshot);
     PeekabooWin11CopyElementGridPattern(element, snapshot);
     PeekabooWin11CopyElementGridItemPattern(element, snapshot);
+    PeekabooWin11CopyElementSpreadsheetItemPattern(element, snapshot);
     PeekabooWin11CopyElementTablePattern(element, snapshot);
     PeekabooWin11CopyElementTableItemPattern(element, snapshot);
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
@@ -4569,6 +4636,12 @@ const char *PeekabooWin11UIAutomationElementTextChildContainerName(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->textChildContainerName;
+}
+
+const char *PeekabooWin11UIAutomationElementSpreadsheetItemFormula(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->spreadsheetItemFormula;
 }
 
 const char *PeekabooWin11UIAutomationElementMultipleViewCurrentViewName(

@@ -65,6 +65,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshots
 - Grid-pattern and GridItem-pattern UI Automation row, column, and span
   metadata in bounded snapshots
+- Spreadsheet-pattern and SpreadsheetItem-pattern UI Automation formula and
+  annotation count metadata in bounded snapshots
 - Table-pattern and TableItem-pattern UI Automation traversal direction and
   header count metadata in bounded snapshots
 - Selection-pattern UI Automation multi-select, required-selection, and
@@ -539,9 +541,10 @@ off-screen, and clickable-point status. When UIA exposes a clickable point,
 snapshots include its physical screen coordinates. Elements also report common
 supported UIA patterns, including invoke, value, range value, scroll,
 expand/collapse, window, selection item, text, text2, textEdit, textChild,
-toggle, grid, grid item, table, table item, transform, transform2, multiple view,
-annotation, styles, drag, drop target, virtualized item, scroll item, and
-legacy IAccessible. When an element supports the UIA Value pattern, snapshots also
+toggle, grid, grid item, spreadsheet, spreadsheet item, table, table item,
+transform, transform2, multiple view, annotation, styles, drag, drop target,
+virtualized item, scroll item, and legacy IAccessible. When an element supports
+the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
 element supports the
 UIA RangeValue pattern, snapshots include the current numeric value, minimum,
@@ -570,6 +573,9 @@ keyboard shortcut, default action, role ID, and state ID when UIA reports them.
 When an element supports the UIA Grid pattern, snapshots include row and
 column counts; GridItem elements include row, column, row span, and column
 span when UIA reports them.
+When an element supports the UIA SpreadsheetItem pattern, snapshots include the
+cell formula plus annotation object and annotation type counts when UIA reports
+them.
 When an element supports the UIA Table pattern, snapshots include the primary
 row-or-column traversal direction plus row and column header counts when UIA
 reports them; TableItem elements include row and column header counts for the

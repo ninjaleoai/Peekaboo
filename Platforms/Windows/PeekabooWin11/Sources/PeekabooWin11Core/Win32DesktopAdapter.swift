@@ -3284,6 +3284,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 gridItemColumnSpan: Self.optionalInt(
                     hasValue: nativeElement.hasGridItemColumnSpan,
                     value: nativeElement.gridItemColumnSpan),
+                spreadsheetItemFormula: nativeElement.hasSpreadsheetItemFormula != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementSpreadsheetItemFormula(
+                            &nativeElement))
+                    : nil,
+                spreadsheetItemAnnotationObjectCount: Self.optionalInt(
+                    hasValue: nativeElement.hasSpreadsheetItemAnnotationObjectCount,
+                    value: nativeElement.spreadsheetItemAnnotationObjectCount),
+                spreadsheetItemAnnotationTypeCount: Self.optionalInt(
+                    hasValue: nativeElement.hasSpreadsheetItemAnnotationTypeCount,
+                    value: nativeElement.spreadsheetItemAnnotationTypeCount),
                 tableRowOrColumnMajor: Self.uiAutomationRowOrColumnMajor(
                     hasValue: nativeElement.hasTableRowOrColumnMajor,
                     value: nativeElement.tableRowOrColumnMajor),
@@ -3788,6 +3799,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 11) {
             patterns.append(.gridItem)
+        }
+        if Self.hasPatternBit(mask, 28) {
+            patterns.append(.spreadsheet)
+        }
+        if Self.hasPatternBit(mask, 29) {
+            patterns.append(.spreadsheetItem)
         }
         if Self.hasPatternBit(mask, 16) {
             patterns.append(.table)
