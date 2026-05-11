@@ -149,6 +149,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   unsupported selection-container states
 - Legacy IAccessible-pattern UI Automation default-action disabled-state
   suppression and preflight rejection
+- Transform/Transform2-pattern UI Automation disabled-state action suppression
+  and preflight rejection
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -225,11 +227,11 @@ container.
 `automation set-current-view --index <n> --view-id <view-id>` covers
 MultipleView-pattern controls that expose alternate UI presentations.
 `automation set-zoom --index <n> --level <percent>` covers Transform2-pattern
-controls that expose zoomable viewports, rejecting known out-of-range zoom
-levels when UIA exposes minimum or maximum zoom metadata.
+controls that expose zoomable viewports on enabled elements, rejecting known
+out-of-range zoom levels when UIA exposes minimum or maximum zoom metadata.
 `automation zoom-by-unit --index <n> --unit
 <large-increment|small-increment|large-decrement|small-decrement|none>` covers
-Transform2-pattern controls that expose unit-based viewport zoom.
+enabled Transform2-pattern controls that expose unit-based viewport zoom.
 `automation start-synchronized-input --index <n> --input-type <input-type>`
 starts SynchronizedInput-pattern listening for one keyboard or mouse input
 type. `automation cancel-synchronized-input --index <n>` asks the same pattern
@@ -272,9 +274,9 @@ When an element supports the UIA Transform pattern, snapshots include whether
 UIA reports that it can be moved, resized, or rotated.
 `automation move --index <n> --point <x,y>` and
 `automation resize --index <n> --size <width,height>` cover Transform-pattern
-movement and resizing for controls that advertise those capabilities.
+movement and resizing for enabled controls that advertise those capabilities.
 `automation rotate --index <n> --degrees <number>` covers Transform-pattern
-rotation for controls where UIA reports `canRotate`.
+rotation for enabled controls where UIA reports `canRotate`.
 
 The production adapter is compiled only behind `#if os(Windows)` and imports
 `WinSDK`. Non-Windows builds get `UnsupportedWin11DesktopAdapter`, which keeps
@@ -717,18 +719,20 @@ IAccessible pattern exposes legacy value metadata on an enabled element,
 setValue is available only when the Value pattern is present and the element is
 enabled and known writable, getText is available when the Text pattern is
 present, setRangeValue is available only when the RangeValue pattern is present
-on an enabled element and known writable, scrollByAmount and setScrollPercent are available when the Scroll pattern is
+on an enabled element and known writable, scrollByAmount and setScrollPercent
+are available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
 Window pattern is present, setDockPosition is available when the Dock pattern
 is present, setCurrentView is available when the MultipleView pattern is
-present, setZoomLevel is available when the Transform2 pattern is present and
-UIA reports that zoom is supported, zoomByUnit is available under the same
-Transform2 zoom condition, startSynchronizedInput and cancelSynchronizedInput
-are available when the SynchronizedInput pattern is present, move, resize, and
-rotate are available when the Transform pattern is present and UIA reports the
-matching capability, findItemByProperty is available when the ItemContainer
+present, setZoomLevel is available when the Transform2 pattern is present on an
+enabled element and UIA reports that zoom is supported, zoomByUnit is available
+under the same Transform2 zoom condition, startSynchronizedInput and
+cancelSynchronizedInput are available when the SynchronizedInput pattern is
+present, move, resize, and rotate are available when the Transform pattern is
+present on an enabled element and UIA reports the matching capability,
+findItemByProperty is available when the ItemContainer
 pattern is present, getSpreadsheetItem is available when the Spreadsheet pattern
 is present, getGridItem is available when the Grid pattern is present, realize
 is available when the VirtualizedItem pattern is
@@ -793,12 +797,12 @@ performs the UIA Dock pattern action, then verifies the refreshed dock position
 when UIA reports it. `automation set-current-view`
 performs the UIA MultipleView pattern action, then verifies the refreshed
 current view identifier when UIA reports it. `automation set-zoom` performs the
-UIA Transform2 pattern zoom action after rejecting known out-of-range requested
-levels when UIA exposes zoom limits, then
-verifies the refreshed zoom level when UIA reports it. `automation zoom-by-unit`
-performs the UIA Transform2 unit zoom action, then verifies that the refreshed
-zoom level moved in the requested direction when pre/post zoom levels are
-observable. `automation scroll-into-view` performs the UIA ScrollItem pattern
+UIA Transform2 pattern zoom action after rejecting known disabled elements and
+known out-of-range requested levels when UIA exposes zoom limits, then verifies
+the refreshed zoom level when UIA reports it. `automation zoom-by-unit` performs
+the UIA Transform2 unit zoom action after rejecting known disabled elements, then
+verifies that the refreshed zoom level moved in the requested direction when
+pre/post zoom levels are observable. `automation scroll-into-view` performs the UIA ScrollItem pattern
 action and verifies that the refreshed element is no longer off-screen when UIA
 reports that state. `automation start-synchronized-input` performs the UIA
 SynchronizedInput pattern's `StartListening` method for one requested keyboard
@@ -823,10 +827,10 @@ the resulting grid item in `resultElement`; the action is marked verified when
 that item reports the requested GridItem row and column metadata.
 `automation move --index <n>` and
 `automation resize --index <n>` perform the UIA Transform pattern move and
-resize actions after rejecting known unsupported elements, then verify the
-refreshed bounds when the bounded lookup can observe them.
+resize actions after rejecting known disabled or unsupported elements, then
+verify the refreshed bounds when the bounded lookup can observe them.
 `automation rotate --index <n>` performs the UIA Transform pattern rotate
-action after rejecting known unsupported elements, then returns refreshed
+action after rejecting known disabled or unsupported elements, then returns refreshed
 post-action metadata without claiming value verification because the current
 snapshot model has no rotation angle field. `automation realize --index <n>`
 performs the UIA VirtualizedItem pattern realize action, then reports a

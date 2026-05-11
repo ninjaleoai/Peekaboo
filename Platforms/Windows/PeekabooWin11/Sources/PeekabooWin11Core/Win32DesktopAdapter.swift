@@ -1450,6 +1450,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         guard element.supportedPatterns.contains(.transform2) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support transform2 zoom")
@@ -1518,6 +1522,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         guard element.supportedPatterns.contains(.transform2) else {
             throw Win11DesktopError.invalidArgument(
@@ -1972,6 +1980,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         guard element.supportedPatterns.contains(.transform) else {
             throw Win11DesktopError.invalidArgument(
@@ -4436,7 +4448,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.multipleView) {
             actions.append(.setCurrentView)
         }
-        if supportedPatterns.contains(.transform2), canZoom == true {
+        if supportedPatterns.contains(.transform2), canZoom == true, isEnabled != false {
             actions.append(.setZoomLevel)
             actions.append(.zoomByUnit)
         }
@@ -4456,13 +4468,13 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.grid) {
             actions.append(.getGridItem)
         }
-        if supportedPatterns.contains(.transform), canMove == true {
+        if supportedPatterns.contains(.transform), canMove == true, isEnabled != false {
             actions.append(.move)
         }
-        if supportedPatterns.contains(.transform), canResize == true {
+        if supportedPatterns.contains(.transform), canResize == true, isEnabled != false {
             actions.append(.resize)
         }
-        if supportedPatterns.contains(.transform), canRotate == true {
+        if supportedPatterns.contains(.transform), canRotate == true, isEnabled != false {
             actions.append(.rotate)
         }
         if supportedPatterns.contains(.virtualizedItem) {
