@@ -871,11 +871,18 @@ selected state when UIA reports it.
 
 ## Next Integration Steps
 
-1. Continue expanding the Windows UI Automation action surface and post-action
-   verification only where UIA exposes stable, observable state.
-2. Keep shared `PeekabooDesktop` contract changes validated by the Windows 11
+1. Decide whether Windows window capture should grow beyond region-backed GDI
+   capture into semantic off-screen rendering, and keep any attempt behind a
+   fallback because Windows providers vary in how much they can render on
+   request.
+2. Keep future UI Automation expansion focused on missing patterns with stable
+   observable state, rather than adding unverified actions for every pattern UIA
+   can expose.
+3. Add a Windows packaging and installation story once the standalone Swift
+   package surface is stable enough to consume outside the checkout.
+4. Keep shared `PeekabooDesktop` contract changes validated by the Windows 11
    Platform workflow because the Windows package depends on that shared model
    seam.
-3. Route additional macOS CLI paths through the shared desktop adapter only when
+5. Route additional macOS CLI paths through the shared desktop adapter only when
    the existing macOS output behavior can be preserved and mac-specific
    validation is intentionally in scope.
