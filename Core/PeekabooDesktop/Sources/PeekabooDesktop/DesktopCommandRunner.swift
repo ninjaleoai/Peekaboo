@@ -177,7 +177,7 @@ public enum DesktopCommandRunner {
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
-                    "navigate-custom, get-spreadsheet-item, move, resize, rotate, realize, " +
+                    "navigate-custom, get-spreadsheet-item, get-grid-item, move, resize, rotate, realize, " +
                     "toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
@@ -225,6 +225,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationNavigateCustom(args: args, adapter: adapter, stdout: stdout)
         case "get-spreadsheet-item", "getSpreadsheetItem", "get-spreadsheet-item-by-name":
             try self.runAutomationGetSpreadsheetItem(args: args, adapter: adapter, stdout: stdout)
+        case "get-grid-item", "getGridItem":
+            try self.runAutomationGetGridItem(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -816,6 +818,45 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             name: name)))
+    }
+
+    private static func runAutomationGetGridItem(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation get-grid-item")
+        }
+
+        let rowValue = try self.value(after: "--row", in: args)
+        guard let rowValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --row <row> for automation get-grid-item")
+        }
+
+        let columnValue = try self.value(after: "--column", in: args) ??
+            self.value(after: "--col", in: args)
+        guard let columnValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --column <column> for automation get-grid-item")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.getUIAutomationGridItem(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            row: self.parseUIAutomationGridCoordinate(rowValue, label: "row"),
+            column: self.parseUIAutomationGridCoordinate(columnValue, label: "column"))))
     }
 
     private static func runAutomationCloseWindow(
@@ -1474,6 +1515,14 @@ public enum DesktopCommandRunner {
         return viewId
     }
 
+    private static func parseUIAutomationGridCoordinate(_ value: String, label: String) throws -> Int {
+        guard let coordinate = Int(value), (0...Int(Int32.max)).contains(coordinate) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation grid \(label) must be a non-negative integer")
+        }
+        return coordinate
+    }
+
     private static func parseUIAutomationZoomLevel(_ value: String) throws -> Double {
         guard let zoomLevel = Double(value), zoomLevel.isFinite else {
             throw DesktopAdapterError.invalidArgument("UI Automation zoom level must be a finite number")
@@ -1690,6 +1739,8 @@ public enum DesktopCommandRunner {
             --direction <parent|next-sibling|previous-sibling|first-child|last-child>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation get-spreadsheet-item --index <n> --name <cell-name>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation get-grid-item --index <n> --row <row> --column <column>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

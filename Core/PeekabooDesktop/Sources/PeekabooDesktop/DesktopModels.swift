@@ -43,6 +43,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case cancelUIAutomationSynchronizedInput
     case navigateUIAutomationCustom
     case getUIAutomationSpreadsheetItemByName
+    case getUIAutomationGridItem
     case moveUIAutomationElement
     case resizeUIAutomationElement
     case rotateUIAutomationElement
@@ -409,6 +410,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case cancelSynchronizedInput
     case navigateCustom
     case getSpreadsheetItem
+    case getGridItem
     case move
     case resize
     case rotate

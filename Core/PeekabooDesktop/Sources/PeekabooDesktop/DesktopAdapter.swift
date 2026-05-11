@@ -129,6 +129,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         name: String) throws -> DesktopUIAutomationActionResult
+    func getUIAutomationGridItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        row: Int,
+        column: Int) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -323,6 +330,13 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         name: String) async throws -> DesktopUIAutomationActionResult
+    func getUIAutomationGridItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        row: Int,
+        column: Int) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -740,6 +754,23 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             name: name)
+    }
+
+    public func getUIAutomationGridItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        row: Int,
+        column: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.getUIAutomationGridItem(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            row: row,
+            column: column)
     }
 
     public func moveUIAutomationElement(

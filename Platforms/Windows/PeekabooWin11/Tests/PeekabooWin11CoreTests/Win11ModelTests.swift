@@ -97,6 +97,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.cancelUIAutomationSynchronizedInput))
         XCTAssertTrue(info.capabilities.contains(.navigateUIAutomationCustom))
         XCTAssertTrue(info.capabilities.contains(.getUIAutomationSpreadsheetItemByName))
+        XCTAssertTrue(info.capabilities.contains(.getUIAutomationGridItem))
         XCTAssertTrue(info.capabilities.contains(.moveUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.resizeUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.rotateUIAutomationElement))
@@ -222,6 +223,13 @@ final class Win11ModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             name: "Revenue"))
+        XCTAssertThrowsError(try adapter.getUIAutomationGridItem(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            row: 1,
+            column: 0))
         XCTAssertThrowsError(try adapter.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,

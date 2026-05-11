@@ -51,6 +51,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .cancelUIAutomationSynchronizedInput,
                 .navigateUIAutomationCustom,
                 .getUIAutomationSpreadsheetItemByName,
+                .getUIAutomationGridItem,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
                 .rotateUIAutomationElement,
@@ -1577,6 +1578,71 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             resultElement: Self.uiAutomationResultElement(from: nativeResult))
     }
 
+    public func getUIAutomationGridItem(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        row: Int,
+        column: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let nativeCoordinateRange = 0...Int(Int32.max)
+        guard nativeCoordinateRange.contains(row), nativeCoordinateRange.contains(column) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation grid row and column must be non-negative integers")
+        }
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.grid) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support grid")
+        }
+        if let rowCount = element.gridRowCount, row >= rowCount {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation grid row \(row) is outside the reported row count \(rowCount)")
+        }
+        if let columnCount = element.gridColumnCount, column >= columnCount {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation grid column \(column) is outside the reported column count \(columnCount)")
+        }
+
+        let nativeRow = Int32(row)
+        let nativeColumn = Int32(column)
+        let nativeResult = PeekabooWin11GetUIAutomationGridItem(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            nativeRow,
+            nativeColumn)
+        try Self.validateUIAutomationGetGridItem(nativeResult)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .getGridItem,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "row=\(row),column=\(column)",
+            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+    }
+
     public func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -3053,6 +3119,52 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationGetGridItem(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation get-grid-item failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support grid")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationGridPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationGridPattern.GetItem failed: \(Self.hresultDescription(action.actionResult))")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -3912,6 +4024,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.spreadsheet) {
             actions.append(.getSpreadsheetItem)
+        }
+        if supportedPatterns.contains(.grid) {
+            actions.append(.getGridItem)
         }
         if supportedPatterns.contains(.transform), canMove == true {
             actions.append(.move)
