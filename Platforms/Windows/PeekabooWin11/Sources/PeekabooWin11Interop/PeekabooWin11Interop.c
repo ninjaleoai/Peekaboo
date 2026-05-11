@@ -29,6 +29,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION 18
 #define PEEKABOO_WIN11_UIA_ACTION_SET_LEGACY_VALUE 19
 #define PEEKABOO_WIN11_UIA_ACTION_CLOSE_WINDOW 20
+#define PEEKABOO_WIN11_UIA_ACTION_WAIT_FOR_WINDOW_INPUT_IDLE 21
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1467,6 +1468,51 @@ static void PeekabooWin11CloseWindow(
     IUIAutomationWindowPattern_Release(windowPattern);
 }
 
+static void PeekabooWin11WaitForWindowInputIdle(
+    IUIAutomationElement *element,
+    int32_t timeoutMilliseconds,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_WindowPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationWindowPattern *windowPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationWindowPattern,
+        (void **)&windowPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || windowPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    BOOL didBecomeIdle = FALSE;
+    result->actionResult = (int32_t)IUIAutomationWindowPattern_WaitForInputIdle(
+        windowPattern,
+        timeoutMilliseconds,
+        &didBecomeIdle);
+    if (PeekabooWin11Succeeded((HRESULT)result->actionResult)) {
+        result->hasBoolResult = 1;
+        result->boolResult = didBecomeIdle ? 1 : 0;
+    }
+    IUIAutomationWindowPattern_Release(windowPattern);
+}
+
 static void PeekabooWin11SetElementDockPosition(
     IUIAutomationElement *element,
     int32_t dockPosition,
@@ -2056,6 +2102,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SetElementWindowVisualState(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_CLOSE_WINDOW) {
             PeekabooWin11CloseWindow(element, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_WAIT_FOR_WINDOW_INPUT_IDLE) {
+            PeekabooWin11WaitForWindowInputIdle(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION) {
             PeekabooWin11SetElementDockPosition(element, dockPosition, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
@@ -2541,6 +2589,29 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CloseUIAutomationWindow(
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11WaitForUIAutomationWindowInputIdle(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t timeoutMilliseconds)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_WAIT_FOR_WINDOW_INPUT_IDLE,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        timeoutMilliseconds,
+        0,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPosition(
     int32_t scope,
     int32_t maxDepth,
@@ -2969,6 +3040,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CloseUIAutomationWindow(
     result.maxDepth = maxDepth;
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11WaitForUIAutomationWindowInputIdle(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t timeoutMilliseconds)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 21;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)timeoutMilliseconds;
     result.initializeResult = -2147467263;
     return result;
 }

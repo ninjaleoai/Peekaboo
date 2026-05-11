@@ -34,6 +34,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case setUIAutomationScrollPercent
     case setUIAutomationWindowVisualState
     case closeUIAutomationWindow
+    case waitForUIAutomationWindowInputIdle
     case setUIAutomationDockPosition
     case moveUIAutomationElement
     case resizeUIAutomationElement
@@ -373,6 +374,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case setScrollPercent
     case setWindowVisualState
     case closeWindow
+    case waitForWindowInputIdle
     case setDockPosition
     case move
     case resize

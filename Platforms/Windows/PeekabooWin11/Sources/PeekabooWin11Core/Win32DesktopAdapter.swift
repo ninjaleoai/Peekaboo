@@ -42,6 +42,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
                 .closeUIAutomationWindow,
+                .waitForUIAutomationWindowInputIdle,
                 .setUIAutomationDockPosition,
                 .moveUIAutomationElement,
                 .resizeUIAutomationElement,
@@ -1075,6 +1076,66 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             value: "closed=true",
             postActionElement: postActionElement,
             valueWasVerified: valueWasVerified)
+    }
+
+    public func waitForUIAutomationWindowInputIdle(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        timeoutMilliseconds: Int) throws -> DesktopUIAutomationActionResult
+    {
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+        guard (0...60_000).contains(timeoutMilliseconds) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation timeout milliseconds must be between 0 and 60000")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.window) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support window input idle wait")
+        }
+
+        let nativeResult = PeekabooWin11WaitForUIAutomationWindowInputIdle(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            Int32(timeoutMilliseconds))
+        try Self.validateUIAutomationWaitForWindowInputIdle(nativeResult)
+
+        let didBecomeIdle = nativeResult.boolResult != 0
+        let postActionElement = try? self.refreshedUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .waitForWindowInputIdle,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "timeoutMilliseconds=\(timeoutMilliseconds),idle=\(didBecomeIdle)",
+            postActionElement: postActionElement,
+            valueWasVerified: didBecomeIdle)
     }
 
     public func setUIAutomationElementDockPosition(
@@ -2121,6 +2182,57 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationWaitForWindowInputIdle(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation wait-window-idle failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support window input idle wait")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationWindowPattern query failed: \(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationWindowPattern.WaitForInputIdle failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+        if action.hasBoolResult == 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationWindowPattern.WaitForInputIdle did not return an idle result")
+        }
+    }
+
     private static func validateUIAutomationSetDockPosition(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -2784,6 +2896,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.window) {
             actions.append(.setWindowVisualState)
             actions.append(.closeWindow)
+            actions.append(.waitForWindowInputIdle)
         }
         if supportedPatterns.contains(.dock) {
             actions.append(.setDockPosition)

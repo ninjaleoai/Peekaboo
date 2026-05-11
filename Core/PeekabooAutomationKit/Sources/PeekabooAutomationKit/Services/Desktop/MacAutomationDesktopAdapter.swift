@@ -320,6 +320,17 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation close-window is not implemented by this adapter")
     }
 
+    public func waitForUIAutomationWindowInputIdle(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        timeoutMilliseconds _: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation wait-window-idle is not implemented by this adapter")
+    }
+
     public func moveUIAutomationElement(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

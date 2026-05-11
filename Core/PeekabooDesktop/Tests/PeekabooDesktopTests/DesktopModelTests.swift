@@ -136,6 +136,12 @@ final class DesktopModelTests: XCTestCase {
             maxDepth: 1,
             maxElements: 4,
             elementIndex: 0)
+        let waitWindowIdle = try await bridge.waitForUIAutomationWindowInputIdle(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            timeoutMilliseconds: 250)
         let setDockPosition = try await bridge.setUIAutomationElementDockPosition(
             scope: .root,
             maxDepth: 1,
@@ -272,6 +278,7 @@ final class DesktopModelTests: XCTestCase {
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
+                .waitForWindowInputIdle,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -377,6 +384,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(closeWindow.value, "closed=true")
         XCTAssertNil(closeWindow.postActionElement)
         XCTAssertEqual(closeWindow.valueWasVerified, true)
+        XCTAssertEqual(waitWindowIdle.action, .waitForWindowInputIdle)
+        XCTAssertEqual(waitWindowIdle.elementIndex, 0)
+        XCTAssertEqual(waitWindowIdle.value, "timeoutMilliseconds=250,idle=true")
+        XCTAssertEqual(waitWindowIdle.postActionElement?.name, "Desktop")
+        XCTAssertEqual(waitWindowIdle.valueWasVerified, true)
         XCTAssertEqual(setDockPosition.action, .setDockPosition)
         XCTAssertEqual(setDockPosition.elementIndex, 0)
         XCTAssertEqual(setDockPosition.value, "right")
@@ -777,6 +789,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setScrollPercent\""))
         XCTAssertTrue(result.stdout.contains("\"setWindowVisualState\""))
         XCTAssertTrue(result.stdout.contains("\"closeWindow\""))
+        XCTAssertTrue(result.stdout.contains("\"waitForWindowInputIdle\""))
         XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
@@ -1305,6 +1318,31 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationWaitWindowIdle() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "wait-window-idle",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--timeout-ms",
+            "250",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"waitForWindowInputIdle\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"timeoutMilliseconds=250,idle=true\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationSetDockPosition() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1451,6 +1489,34 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --index <element-index> for automation close-window"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationWaitWindowIdleIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "wait-window-idle",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationWaitWindowIdleTimeout() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "wait-window-idle",
+            "--index",
+            "0",
+            "--timeout-ms",
+            "-1",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation timeout milliseconds must be between 0 and 60000"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionValue() {
@@ -1829,6 +1895,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
         XCTAssertTrue(result.stdout.contains("automation close-window --index"))
+        XCTAssertTrue(result.stdout.contains("automation wait-window-idle --index"))
         XCTAssertTrue(result.stdout.contains("automation set-dock-position --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
@@ -2297,6 +2364,33 @@ private struct StubDesktopAdapter: DesktopAdapter {
             value: "closed=true",
             postActionElement: nil,
             valueWasVerified: element.nativeWindowHandle.map { _ in true })
+    }
+
+    func waitForUIAutomationWindowInputIdle(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        timeoutMilliseconds: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .waitForWindowInputIdle,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "timeoutMilliseconds=\(timeoutMilliseconds),idle=true",
+            postActionElement: element,
+            valueWasVerified: true)
     }
 
     func setUIAutomationElementDockPosition(
@@ -2818,6 +2912,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
+                .waitForWindowInputIdle,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2838,6 +2933,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
+                .waitForWindowInputIdle,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2858,6 +2954,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
+                .waitForWindowInputIdle,
                 .setDockPosition,
                 .move,
                 .resize,
@@ -2879,6 +2976,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
+                .waitForWindowInputIdle,
                 .setDockPosition,
                 .move,
                 .resize,

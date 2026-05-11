@@ -185,6 +185,8 @@ typedef struct PeekabooWin11UIAutomationActionResult {
     int32_t readOnlyResult;
     int32_t isReadOnly;
     int32_t actionResult;
+    int32_t hasBoolResult;
+    int32_t boolResult;
 } PeekabooWin11UIAutomationActionResult;
 
 PeekabooWin11UIAutomationSnapshotResult PeekabooWin11CopyUIAutomationSnapshot(
@@ -251,6 +253,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11CloseUIAutomationWindow(
     int32_t maxDepth,
     int32_t maxElements,
     int32_t elementIndex);
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11WaitForUIAutomationWindowInputIdle(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t timeoutMilliseconds);
 
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPosition(
     int32_t scope,

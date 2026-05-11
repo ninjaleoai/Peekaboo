@@ -175,7 +175,8 @@ public enum DesktopCommandRunner {
                     "focus, " +
                     "legacy-default-action, " +
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
-                    "close-window, set-dock-position, move, resize, rotate, toggle, expand, collapse, select, " +
+                    "close-window, wait-window-idle, set-dock-position, " +
+                    "move, resize, rotate, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
 
@@ -204,6 +205,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetWindowState(args: args, adapter: adapter, stdout: stdout)
         case "close-window", "closeWindow":
             try self.runAutomationCloseWindow(args: args, adapter: adapter, stdout: stdout)
+        case "wait-window-idle", "waitWindowIdle", "wait-for-window-input-idle":
+            try self.runAutomationWaitWindowIdle(args: args, adapter: adapter, stdout: stdout)
         case "set-dock-position", "setDockPosition":
             try self.runAutomationSetDockPosition(args: args, adapter: adapter, stdout: stdout)
         case "move":
@@ -589,6 +592,37 @@ public enum DesktopCommandRunner {
             maxDepth: maxDepth,
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue))))
+    }
+
+    private static func runAutomationWaitWindowIdle(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation wait-window-idle")
+        }
+
+        let timeoutValue = try self.value(after: "--timeout-ms", in: args) ??
+            self.value(after: "--timeout", in: args)
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+        let timeoutMilliseconds = try timeoutValue
+            .map(self.parseUIAutomationTimeoutMilliseconds) ?? 5_000
+
+        try stdout(self.success(adapter.waitForUIAutomationWindowInputIdle(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            timeoutMilliseconds: timeoutMilliseconds)))
     }
 
     private static func runAutomationMove(
@@ -1117,6 +1151,14 @@ public enum DesktopCommandRunner {
         return elementIndex
     }
 
+    private static func parseUIAutomationTimeoutMilliseconds(_ value: String) throws -> Int {
+        guard let timeoutMilliseconds = Int(value), (0...60_000).contains(timeoutMilliseconds) else {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation timeout milliseconds must be between 0 and 60000")
+        }
+        return timeoutMilliseconds
+    }
+
     private static func parseUIAutomationRangeValue(_ value: String) throws -> Double {
         guard let rangeValue = Double(value), rangeValue.isFinite else {
             throw DesktopAdapterError.invalidArgument("UI Automation range value must be a finite number")
@@ -1273,6 +1315,8 @@ public enum DesktopCommandRunner {
           automation set-window-state --index <n> --state <normal|maximized|minimized>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation close-window --index <n>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation wait-window-idle --index <n> [--timeout-ms <n>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

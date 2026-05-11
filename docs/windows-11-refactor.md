@@ -40,6 +40,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - Window-pattern UI Automation close-window actions against a bounded snapshot
   element index
+- Window-pattern UI Automation wait-window-idle actions against a bounded
+  snapshot element index
 - Dock-pattern UI Automation dock position metadata in bounded snapshots
 - Dock-pattern UI Automation set-dock-position actions against a bounded
   snapshot element index
@@ -100,7 +102,8 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`,
 `automation set-window-state --index <n>`, and
-`automation close-window --index <n>` for Invoke-pattern,
+`automation close-window --index <n>`, and
+`automation wait-window-idle --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
 and Window-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
@@ -114,6 +117,9 @@ action string.
 metadata.
 `automation close-window --index <n>` calls the Window pattern `Close` method
 for Window-pattern controls.
+`automation wait-window-idle --index <n> --timeout-ms <n>` calls the Window
+pattern `WaitForInputIdle` method and reports whether the window became idle
+before the timeout.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
 covers Dock-pattern controls that can be rearranged within a docking
 container.
@@ -259,6 +265,12 @@ public protocol DesktopAdapter: Sendable {
         maxDepth: Int,
         maxElements: Int,
         elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    func waitForUIAutomationWindowInputIdle(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        timeoutMilliseconds: Int) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementDockPosition(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -404,6 +416,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation close-window --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation wait-window-idle --scope foreground --index 0 --timeout-ms 5000 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-dock-position --scope foreground --index 0 --position right --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
@@ -487,10 +501,10 @@ setRangeValue is available only when the RangeValue pattern is present and
 known writable, setScrollPercent is available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
-the Window pattern is present, setDockPosition is available when the Dock
-pattern is present, move, resize, and rotate are available when the Transform
-pattern is present and UIA reports the matching capability, toggle is available
-when the
+the Window pattern is present, waitForWindowInputIdle is available when the
+Window pattern is present, setDockPosition is available when the Dock pattern
+is present, move, resize, and rotate are available when the Transform pattern
+is present and UIA reports the matching capability, toggle is available when the
 Toggle pattern is present, expand is available for collapsed or partially
 expanded ExpandCollapse elements, collapse is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
@@ -530,7 +544,9 @@ minimize requests before calling UIA `SetWindowVisualState`, then verifies the
 refreshed visual state when UIA reports it. `automation close-window` performs
 the UIA Window pattern close action, then verifies the original native window
 handle disappeared when a handle and refreshed bounded snapshot are available.
-`automation set-dock-position`
+`automation wait-window-idle` performs the UIA Window pattern input-idle wait
+with a bounded timeout and reports whether UIA observed the window becoming
+idle before the timeout. `automation set-dock-position`
 performs the UIA Dock pattern action, then verifies the refreshed dock position
 when UIA reports it. `automation scroll-into-view`
 performs the UIA ScrollItem pattern action and verifies that the refreshed
