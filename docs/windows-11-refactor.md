@@ -165,12 +165,24 @@ bounded element lookup over the same snapshot traversal, and
 `automation find-item --index <n>`,
 `automation get-spreadsheet-item --index <n>`,
 `automation get-grid-item --index <n>`,
-and `automation realize --index <n>` for Invoke-pattern,
+`automation realize --index <n>`,
+`automation scroll-into-view --index <n>`,
+`automation toggle --index <n>`,
+`automation expand --index <n>`,
+`automation collapse --index <n>`,
+`automation select --index <n>`,
+`automation add-to-selection --index <n>`,
+`automation remove-from-selection --index <n>`,
+`automation move --index <n>`,
+`automation resize --index <n>`,
+and `automation rotate --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, Text-pattern, RangeValue-pattern,
 Scroll-pattern, Window-pattern, Dock-pattern, MultipleView-pattern,
 Transform2-pattern, SynchronizedInput-pattern, CustomNavigation-pattern,
-ItemContainer-pattern, Spreadsheet-pattern, Grid-pattern, and
-VirtualizedItem-pattern UIA actions.
+ItemContainer-pattern, Spreadsheet-pattern, Grid-pattern,
+VirtualizedItem-pattern, ScrollItem-pattern, Toggle-pattern,
+ExpandCollapse-pattern, SelectionItem-pattern, and Transform-pattern UIA
+actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is enabled and
 keyboard focusable.
