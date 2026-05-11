@@ -106,6 +106,17 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         unit: DesktopUIAutomationZoomUnit) throws -> DesktopUIAutomationActionResult
+    func startUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        inputType: DesktopUIAutomationSynchronizedInputType) throws -> DesktopUIAutomationActionResult
+    func cancelUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -277,6 +288,17 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         unit: DesktopUIAutomationZoomUnit) async throws -> DesktopUIAutomationActionResult
+    func startUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        inputType: DesktopUIAutomationSynchronizedInputType) async throws -> DesktopUIAutomationActionResult
+    func cancelUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
     func moveUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -636,6 +658,34 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             unit: unit)
+    }
+
+    public func startUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        inputType: DesktopUIAutomationSynchronizedInputType) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.startUIAutomationSynchronizedInput(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            inputType: inputType)
+    }
+
+    public func cancelUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.cancelUIAutomationSynchronizedInput(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex)
     }
 
     public func moveUIAutomationElement(

@@ -166,6 +166,17 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             unit: .smallIncrement)
+        let startSynchronizedInput = try await bridge.startUIAutomationSynchronizedInput(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            inputType: .keyDown)
+        let cancelSynchronizedInput = try await bridge.cancelUIAutomationSynchronizedInput(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -332,6 +343,8 @@ final class DesktopModelTests: XCTestCase {
                 .setCurrentView,
                 .setZoomLevel,
                 .zoomByUnit,
+                .startSynchronizedInput,
+                .cancelSynchronizedInput,
                 .move,
                 .resize,
                 .rotate,
@@ -503,6 +516,16 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(zoomByUnit.value, "unit=small-increment")
         XCTAssertEqual(zoomByUnit.postActionElement?.zoomLevel, 150.0)
         XCTAssertEqual(zoomByUnit.valueWasVerified, true)
+        XCTAssertEqual(startSynchronizedInput.action, .startSynchronizedInput)
+        XCTAssertEqual(startSynchronizedInput.elementIndex, 0)
+        XCTAssertEqual(startSynchronizedInput.value, "inputType=key-down")
+        XCTAssertNil(startSynchronizedInput.postActionElement)
+        XCTAssertNil(startSynchronizedInput.valueWasVerified)
+        XCTAssertEqual(cancelSynchronizedInput.action, .cancelSynchronizedInput)
+        XCTAssertEqual(cancelSynchronizedInput.elementIndex, 0)
+        XCTAssertEqual(cancelSynchronizedInput.value, "cancelled=true")
+        XCTAssertNil(cancelSynchronizedInput.postActionElement)
+        XCTAssertNil(cancelSynchronizedInput.valueWasVerified)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -916,6 +939,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"setCurrentView\""))
         XCTAssertTrue(result.stdout.contains("\"setZoomLevel\""))
         XCTAssertTrue(result.stdout.contains("\"zoomByUnit\""))
+        XCTAssertTrue(result.stdout.contains("\"startSynchronizedInput\""))
+        XCTAssertTrue(result.stdout.contains("\"cancelSynchronizedInput\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"realize\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
@@ -1633,6 +1658,52 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationStartSynchronizedInput() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "start-synchronized-input",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--input-type",
+            "key-down",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"startSynchronizedInput\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"inputType=key-down\""))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationCancelSynchronizedInput() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "cancel-synchronized-input",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"cancelSynchronizedInput\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"cancelled=true\""))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationMove() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1805,6 +1876,62 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("UI Automation timeout milliseconds must be between 0 and 60000"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationStartSynchronizedInputIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "start-synchronized-input",
+            "--input-type",
+            "key-down",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationStartSynchronizedInputType() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "start-synchronized-input",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --input-type <input-type>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationStartSynchronizedInputType() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "start-synchronized-input",
+            "--index",
+            "0",
+            "--input-type",
+            "tap",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation synchronized input type must be key-up"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationCancelSynchronizedInputIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "cancel-synchronized-input",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetDockPositionValue() {
@@ -2185,6 +2312,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation close-window --index"))
         XCTAssertTrue(result.stdout.contains("automation wait-window-idle --index"))
         XCTAssertTrue(result.stdout.contains("automation set-dock-position --index"))
+        XCTAssertTrue(result.stdout.contains("automation start-synchronized-input --index"))
+        XCTAssertTrue(result.stdout.contains("automation cancel-synchronized-input --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
         XCTAssertTrue(result.stdout.contains("automation resize --index"))
         XCTAssertTrue(result.stdout.contains("automation rotate --index"))
@@ -2826,6 +2955,55 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 unit: unit))
     }
 
+    func startUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        inputType: DesktopUIAutomationSynchronizedInputType) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .startSynchronizedInput,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "inputType=\(inputType.rawValue)")
+    }
+
+    func cancelUIAutomationSynchronizedInput(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .cancelSynchronizedInput,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "cancelled=true")
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -3426,6 +3604,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setCurrentView,
                 .setZoomLevel,
                 .zoomByUnit,
+                .startSynchronizedInput,
+                .cancelSynchronizedInput,
                 .move,
                 .resize,
                 .rotate,
@@ -3451,6 +3631,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setCurrentView,
                 .setZoomLevel,
                 .zoomByUnit,
+                .startSynchronizedInput,
+                .cancelSynchronizedInput,
                 .move,
                 .resize,
                 .rotate,
@@ -3476,6 +3658,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setCurrentView,
                 .setZoomLevel,
                 .zoomByUnit,
+                .startSynchronizedInput,
+                .cancelSynchronizedInput,
                 .move,
                 .resize,
                 .rotate,
@@ -3502,6 +3686,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setCurrentView,
                 .setZoomLevel,
                 .zoomByUnit,
+                .startSynchronizedInput,
+                .cancelSynchronizedInput,
                 .move,
                 .resize,
                 .rotate,

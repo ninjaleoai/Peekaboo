@@ -90,6 +90,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   metadata in bounded snapshots
 - ItemContainer, SynchronizedInput, ObjectModel, and CustomNavigation UI
   Automation pattern availability in bounded snapshots
+- SynchronizedInput-pattern UI Automation start-listening and cancel actions
+  against a bounded snapshot element index
 - VirtualizedItem-pattern UI Automation realize actions against a bounded
   snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
@@ -141,10 +143,12 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-current-view --index <n>`,
 `automation set-zoom --index <n>`,
 `automation zoom-by-unit --index <n>`,
+`automation start-synchronized-input --index <n>`,
+`automation cancel-synchronized-input --index <n>`,
 and `automation realize --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
-Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern, and
-VirtualizedItem-pattern UIA actions.
+Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern,
+SynchronizedInput-pattern, and VirtualizedItem-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -169,6 +173,10 @@ controls that expose zoomable viewports.
 `automation zoom-by-unit --index <n> --unit
 <large-increment|small-increment|large-decrement|small-decrement|none>` covers
 Transform2-pattern controls that expose unit-based viewport zoom.
+`automation start-synchronized-input --index <n> --input-type <input-type>`
+starts SynchronizedInput-pattern listening for one keyboard or mouse input
+type. `automation cancel-synchronized-input --index <n>` asks the same pattern
+to stop listening.
 `automation realize --index <n>` covers VirtualizedItem-pattern controls whose
 placeholder element can be materialized into a full UIA element.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
@@ -497,6 +505,10 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation zoom-by-unit --scope foreground --index 0 --unit small-increment --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation start-synchronized-input --scope foreground --index 0 --input-type key-down --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation cancel-synchronized-input --scope foreground --index 0 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
@@ -623,11 +635,13 @@ Window pattern is present, setDockPosition is available when the Dock pattern
 is present, setCurrentView is available when the MultipleView pattern is
 present, setZoomLevel is available when the Transform2 pattern is present and
 UIA reports that zoom is supported, zoomByUnit is available under the same
-Transform2 zoom condition, move, resize, and rotate are available when the
-Transform pattern is present and UIA reports the matching capability, realize
-is available when the VirtualizedItem pattern is present, toggle is available
-when the Toggle pattern is present, expand is available for collapsed or
-partially expanded ExpandCollapse elements, collapse is available for expanded or
+Transform2 zoom condition, startSynchronizedInput and cancelSynchronizedInput
+are available when the SynchronizedInput pattern is present, move, resize, and
+rotate are available when the Transform pattern is present and UIA reports the
+matching capability, realize is available when the VirtualizedItem pattern is
+present, toggle is available when the Toggle pattern is present, expand is
+available for collapsed or partially expanded ExpandCollapse elements, collapse
+is available for expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -678,7 +692,12 @@ performs the UIA Transform2 unit zoom action, then verifies that the refreshed
 zoom level moved in the requested direction when pre/post zoom levels are
 observable. `automation scroll-into-view` performs the UIA ScrollItem pattern
 action and verifies that the refreshed element is no longer off-screen when UIA
-reports that state.
+reports that state. `automation start-synchronized-input` performs the UIA
+SynchronizedInput pattern's `StartListening` method for one requested keyboard
+or mouse input type. `automation cancel-synchronized-input` performs the same
+pattern's `Cancel` method. These actions return the pre-action element metadata
+without claiming post-action verification because UIA does not expose a stable
+listening-state property in the bounded snapshot.
 `automation move --index <n>` and
 `automation resize --index <n>` perform the UIA Transform pattern move and
 resize actions after rejecting known unsupported elements, then verify the

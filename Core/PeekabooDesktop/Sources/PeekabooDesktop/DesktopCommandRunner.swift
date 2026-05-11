@@ -176,7 +176,7 @@ public enum DesktopCommandRunner {
                     "legacy-default-action, " +
                     "set-legacy-value, set-value, set-range-value, set-scroll-percent, set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
-                    "zoom-by-unit, " +
+                    "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
                     "move, resize, rotate, realize, toggle, expand, collapse, select, " +
                     "add-to-selection, remove-from-selection, or scroll-into-view")
         }
@@ -216,6 +216,10 @@ public enum DesktopCommandRunner {
             try self.runAutomationSetZoom(args: args, adapter: adapter, stdout: stdout)
         case "zoom-by-unit", "zoomByUnit":
             try self.runAutomationZoomByUnit(args: args, adapter: adapter, stdout: stdout)
+        case "start-synchronized-input", "startSynchronizedInput":
+            try self.runAutomationStartSynchronizedInput(args: args, adapter: adapter, stdout: stdout)
+        case "cancel-synchronized-input", "cancelSynchronizedInput":
+            try self.runAutomationCancelSynchronizedInput(args: args, adapter: adapter, stdout: stdout)
         case "move":
             try self.runAutomationMove(args: args, adapter: adapter, stdout: stdout)
         case "resize":
@@ -679,6 +683,66 @@ public enum DesktopCommandRunner {
             maxElements: maxElements,
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             unit: self.parseUIAutomationZoomUnit(unitValue))))
+    }
+
+    private static func runAutomationStartSynchronizedInput(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation start-synchronized-input")
+        }
+
+        let inputTypeValue = try self.value(after: "--input-type", in: args) ??
+            self.value(after: "--type", in: args)
+        guard let inputTypeValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --input-type <input-type> for automation start-synchronized-input")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.startUIAutomationSynchronizedInput(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            inputType: self.parseUIAutomationSynchronizedInputType(inputTypeValue))))
+    }
+
+    private static func runAutomationCancelSynchronizedInput(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --index <element-index> for automation cancel-synchronized-input")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.cancelUIAutomationSynchronizedInput(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue))))
     }
 
     private static func runAutomationCloseWindow(
@@ -1363,6 +1427,30 @@ public enum DesktopCommandRunner {
         }
     }
 
+    private static func parseUIAutomationSynchronizedInputType(
+        _ value: String) throws -> DesktopUIAutomationSynchronizedInputType
+    {
+        switch value {
+        case "key-up", "keyUp":
+            return .keyUp
+        case "key-down", "keyDown":
+            return .keyDown
+        case "mouse-left-button-up", "mouseLeftButtonUp":
+            return .mouseLeftButtonUp
+        case "mouse-left-button-down", "mouseLeftButtonDown":
+            return .mouseLeftButtonDown
+        case "mouse-right-button-up", "mouseRightButtonUp":
+            return .mouseRightButtonUp
+        case "mouse-right-button-down", "mouseRightButtonDown":
+            return .mouseRightButtonDown
+        default:
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation synchronized input type must be key-up, key-down, " +
+                    "mouse-left-button-up, mouse-left-button-down, " +
+                    "mouse-right-button-up, or mouse-right-button-down")
+        }
+    }
+
     private static func parseUIAutomationMovePoint(_ args: [String]) throws -> (Double, Double) {
         if let pointValue = try self.value(after: "--point", in: args) ??
             self.value(after: "--position", in: args)
@@ -1497,6 +1585,12 @@ public enum DesktopCommandRunner {
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation zoom-by-unit --index <n>
             --unit <large-increment|small-increment|large-decrement|small-decrement|none>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation start-synchronized-input --index <n>
+            --input-type <key-up|key-down|mouse-left-button-up|mouse-left-button-down|
+                          mouse-right-button-up|mouse-right-button-down>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation cancel-synchronized-input --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation move --index <n> --point <x,y>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

@@ -34,6 +34,8 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_ZOOM_LEVEL 23
 #define PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT 24
 #define PEEKABOO_WIN11_UIA_ACTION_REALIZE_VIRTUALIZED_ITEM 25
+#define PEEKABOO_WIN11_UIA_ACTION_START_SYNCHRONIZED_INPUT 26
+#define PEEKABOO_WIN11_UIA_ACTION_CANCEL_SYNCHRONIZED_INPUT 27
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -2571,6 +2573,51 @@ static void PeekabooWin11ZoomElementByUnit(
     IUIAutomationTransformPattern2_Release(transformPattern);
 }
 
+static void PeekabooWin11SynchronizedInputElement(
+    IUIAutomationElement *element,
+    int32_t inputType,
+    int32_t shouldStart,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_SynchronizedInputPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationSynchronizedInputPattern *synchronizedInputPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationSynchronizedInputPattern,
+        (void **)&synchronizedInputPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || synchronizedInputPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    if (shouldStart) {
+        result->actionResult = (int32_t)IUIAutomationSynchronizedInputPattern_StartListening(
+            synchronizedInputPattern,
+            (enum SynchronizedInputType)inputType);
+    } else {
+        result->actionResult = (int32_t)IUIAutomationSynchronizedInputPattern_Cancel(
+            synchronizedInputPattern);
+    }
+    IUIAutomationSynchronizedInputPattern_Release(synchronizedInputPattern);
+}
+
 static void PeekabooWin11FocusElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -3217,6 +3264,10 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11SetElementZoomLevel(element, transformFirstValue, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_ZOOM_BY_UNIT) {
             PeekabooWin11ZoomElementByUnit(element, dockPosition, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_START_SYNCHRONIZED_INPUT) {
+            PeekabooWin11SynchronizedInputElement(element, dockPosition, 1, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_CANCEL_SYNCHRONIZED_INPUT) {
+            PeekabooWin11SynchronizedInputElement(element, 0, 0, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
             PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
@@ -3817,6 +3868,51 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ZoomUIAutomationElementByUnit
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11StartUIAutomationSynchronizedInput(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t inputType)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_START_SYNCHRONIZED_INPUT,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        inputType,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11CancelUIAutomationSynchronizedInput(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_CANCEL_SYNCHRONIZED_INPUT,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -4339,6 +4435,42 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11ZoomUIAutomationElementByUnit
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)zoomUnit;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11StartUIAutomationSynchronizedInput(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t inputType)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 26;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)inputType;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11CancelUIAutomationSynchronizedInput(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 27;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
     result.initializeResult = -2147467263;
     return result;
 }
