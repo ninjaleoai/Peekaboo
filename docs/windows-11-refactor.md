@@ -553,6 +553,10 @@ The Windows 11 Platform workflow runs the same packaging and verification
 scripts after build and test, then uploads the zip and checksum as a workflow artifact named
 `peekaboo-win11-<commit-sha>`.
 
+The workflow pins `runs-on: windows-2025-vs2026` so Windows validation stays on
+the same Windows Server 2025 image family GitHub currently redirects
+`windows-2025` jobs to.
+
 ## Run
 
 ```powershell
