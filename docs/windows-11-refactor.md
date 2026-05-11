@@ -30,6 +30,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - point-to-point mouse dragging through Win32 mouse input APIs
 - modifier and virtual-key hotkeys through Win32 keyboard input APIs
 - focused text typing through Win32 keyboard input APIs
+- release-mode `peekaboo-win11.exe` packaging as a Windows workflow artifact
 - native UI Automation availability probing through the Windows UI Automation
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
@@ -528,6 +529,24 @@ swift build --package-path Platforms/Windows/PeekabooWin11
 swift test --package-path Platforms/Windows/PeekabooWin11
 ```
 
+## Package
+
+On Windows 11 with Swift installed:
+
+```powershell
+.\scripts\windows\package-win11.ps1
+```
+
+The script builds the standalone Windows CLI in release mode and writes:
+
+```text
+.artifacts\windows\peekaboo-win11.zip
+```
+
+The Windows 11 Platform workflow runs the same packaging script after build and
+test, then uploads the zip as a workflow artifact named
+`peekaboo-win11-<commit-sha>`.
+
 ## Run
 
 ```powershell
@@ -878,8 +897,8 @@ selected state when UIA reports it.
 2. Keep future UI Automation expansion focused on missing patterns with stable
    observable state, rather than adding unverified actions for every pattern UIA
    can expose.
-3. Add a Windows packaging and installation story once the standalone Swift
-   package surface is stable enough to consume outside the checkout.
+3. Promote the packaged Windows artifact into a release channel once versioning,
+   signing, and distribution policy are intentionally in scope.
 4. Keep shared `PeekabooDesktop` contract changes validated by the Windows 11
    Platform workflow because the Windows package depends on that shared model
    seam.

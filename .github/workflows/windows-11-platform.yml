@@ -6,6 +6,7 @@ on:
       - "Platforms/Windows/PeekabooWin11/**"
       - "Core/PeekabooDesktop/**"
       - "scripts/windows/build-win11.ps1"
+      - "scripts/windows/package-win11.ps1"
       - "docs/windows-11-refactor.md"
       - ".github/workflows/windows-11-platform.yml"
   pull_request:
@@ -13,6 +14,7 @@ on:
       - "Platforms/Windows/PeekabooWin11/**"
       - "Core/PeekabooDesktop/**"
       - "scripts/windows/build-win11.ps1"
+      - "scripts/windows/package-win11.ps1"
       - "docs/windows-11-refactor.md"
       - ".github/workflows/windows-11-platform.yml"
   workflow_dispatch:
@@ -41,3 +43,14 @@ jobs:
 
       - name: Build and test
         run: .\scripts\windows\build-win11.ps1
+
+      - name: Package Windows CLI
+        run: .\scripts\windows\package-win11.ps1
+
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: peekaboo-win11-${{ github.sha }}
+          path: .artifacts\windows\peekaboo-win11.zip
+          if-no-files-found: error
+          retention-days: 14

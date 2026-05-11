@@ -153,7 +153,8 @@ UI Automation snapshots/actions. The package is built on the shared desktop
 model and command-runner seam in
 [`Core/PeekabooDesktop`](Core/PeekabooDesktop), while `PeekabooAutomationKit`
 maps the existing macOS service models into the same neutral contract without
-changing macOS runtime behavior. See
+changing macOS runtime behavior. The Windows CI packages `peekaboo-win11.exe`
+as a workflow artifact for branch and PR validation. See
 [`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the current
 Windows command surface, build steps, and remaining integration notes.
 
