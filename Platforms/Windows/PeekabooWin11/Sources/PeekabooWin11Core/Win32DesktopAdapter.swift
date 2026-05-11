@@ -664,6 +664,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         guard element.supportedPatterns.contains(.legacyIAccessible) else {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support legacy default action")
@@ -4398,7 +4402,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if supportedPatterns.contains(.legacyIAccessible),
             let legacyDefaultAction,
-            !legacyDefaultAction.isEmpty
+            !legacyDefaultAction.isEmpty,
+            isEnabled != false
         {
             actions.append(.performLegacyDefaultAction)
         }

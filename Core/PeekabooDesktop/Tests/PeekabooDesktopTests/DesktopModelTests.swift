@@ -34,6 +34,7 @@ final class DesktopModelTests: XCTestCase {
 
         XCTAssertFalse(actions.contains(.focus))
         XCTAssertFalse(actions.contains(.invoke))
+        XCTAssertFalse(actions.contains(.performLegacyDefaultAction))
         XCTAssertFalse(actions.contains(.toggle))
         XCTAssertFalse(actions.contains(.expand))
         XCTAssertFalse(actions.contains(.setLegacyValue))
@@ -1399,6 +1400,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"Open\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
         XCTAssertFalse(result.stdout.contains("\"valueWasVerified\""))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationLegacyDefaultAction() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "legacy-default-action",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSetLegacyValue() {
@@ -4793,6 +4814,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 ![
                     .focus,
                     .invoke,
+                    .performLegacyDefaultAction,
                     .toggle,
                     .expand,
                     .collapse,

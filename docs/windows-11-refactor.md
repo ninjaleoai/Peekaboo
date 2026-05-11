@@ -147,6 +147,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   preflight rejection
 - SelectionItem-pattern UI Automation add/remove preflight rejection for known
   unsupported selection-container states
+- Legacy IAccessible-pattern UI Automation default-action disabled-state
+  suppression and preflight rejection
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -201,7 +203,7 @@ advertises availability only when UIA reports that the element is enabled and
 keyboard focusable.
 `automation legacy-default-action --index <n>` calls the LegacyIAccessible
 pattern default action for older MSAA-backed controls when UIA exposes a default
-action string.
+action string on an enabled element.
 `automation set-legacy-value --index <n>` calls the LegacyIAccessible pattern
 `SetValue` method for older MSAA-backed controls when UIA exposes legacy value
 metadata.
@@ -708,13 +710,14 @@ Elements also expose stable
 available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
 element is enabled and keyboard focusable, invoke is available when the Invoke
-pattern is present on an enabled element, performLegacyDefaultAction is available when the Legacy IAccessible
-pattern exposes a non-empty default action string, setLegacyValue is available
-when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
-element, setValue is available only when the Value pattern is present and the
-element is enabled and known writable, getText is available when the Text pattern is present, setRangeValue
-is available only when the RangeValue pattern is present on an enabled element
-and known writable, scrollByAmount and setScrollPercent are available when the Scroll pattern is
+pattern is present on an enabled element, performLegacyDefaultAction is
+available when the Legacy IAccessible pattern exposes a non-empty default action
+string on an enabled element, setLegacyValue is available when the Legacy
+IAccessible pattern exposes legacy value metadata on an enabled element,
+setValue is available only when the Value pattern is present and the element is
+enabled and known writable, getText is available when the Text pattern is
+present, setRangeValue is available only when the RangeValue pattern is present
+on an enabled element and known writable, scrollByAmount and setScrollPercent are available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
@@ -747,8 +750,9 @@ persistent UIA element handles yet. `automation focus --index <n>` calls
 not to be enabled or keyboard focusable, then verifies `hasKeyboardFocus` from a
 refreshed lookup when UIA reports it. `automation legacy-default-action --index <n>`
 performs the UIA LegacyIAccessible pattern's Microsoft Active Accessibility
-default action and returns refreshed post-action metadata without claiming value
-verification because the default action's visible effect is provider-specific.
+default action, rejects elements known not to be enabled before calling UIA, and
+returns refreshed post-action metadata without claiming value verification
+because the default action's visible effect is provider-specific.
 `automation set-legacy-value --index <n>` performs the UIA LegacyIAccessible
 pattern's `SetValue` method for MSAA-backed controls, then verifies the
 refreshed `legacyValue` metadata when UIA reports one.
