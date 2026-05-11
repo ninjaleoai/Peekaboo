@@ -2343,6 +2343,20 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support selection item")
         }
+        if action == .addToSelection, element.selectionCanSelectMultiple == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) selection container does not support multiple selection")
+        }
+        if action == .removeFromSelection {
+            if element.isSelected == false {
+                throw Win11DesktopError.invalidArgument(
+                    "UI Automation element index \(elementIndex) is not selected")
+            }
+            if element.selectionIsRequired == true, (element.selectionSelectedItemCount ?? 0) <= 1 {
+                throw Win11DesktopError.invalidArgument(
+                    "UI Automation element index \(elementIndex) selection container requires a selected item")
+            }
+        }
 
         let nativeResult: PeekabooWin11UIAutomationActionResult
         if action == .addToSelection {

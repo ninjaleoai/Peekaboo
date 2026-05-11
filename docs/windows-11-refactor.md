@@ -137,6 +137,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   snapshot element index
 - SelectionItem-pattern UI Automation add-to-selection and
   remove-from-selection actions against a bounded snapshot element index
+- SelectionItem-pattern UI Automation add/remove preflight rejection for known
+  unsupported selection-container states
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -254,7 +256,8 @@ the selection like `select`. Snapshot action availability uses the selection
 container metadata when UIA exposes it, so add-to-selection is only advertised
 when the container reports multi-selection support and remove-from-selection is
 only advertised for selected items, with required single-selection containers
-suppressed.
+suppressed. The command path applies the same known-unsupported preflight checks
+before calling the UIA SelectionItem method.
 When an element supports the UIA Transform pattern, snapshots include whether
 UIA reports that it can be moved, resized, or rotated.
 `automation move --index <n> --point <x,y>` and
@@ -675,9 +678,12 @@ UIA ExpandCollapse pattern,
 snapshots also include the current expand/collapse state: collapsed, expanded,
 partially expanded, or leaf node. When an element supports the UIA
 SelectionItem pattern, snapshots also include whether the item is currently
-selected. When an element supports the UIA Transform2 pattern, snapshots include
-whether zooming is supported plus current, minimum, and maximum zoom levels when
-UIA reports them. When an element supports the UIA MultipleView pattern,
+selected and, when UIA exposes it through the item's selection container,
+whether the container supports multiple selection, requires a selection, and how
+many items are currently selected. When an element supports the UIA Transform2
+pattern, snapshots include whether zooming is supported plus current, minimum,
+and maximum zoom levels when UIA reports them. When an element supports the UIA
+MultipleView pattern,
 snapshots include the current view identifier, localized current view name, and
 supported view count when UIA reports them. When an element supports the UIA
 Annotation pattern, snapshots include annotation type ID, localized type name,
