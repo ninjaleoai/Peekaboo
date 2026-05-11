@@ -124,6 +124,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   bounded snapshot element index
 - Value-pattern UI Automation set-value actions against a bounded snapshot
   element index
+- Legacy IAccessible-pattern and Value-pattern disabled-state value-setter
+  action suppression and preflight rejection
 - RangeValue-pattern UI Automation set-range-value actions against a bounded
   snapshot element index
 - RangeValue-pattern UI Automation disabled-state action suppression and
@@ -761,8 +763,9 @@ default action, rejects elements known not to be enabled before calling UIA, and
 returns refreshed post-action metadata without claiming value verification
 because the default action's visible effect is provider-specific.
 `automation set-legacy-value --index <n>` performs the UIA LegacyIAccessible
-pattern's `SetValue` method for MSAA-backed controls, then verifies the
-refreshed `legacyValue` metadata when UIA reports one.
+pattern's `SetValue` method for MSAA-backed controls, rejects known disabled
+elements before calling UIA, then verifies the refreshed `legacyValue` metadata
+when UIA reports one.
 `automation invoke --index <n>` performs
 the UIA Invoke pattern for an element from that bounded traversal, rejecting
 known disabled elements before calling UIA `Invoke`, and returns the pre-action

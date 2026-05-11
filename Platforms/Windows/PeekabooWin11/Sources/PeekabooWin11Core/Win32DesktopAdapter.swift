@@ -727,7 +727,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if element.isEnabled == false {
             throw Win11DesktopError.invalidArgument(
-                "UI Automation element index \(elementIndex) is not enabled")
+                "UI Automation element index \(elementIndex) value cannot be set because element is disabled")
         }
         guard element.supportedPatterns.contains(.legacyIAccessible) else {
             throw Win11DesktopError.invalidArgument(
