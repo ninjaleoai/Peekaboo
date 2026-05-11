@@ -133,6 +133,14 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t canResize;
     int32_t hasCanRotate;
     int32_t canRotate;
+    int32_t hasCanZoom;
+    int32_t canZoom;
+    int32_t hasZoomLevel;
+    double zoomLevel;
+    int32_t hasZoomMinimum;
+    double zoomMinimum;
+    int32_t hasZoomMaximum;
+    double zoomMaximum;
     int32_t hasLegacyChildId;
     int32_t legacyChildId;
     int32_t hasLegacyRole;

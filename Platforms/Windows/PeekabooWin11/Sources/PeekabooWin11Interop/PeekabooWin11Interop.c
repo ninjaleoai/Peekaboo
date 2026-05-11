@@ -406,6 +406,7 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_DockPatternId, 1ULL << 15, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TablePatternId, 1ULL << 16, snapshot);
     PeekabooWin11MarkPattern(element, UIA_TableItemPatternId, 1ULL << 17, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_TransformPattern2Id, 1ULL << 18, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1164,6 +1165,69 @@ static void PeekabooWin11CopyElementTransformPattern(
     }
 
     IUIAutomationTransformPattern_Release(transformPattern);
+}
+
+static void PeekabooWin11CopyElementTransform2Pattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_TransformPattern2Id,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationTransformPattern2 *transformPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationTransformPattern2,
+        (void **)&transformPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || transformPattern == NULL) {
+        return;
+    }
+
+    BOOL canZoom = FALSE;
+    HRESULT canZoomResult = IUIAutomationTransformPattern2_get_CurrentCanZoom(
+        transformPattern,
+        &canZoom);
+    if (PeekabooWin11Succeeded(canZoomResult)) {
+        snapshot->hasCanZoom = 1;
+        snapshot->canZoom = canZoom ? 1 : 0;
+    }
+
+    double zoomLevel = 0.0;
+    HRESULT zoomLevelResult = IUIAutomationTransformPattern2_get_CurrentZoomLevel(
+        transformPattern,
+        &zoomLevel);
+    if (PeekabooWin11Succeeded(zoomLevelResult)) {
+        snapshot->hasZoomLevel = 1;
+        snapshot->zoomLevel = zoomLevel;
+    }
+
+    double zoomMinimum = 0.0;
+    HRESULT zoomMinimumResult = IUIAutomationTransformPattern2_get_CurrentZoomMinimum(
+        transformPattern,
+        &zoomMinimum);
+    if (PeekabooWin11Succeeded(zoomMinimumResult)) {
+        snapshot->hasZoomMinimum = 1;
+        snapshot->zoomMinimum = zoomMinimum;
+    }
+
+    double zoomMaximum = 0.0;
+    HRESULT zoomMaximumResult = IUIAutomationTransformPattern2_get_CurrentZoomMaximum(
+        transformPattern,
+        &zoomMaximum);
+    if (PeekabooWin11Succeeded(zoomMaximumResult)) {
+        snapshot->hasZoomMaximum = 1;
+        snapshot->zoomMaximum = zoomMaximum;
+    }
+
+    IUIAutomationTransformPattern2_Release(transformPattern);
 }
 
 static void PeekabooWin11CopyLegacyString(
@@ -2204,6 +2268,7 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementTablePattern(element, snapshot);
     PeekabooWin11CopyElementTableItemPattern(element, snapshot);
     PeekabooWin11CopyElementTransformPattern(element, snapshot);
+    PeekabooWin11CopyElementTransform2Pattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);

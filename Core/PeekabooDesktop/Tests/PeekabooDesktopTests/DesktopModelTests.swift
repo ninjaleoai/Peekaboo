@@ -274,6 +274,7 @@ final class DesktopModelTests: XCTestCase {
                 .table,
                 .tableItem,
                 .transform,
+                .transform2,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -346,6 +347,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.canMove, true)
         XCTAssertEqual(snapshot.elements.first?.canResize, true)
         XCTAssertEqual(snapshot.elements.first?.canRotate, true)
+        XCTAssertEqual(snapshot.elements.first?.canZoom, true)
+        XCTAssertEqual(snapshot.elements.first?.zoomLevel, 125.0)
+        XCTAssertEqual(snapshot.elements.first?.zoomMinimum, 50.0)
+        XCTAssertEqual(snapshot.elements.first?.zoomMaximum, 400.0)
         XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
         XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
         XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
@@ -866,6 +871,10 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canResize\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"canZoom\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 125"))
+        XCTAssertTrue(result.stdout.contains("\"zoomMinimum\" : 50"))
+        XCTAssertTrue(result.stdout.contains("\"zoomMaximum\" : 400"))
         XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
@@ -961,6 +970,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"tableRowOrColumnMajor\" : \"rowMajor\""))
         XCTAssertTrue(result.stdout.contains("\"canMove\" : true"))
         XCTAssertTrue(result.stdout.contains("\"canRotate\" : true"))
+        XCTAssertTrue(result.stdout.contains("\"zoomLevel\" : 125"))
         XCTAssertTrue(result.stdout.contains("\"legacyDefaultAction\" : \"Open\""))
         XCTAssertTrue(result.stdout.contains("\"isSelected\" : false"))
     }
@@ -2876,6 +2886,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                         .table,
                         .tableItem,
                         .transform,
+                        .transform2,
                         .scrollItem,
                     ],
                     availableActions: self.stubAvailableActions(
@@ -2927,6 +2938,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     canMove: true,
                     canResize: true,
                     canRotate: true,
+                    canZoom: true,
+                    zoomLevel: 125.0,
+                    zoomMinimum: 50.0,
+                    zoomMaximum: 400.0,
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
                     legacyValue: legacyValue,

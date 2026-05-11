@@ -357,6 +357,7 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case table
     case tableItem
     case transform
+    case transform2
     case scrollItem
 }
 
@@ -505,6 +506,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let canMove: Bool?
     public let canResize: Bool?
     public let canRotate: Bool?
+    public let canZoom: Bool?
+    public let zoomLevel: Double?
+    public let zoomMinimum: Double?
+    public let zoomMaximum: Double?
     public let legacyChildId: Int?
     public let legacyName: String?
     public let legacyValue: String?
@@ -590,6 +595,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         canMove: Bool? = nil,
         canResize: Bool? = nil,
         canRotate: Bool? = nil,
+        canZoom: Bool? = nil,
+        zoomLevel: Double? = nil,
+        zoomMinimum: Double? = nil,
+        zoomMaximum: Double? = nil,
         legacyChildId: Int? = nil,
         legacyName: String? = nil,
         legacyValue: String? = nil,
@@ -674,6 +683,10 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.canMove = canMove
         self.canResize = canResize
         self.canRotate = canRotate
+        self.canZoom = canZoom
+        self.zoomLevel = zoomLevel
+        self.zoomMinimum = zoomMinimum
+        self.zoomMaximum = zoomMaximum
         self.legacyChildId = legacyChildId
         self.legacyName = legacyName
         self.legacyValue = legacyValue

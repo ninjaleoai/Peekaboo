@@ -2848,6 +2848,18 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 canRotate: Self.optionalBool(
                     hasValue: nativeElement.hasCanRotate,
                     value: nativeElement.canRotate),
+                canZoom: Self.optionalBool(
+                    hasValue: nativeElement.hasCanZoom,
+                    value: nativeElement.canZoom),
+                zoomLevel: Self.optionalDouble(
+                    hasValue: nativeElement.hasZoomLevel,
+                    value: nativeElement.zoomLevel),
+                zoomMinimum: Self.optionalDouble(
+                    hasValue: nativeElement.hasZoomMinimum,
+                    value: nativeElement.zoomMinimum),
+                zoomMaximum: Self.optionalDouble(
+                    hasValue: nativeElement.hasZoomMaximum,
+                    value: nativeElement.zoomMaximum),
                 legacyChildId: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyChildId,
                     value: nativeElement.legacyChildId),
@@ -3200,6 +3212,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 12) {
             patterns.append(.transform)
+        }
+        if Self.hasPatternBit(mask, 18) {
+            patterns.append(.transform2)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)
