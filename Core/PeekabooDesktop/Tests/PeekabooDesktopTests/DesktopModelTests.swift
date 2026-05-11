@@ -148,6 +148,12 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             position: .right)
+        let setCurrentView = try await bridge.setUIAutomationElementCurrentView(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            viewId: 4)
         let move = try await bridge.moveUIAutomationElement(
             scope: .root,
             maxDepth: 1,
@@ -292,6 +298,7 @@ final class DesktopModelTests: XCTestCase {
                 .closeWindow,
                 .waitForWindowInputIdle,
                 .setDockPosition,
+                .setCurrentView,
                 .move,
                 .resize,
                 .rotate,
@@ -418,6 +425,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setDockPosition.value, "right")
         XCTAssertEqual(setDockPosition.postActionElement?.dockPosition, .right)
         XCTAssertEqual(setDockPosition.valueWasVerified, true)
+        XCTAssertEqual(setCurrentView.action, .setCurrentView)
+        XCTAssertEqual(setCurrentView.elementIndex, 0)
+        XCTAssertEqual(setCurrentView.value, "viewId=4")
+        XCTAssertEqual(setCurrentView.postActionElement?.multipleViewCurrentView, 4)
+        XCTAssertEqual(setCurrentView.valueWasVerified, true)
         XCTAssertEqual(move.action, .move)
         XCTAssertEqual(move.elementIndex, 0)
         XCTAssertEqual(move.value, "x=20.0,y=30.0")
@@ -823,6 +835,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"closeWindow\""))
         XCTAssertTrue(result.stdout.contains("\"waitForWindowInputIdle\""))
         XCTAssertTrue(result.stdout.contains("\"setDockPosition\""))
+        XCTAssertTrue(result.stdout.contains("\"setCurrentView\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
         XCTAssertTrue(result.stdout.contains("\"toggle\""))
         XCTAssertTrue(result.stdout.contains("\"legacyIAccessible\""))
@@ -1416,6 +1429,32 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"value\" : \"right\""))
         XCTAssertTrue(result.stdout.contains("\"dockPosition\" : \"right\""))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationSetCurrentView() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-current-view",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--view-id",
+            "4",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"setCurrentView\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"viewId=4\""))
+        XCTAssertTrue(result.stdout.contains("\"multipleViewCurrentView\" : 4"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
@@ -2478,6 +2517,41 @@ private struct StubDesktopAdapter: DesktopAdapter {
             valueWasVerified: postActionElement?.dockPosition == position)
     }
 
+    func setUIAutomationElementCurrentView(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        viewId: Int) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            multipleViewCurrentView: viewId)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .setCurrentView,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "viewId=\(viewId)",
+            postActionElement: postActionElement,
+            valueWasVerified: postActionElement?.multipleViewCurrentView == viewId)
+    }
+
     func toggleUIAutomationElement(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -2844,6 +2918,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
         hasKeyboardFocus: Bool = false,
         bounds: DesktopRect = DesktopRect(x: 0, y: 0, width: 100, height: 100),
         isOffscreen: Bool = false,
+        multipleViewCurrentView: Int = 2,
         isSelected: Bool = false) -> DesktopUIAutomationSnapshot
     {
         DesktopUIAutomationSnapshot(
@@ -2951,7 +3026,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     zoomLevel: 125.0,
                     zoomMinimum: 50.0,
                     zoomMaximum: 400.0,
-                    multipleViewCurrentView: 2,
+                    multipleViewCurrentView: multipleViewCurrentView,
                     multipleViewCurrentViewName: "Details",
                     multipleViewSupportedViewCount: 3,
                     legacyChildId: 0,
@@ -2988,6 +3063,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .closeWindow,
                 .waitForWindowInputIdle,
                 .setDockPosition,
+                .setCurrentView,
                 .move,
                 .resize,
                 .rotate,
@@ -3009,6 +3085,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .closeWindow,
                 .waitForWindowInputIdle,
                 .setDockPosition,
+                .setCurrentView,
                 .move,
                 .resize,
                 .rotate,
@@ -3030,6 +3107,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .closeWindow,
                 .waitForWindowInputIdle,
                 .setDockPosition,
+                .setCurrentView,
                 .move,
                 .resize,
                 .rotate,
@@ -3052,6 +3130,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .closeWindow,
                 .waitForWindowInputIdle,
                 .setDockPosition,
+                .setCurrentView,
                 .move,
                 .resize,
                 .rotate,

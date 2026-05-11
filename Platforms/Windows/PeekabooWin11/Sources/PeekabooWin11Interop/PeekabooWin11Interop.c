@@ -30,6 +30,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_SET_LEGACY_VALUE 19
 #define PEEKABOO_WIN11_UIA_ACTION_CLOSE_WINDOW 20
 #define PEEKABOO_WIN11_UIA_ACTION_WAIT_FOR_WINDOW_INPUT_IDLE 21
+#define PEEKABOO_WIN11_UIA_ACTION_SET_CURRENT_VIEW 22
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -1874,6 +1875,45 @@ static void PeekabooWin11SetElementDockPosition(
     IUIAutomationDockPattern_Release(dockPattern);
 }
 
+static void PeekabooWin11SetElementCurrentView(
+    IUIAutomationElement *element,
+    int32_t viewId,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_MultipleViewPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationMultipleViewPattern *multipleViewPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationMultipleViewPattern,
+        (void **)&multipleViewPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || multipleViewPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationMultipleViewPattern_SetCurrentView(
+        multipleViewPattern,
+        viewId);
+    IUIAutomationMultipleViewPattern_Release(multipleViewPattern);
+}
+
 static void PeekabooWin11FocusElement(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationActionResult *result)
@@ -2469,6 +2509,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11WaitForWindowInputIdle(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_DOCK_POSITION) {
             PeekabooWin11SetElementDockPosition(element, dockPosition, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_CURRENT_VIEW) {
+            PeekabooWin11SetElementCurrentView(element, (int32_t)transformFirstValue, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FOCUS) {
             PeekabooWin11FocusElement(element, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_PERFORM_LEGACY_DEFAULT_ACTION) {
@@ -2998,6 +3040,29 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPos
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementCurrentView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t viewId)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_SET_CURRENT_VIEW,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        0,
+        (double)viewId,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,
@@ -3441,6 +3506,25 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPos
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)dockPosition;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementCurrentView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t viewId)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 22;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)viewId;
     result.initializeResult = -2147467263;
     return result;
 }

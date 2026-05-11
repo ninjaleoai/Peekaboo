@@ -302,6 +302,13 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementDockPos
     int32_t elementIndex,
     int32_t dockPosition);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementCurrentView(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t viewId);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11MoveUIAutomationElement(
     int32_t scope,
     int32_t maxDepth,

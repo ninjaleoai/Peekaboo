@@ -68,6 +68,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - Transform2-pattern UI Automation zoom capability and level metadata in
   bounded snapshots
 - MultipleView-pattern UI Automation current-view metadata in bounded snapshots
+- MultipleView-pattern UI Automation set-current-view actions against a bounded
+  snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
   bounded snapshot element index
 - refreshed post-action verification metadata for observable UI Automation
@@ -110,11 +112,13 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-value --index <n>`,
 `automation set-range-value --index <n>`,
 `automation set-scroll-percent --index <n>`,
-`automation set-window-state --index <n>`, and
-`automation close-window --index <n>`, and
-`automation wait-window-idle --index <n>` for Invoke-pattern,
+`automation set-window-state --index <n>`,
+`automation close-window --index <n>`,
+`automation wait-window-idle --index <n>`,
+`automation set-dock-position --index <n>`, and
+`automation set-current-view --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
-and Window-pattern UIA actions.
+Window-pattern, Dock-pattern, and MultipleView-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -132,6 +136,8 @@ before the timeout.
 `automation set-dock-position --index <n> --position <top|left|bottom|right|fill|none>`
 covers Dock-pattern controls that can be rearranged within a docking
 container.
+`automation set-current-view --index <n> --view-id <view-id>` covers
+MultipleView-pattern controls that expose alternate UI presentations.
 `automation scroll-into-view --index <n>` covers ScrollItem-pattern controls
 that can ask their scrollable container to bring the item into view.
 `automation toggle --index <n>` covers Toggle-pattern controls.
@@ -429,6 +435,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-dock-position --scope foreground --index 0 --position right --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation set-current-view --scope foreground --index 0 --view-id 2 --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation scroll-into-view --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation move --scope foreground --index 0 --point 100,100 --max-depth 2 --max-elements 64
@@ -510,7 +518,8 @@ selected. When an element supports the UIA Transform2 pattern, snapshots include
 whether zooming is supported plus current, minimum, and maximum zoom levels when
 UIA reports them. When an element supports the UIA MultipleView pattern,
 snapshots include the current view identifier, localized current view name, and
-supported view count when UIA reports them. Elements also expose stable available actions derived from those
+supported view count when UIA reports them. Elements also expose stable
+available actions derived from those
 patterns and element properties: focus is available when UIA reports that the
 element is keyboard focusable, invoke is available when the Invoke pattern is
 present, performLegacyDefaultAction is available when the Legacy IAccessible
@@ -568,7 +577,9 @@ handle disappeared when a handle and refreshed bounded snapshot are available.
 with a bounded timeout and reports whether UIA observed the window becoming
 idle before the timeout. `automation set-dock-position`
 performs the UIA Dock pattern action, then verifies the refreshed dock position
-when UIA reports it. `automation scroll-into-view`
+when UIA reports it. `automation set-current-view`
+performs the UIA MultipleView pattern action, then verifies the refreshed
+current view identifier when UIA reports it. `automation scroll-into-view`
 performs the UIA ScrollItem pattern action and verifies that the refreshed
 element is no longer off-screen when UIA reports that state.
 `automation move --index <n>` and
