@@ -3034,14 +3034,6 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
-        if let minimum = element.zoomMinimum, zoomLevel < minimum {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation zoom level \(zoomLevel) is below minimum \(minimum)")
-        }
-        if let maximum = element.zoomMaximum, zoomLevel > maximum {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation zoom level \(zoomLevel) is above maximum \(maximum)")
-        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -3076,10 +3068,6 @@ private struct StubDesktopAdapter: DesktopAdapter {
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
         }
-        if element.isEnabled == false {
-            throw DesktopAdapterError.invalidArgument(
-                "UI Automation element index \(elementIndex) value cannot be set because element is disabled")
-        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -3112,6 +3100,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) value cannot be set because element is disabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
