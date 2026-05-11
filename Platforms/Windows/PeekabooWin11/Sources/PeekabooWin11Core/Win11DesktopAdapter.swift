@@ -184,6 +184,17 @@ public struct UnsupportedWin11DesktopAdapter: Win11DesktopAdapter {
         throw self.unsupported()
     }
 
+    public func scrollUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        horizontalAmount _: DesktopUIAutomationScrollAmount,
+        verticalAmount _: DesktopUIAutomationScrollAmount) throws -> DesktopUIAutomationActionResult
+    {
+        throw self.unsupported()
+    }
+
     public func setUIAutomationElementWindowVisualState(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

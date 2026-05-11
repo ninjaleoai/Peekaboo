@@ -346,6 +346,14 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollP
     double horizontalPercent,
     double verticalPercent);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t horizontalAmount,
+    int32_t verticalAmount);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementWindowVisualState(
     int32_t scope,
     int32_t maxDepth,

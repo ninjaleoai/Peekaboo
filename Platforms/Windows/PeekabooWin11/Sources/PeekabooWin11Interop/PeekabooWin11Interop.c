@@ -41,6 +41,7 @@
 #define PEEKABOO_WIN11_UIA_ACTION_GET_GRID_ITEM 30
 #define PEEKABOO_WIN11_UIA_ACTION_FIND_ITEM_BY_PROPERTY 31
 #define PEEKABOO_WIN11_UIA_ACTION_GET_TEXT 32
+#define PEEKABOO_WIN11_UIA_ACTION_SCROLL 33
 #define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_NAME 1
 #define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_AUTOMATION_ID 2
 #define PEEKABOO_WIN11_UIA_TEXT_SOURCE_DOCUMENT 1
@@ -2507,6 +2508,47 @@ static void PeekabooWin11SetElementScrollPercent(
     IUIAutomationScrollPattern_Release(scrollPattern);
 }
 
+static void PeekabooWin11ScrollElement(
+    IUIAutomationElement *element,
+    int32_t horizontalAmount,
+    int32_t verticalAmount,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ScrollPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationScrollPattern *scrollPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationScrollPattern,
+        (void **)&scrollPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || scrollPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    result->actionResult = (int32_t)IUIAutomationScrollPattern_Scroll(
+        scrollPattern,
+        (ScrollAmount)horizontalAmount,
+        (ScrollAmount)verticalAmount);
+    IUIAutomationScrollPattern_Release(scrollPattern);
+}
+
 static void PeekabooWin11SetElementWindowVisualState(
     IUIAutomationElement *element,
     int32_t visualState,
@@ -3716,6 +3758,8 @@ static int32_t PeekabooWin11VisitElementForAction(
                 horizontalScrollPercent,
                 verticalScrollPercent,
                 result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SCROLL) {
+            PeekabooWin11ScrollElement(element, dockPosition, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_SET_WINDOW_VISUAL_STATE) {
             PeekabooWin11SetElementWindowVisualState(element, windowVisualState, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_CLOSE_WINDOW) {
@@ -4212,6 +4256,30 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollP
         verticalPercent,
         0,
         0,
+        0.0,
+        0.0);
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t horizontalAmount,
+    int32_t verticalAmount)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_SCROLL,
+        NULL,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        verticalAmount,
+        horizontalAmount,
         0.0,
         0.0);
 }
@@ -4927,6 +4995,27 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11SetUIAutomationElementScrollP
     result.elementIndex = elementIndex;
     (void)horizontalPercent;
     (void)verticalPercent;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11ScrollUIAutomationElement(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t horizontalAmount,
+    int32_t verticalAmount)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 33;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)horizontalAmount;
+    (void)verticalAmount;
     result.initializeResult = -2147467263;
     return result;
 }

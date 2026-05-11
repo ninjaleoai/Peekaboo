@@ -310,6 +310,18 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation set-scroll-percent is not implemented by this adapter")
     }
 
+    public func scrollUIAutomationElement(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        horizontalAmount _: DesktopUIAutomationScrollAmount,
+        verticalAmount _: DesktopUIAutomationScrollAmount) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation scroll is not implemented by this adapter")
+    }
+
     public func setUIAutomationElementWindowVisualState(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,

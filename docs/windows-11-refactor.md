@@ -124,6 +124,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   element index
 - RangeValue-pattern UI Automation set-range-value actions against a bounded
   snapshot element index
+- Scroll-pattern UI Automation scroll-by-amount actions against a bounded
+  snapshot element index
 - Scroll-pattern UI Automation set-scroll-percent actions against a bounded
   snapshot element index
 - ScrollItem-pattern UI Automation scroll-into-view actions against a bounded
@@ -151,6 +153,7 @@ bounded element lookup over the same snapshot traversal, and
 `automation set-value --index <n>`,
 `automation get-text --index <n>`,
 `automation set-range-value --index <n>`,
+`automation scroll --index <n>`,
 `automation set-scroll-percent --index <n>`,
 `automation set-window-state --index <n>`,
 `automation close-window --index <n>`,
@@ -197,6 +200,8 @@ for enabled, writable controls.
 `automation get-text --index <n> --source <document|selected|visible>` covers
 Text-pattern controls that expose document, selected, or visible text ranges,
 and returns bounded text in the action `value`.
+`automation scroll --index <n> --vertical <amount>` covers Scroll-pattern
+controls that expose semantic horizontal or vertical scroll increments.
 `automation close-window --index <n>` calls the Window pattern `Close` method
 for Window-pattern controls.
 `automation wait-window-idle --index <n> --timeout-ms <n>` calls the Window
@@ -359,6 +364,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: Double) throws -> DesktopUIAutomationActionResult
+    func scrollUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementScrollPercent(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -547,6 +559,8 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-range-value --scope foreground --index 0 --value 42.5 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
+  automation scroll --scope foreground --index 0 --vertical large-increment --max-depth 2 --max-elements 64
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-scroll-percent --scope foreground --index 0 --vertical 75 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation set-window-state --scope foreground --index 0 --state maximized --max-depth 2 --max-elements 64
@@ -686,7 +700,7 @@ when the Legacy IAccessible pattern exposes legacy value metadata on an enabled
 element, setValue is available only when the Value pattern is present and the
 element is enabled and known writable, getText is available when the Text pattern is present, setRangeValue
 is available only when the RangeValue pattern is present and known writable,
-setScrollPercent is available when the Scroll pattern is
+scrollByAmount and setScrollPercent are available when the Scroll pattern is
 present and at least one axis is known scrollable, setWindowVisualState is
 available when the Window pattern is present, closeWindow is available when
 the Window pattern is present, waitForWindowInputIdle is available when the
@@ -737,6 +751,9 @@ bounded result matches Text-pattern metadata already visible in the pre-action
 snapshot. `automation set-range-value` targets RangeValue-pattern elements,
 rejecting known read-only and out-of-range values before calling UIA `SetValue`,
 then verifies the refreshed numeric value when UIA reports one.
+`automation scroll` targets Scroll-pattern elements, rejects known unscrollable
+requested axes before calling UIA `Scroll`, then verifies refreshed scroll
+percentages moved in the requested direction when UIA reports them.
 `automation set-scroll-percent` does the same for Scroll-pattern elements,
 rejecting known unscrollable requested axes before calling UIA
 `SetScrollPercent`, then verifies refreshed scroll percentages for requested

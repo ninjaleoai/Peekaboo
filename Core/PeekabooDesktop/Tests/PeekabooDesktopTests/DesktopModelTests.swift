@@ -145,6 +145,13 @@ final class DesktopModelTests: XCTestCase {
             elementIndex: 0,
             horizontalPercent: nil,
             verticalPercent: 75.0)
+        let scrollByAmount = try await bridge.scrollUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            horizontalAmount: .none,
+            verticalAmount: .largeIncrement)
         let setWindowState = try await bridge.setUIAutomationElementWindowVisualState(
             scope: .root,
             maxDepth: 1,
@@ -382,6 +389,7 @@ final class DesktopModelTests: XCTestCase {
                 .setValue,
                 .getText,
                 .setRangeValue,
+                .scrollByAmount,
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
@@ -536,6 +544,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(setScrollPercent.value, "horizontal=noScroll,vertical=75.0")
         XCTAssertEqual(setScrollPercent.postActionElement?.verticalScrollPercent, 75.0)
         XCTAssertEqual(setScrollPercent.valueWasVerified, true)
+        XCTAssertEqual(scrollByAmount.action, .scrollByAmount)
+        XCTAssertEqual(scrollByAmount.elementIndex, 0)
+        XCTAssertEqual(scrollByAmount.value, "horizontal=none,vertical=large-increment")
+        XCTAssertEqual(scrollByAmount.postActionElement?.verticalScrollPercent, 75.0)
+        XCTAssertEqual(scrollByAmount.valueWasVerified, true)
         XCTAssertEqual(setWindowState.action, .setWindowVisualState)
         XCTAssertEqual(setWindowState.elementIndex, 0)
         XCTAssertEqual(setWindowState.value, "maximized")
@@ -1690,6 +1703,62 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"horizontal=noScroll,vertical=75.0\""))
         XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 75"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRoutesAutomationScroll() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--vertical",
+            "large-increment",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"scrollByAmount\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"horizontal=none,vertical=large-increment\""))
+        XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 75"))
+        XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationScrollAmount() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll",
+            "--index",
+            "0",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --horizontal <amount> or --vertical <amount>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationScrollAmount() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll",
+            "--index",
+            "0",
+            "--vertical",
+            "page-down",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation scroll amount must be large-increment"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationSetScrollPercentAxis() {
@@ -2924,6 +2993,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation set-value --index"))
         XCTAssertTrue(result.stdout.contains("automation get-text --index"))
         XCTAssertTrue(result.stdout.contains("automation set-range-value --index"))
+        XCTAssertTrue(result.stdout.contains("automation scroll --index"))
         XCTAssertTrue(result.stdout.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(result.stdout.contains("automation set-window-state --index"))
         XCTAssertTrue(result.stdout.contains("automation close-window --index"))
@@ -3402,6 +3472,59 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 postActionElement: postActionElement,
                 horizontalPercent: horizontalPercent,
                 verticalPercent: verticalPercent))
+    }
+
+    func scrollUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard horizontalAmount != .none || verticalAmount != .none else {
+            throw DesktopAdapterError.invalidArgument(
+                "At least one UI Automation scroll amount axis must be provided")
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        let horizontalPercent = self.scrollPercent(
+            afterApplying: horizontalAmount,
+            to: element.horizontalScrollPercent ?? 0.0)
+        let verticalPercent = self.scrollPercent(
+            afterApplying: verticalAmount,
+            to: element.verticalScrollPercent ?? 0.0)
+        let postActionElement = self.stubUIAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementValue: element.value ?? "",
+            horizontalScrollPercent: horizontalPercent,
+            verticalScrollPercent: verticalPercent)
+            .elements
+            .first(where: { $0.index == elementIndex })
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .scrollByAmount,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: self.scrollAmountValue(
+                horizontalAmount: horizontalAmount,
+                verticalAmount: verticalAmount),
+            postActionElement: postActionElement,
+            valueWasVerified: self.scrollAmountWasVerified(
+                previousElement: element,
+                postActionElement: postActionElement,
+                horizontalAmount: horizontalAmount,
+                verticalAmount: verticalAmount))
     }
 
     func setUIAutomationElementWindowVisualState(
@@ -4425,6 +4548,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setValue,
                 .getText,
                 .setRangeValue,
+                .scrollByAmount,
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
@@ -4457,6 +4581,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setValue,
                 .getText,
                 .setRangeValue,
+                .scrollByAmount,
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
@@ -4489,6 +4614,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setValue,
                 .getText,
                 .setRangeValue,
+                .scrollByAmount,
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
@@ -4522,6 +4648,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .setValue,
                 .getText,
                 .setRangeValue,
+                .scrollByAmount,
                 .setScrollPercent,
                 .setWindowVisualState,
                 .closeWindow,
@@ -4558,6 +4685,31 @@ private struct StubDesktopAdapter: DesktopAdapter {
         return "horizontal=\(horizontal),vertical=\(vertical)"
     }
 
+    private func scrollAmountValue(
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) -> String
+    {
+        "horizontal=\(horizontalAmount.rawValue),vertical=\(verticalAmount.rawValue)"
+    }
+
+    private func scrollPercent(
+        afterApplying amount: DesktopUIAutomationScrollAmount,
+        to previousPercent: Double) -> Double
+    {
+        switch amount {
+        case .none:
+            return previousPercent
+        case .largeDecrement:
+            return max(0.0, previousPercent - 50.0)
+        case .smallDecrement:
+            return max(0.0, previousPercent - 10.0)
+        case .largeIncrement:
+            return min(100.0, previousPercent + 50.0)
+        case .smallIncrement:
+            return min(100.0, previousPercent + 10.0)
+        }
+    }
+
     private func zoomLevel(
         afterApplying unit: DesktopUIAutomationZoomUnit,
         to previousZoomLevel: Double) -> Double
@@ -4591,6 +4743,58 @@ private struct StubDesktopAdapter: DesktopAdapter {
             return postZoomLevel > previousZoomLevel
         case .largeDecrement, .smallDecrement:
             return postZoomLevel < previousZoomLevel
+        }
+    }
+
+    private func scrollAmountWasVerified(
+        previousElement: DesktopUIAutomationElementSnapshot,
+        postActionElement: DesktopUIAutomationElementSnapshot?,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) -> Bool?
+    {
+        guard let postActionElement else {
+            return nil
+        }
+
+        var observed: [Bool] = []
+        if horizontalAmount != .none {
+            guard let previous = previousElement.horizontalScrollPercent,
+                  let current = postActionElement.horizontalScrollPercent
+            else {
+                return nil
+            }
+            observed.append(self.scrollAmountMoved(
+                previousPercent: previous,
+                currentPercent: current,
+                amount: horizontalAmount))
+        }
+        if verticalAmount != .none {
+            guard let previous = previousElement.verticalScrollPercent,
+                  let current = postActionElement.verticalScrollPercent
+            else {
+                return nil
+            }
+            observed.append(self.scrollAmountMoved(
+                previousPercent: previous,
+                currentPercent: current,
+                amount: verticalAmount))
+        }
+
+        return observed.isEmpty ? nil : observed.allSatisfy { $0 }
+    }
+
+    private func scrollAmountMoved(
+        previousPercent: Double,
+        currentPercent: Double,
+        amount: DesktopUIAutomationScrollAmount) -> Bool
+    {
+        switch amount {
+        case .none:
+            return currentPercent == previousPercent
+        case .largeIncrement, .smallIncrement:
+            return currentPercent >= previousPercent
+        case .largeDecrement, .smallDecrement:
+            return currentPercent <= previousPercent
         }
     }
 

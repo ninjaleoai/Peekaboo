@@ -65,6 +65,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: Double) throws -> DesktopUIAutomationActionResult
+    func scrollUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementScrollPercent(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -280,6 +287,13 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         value: Double) async throws -> DesktopUIAutomationActionResult
+    func scrollUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) async throws -> DesktopUIAutomationActionResult
     func setUIAutomationElementScrollPercent(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -621,6 +635,23 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             value: value)
+    }
+
+    public func scrollUIAutomationElement(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        horizontalAmount: DesktopUIAutomationScrollAmount,
+        verticalAmount: DesktopUIAutomationScrollAmount) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.scrollUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            horizontalAmount: horizontalAmount,
+            verticalAmount: verticalAmount)
     }
 
     public func setUIAutomationElementScrollPercent(

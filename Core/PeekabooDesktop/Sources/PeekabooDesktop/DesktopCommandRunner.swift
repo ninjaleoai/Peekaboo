@@ -174,7 +174,7 @@ public enum DesktopCommandRunner {
                 "Missing automation subcommand: status, snapshot, element, invoke, " +
                     "focus, " +
                     "legacy-default-action, " +
-                    "set-legacy-value, set-value, get-text, set-range-value, set-scroll-percent, " +
+                    "set-legacy-value, set-value, get-text, set-range-value, scroll, set-scroll-percent, " +
                     "set-window-state, " +
                     "close-window, wait-window-idle, set-dock-position, set-current-view, set-zoom, " +
                     "zoom-by-unit, start-synchronized-input, cancel-synchronized-input, " +
@@ -204,6 +204,8 @@ public enum DesktopCommandRunner {
             try self.runAutomationGetText(args: args, adapter: adapter, stdout: stdout)
         case "set-range-value", "setRangeValue":
             try self.runAutomationSetRangeValue(args: args, adapter: adapter, stdout: stdout)
+        case "scroll", "scroll-by-amount", "scrollByAmount":
+            try self.runAutomationScroll(args: args, adapter: adapter, stdout: stdout)
         case "set-scroll-percent", "setScrollPercent":
             try self.runAutomationSetScrollPercent(args: args, adapter: adapter, stdout: stdout)
         case "set-window-state", "setWindowState":
@@ -556,6 +558,44 @@ public enum DesktopCommandRunner {
             elementIndex: self.parseUIAutomationElementIndex(indexValue),
             horizontalPercent: try horizontalValue.map(self.parseUIAutomationScrollPercent),
             verticalPercent: try verticalValue.map(self.parseUIAutomationScrollPercent))))
+    }
+
+    private static func runAutomationScroll(
+        args: [String],
+        adapter: any DesktopAdapter,
+        stdout: OutputHandler) throws
+    {
+        let indexValue = try self.value(after: "--index", in: args) ??
+            self.value(after: "--element-index", in: args)
+        guard let indexValue else {
+            throw DesktopAdapterError.invalidArgument("Missing --index <element-index> for automation scroll")
+        }
+
+        let horizontalValue = try self.value(after: "--horizontal", in: args) ??
+            self.value(after: "--horizontal-amount", in: args)
+        let verticalValue = try self.value(after: "--vertical", in: args) ??
+            self.value(after: "--vertical-amount", in: args)
+        let horizontalAmount = try horizontalValue.map(self.parseUIAutomationScrollAmount) ?? .none
+        let verticalAmount = try verticalValue.map(self.parseUIAutomationScrollAmount) ?? .none
+        guard horizontalAmount != .none || verticalAmount != .none else {
+            throw DesktopAdapterError.invalidArgument(
+                "Missing --horizontal <amount> or --vertical <amount> for automation scroll")
+        }
+
+        let scope = try self.value(after: "--scope", in: args)
+            .map(self.parseUIAutomationSnapshotScope) ?? .foreground
+        let maxDepth = try self.value(after: "--max-depth", in: args)
+            .map(self.parseUIAutomationMaxDepth) ?? 2
+        let maxElements = try self.value(after: "--max-elements", in: args)
+            .map(self.parseUIAutomationMaxElements) ?? 64
+
+        try stdout(self.success(adapter.scrollUIAutomationElement(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: self.parseUIAutomationElementIndex(indexValue),
+            horizontalAmount: horizontalAmount,
+            verticalAmount: verticalAmount)))
     }
 
     private static func runAutomationSetWindowState(
@@ -1659,6 +1699,25 @@ public enum DesktopCommandRunner {
         }
     }
 
+    private static func parseUIAutomationScrollAmount(_ value: String) throws -> DesktopUIAutomationScrollAmount {
+        switch value {
+        case "none", "no-amount", "noAmount":
+            return .none
+        case "large-decrement", "largeDecrement":
+            return .largeDecrement
+        case "small-decrement", "smallDecrement":
+            return .smallDecrement
+        case "large-increment", "largeIncrement":
+            return .largeIncrement
+        case "small-increment", "smallIncrement":
+            return .smallIncrement
+        default:
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation scroll amount must be large-increment, small-increment, " +
+                    "large-decrement, small-decrement, or none")
+        }
+    }
+
     private static func parseUIAutomationSynchronizedInputType(
         _ value: String) throws -> DesktopUIAutomationSynchronizedInputType
     {
@@ -1823,6 +1882,10 @@ public enum DesktopCommandRunner {
           automation get-text --index <n> [--source document|selected|visible] [--max-length <n>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-range-value --index <n> --value <number>
+            [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+          automation scroll --index <n>
+            [--horizontal <large-increment|small-increment|large-decrement|small-decrement|none>]
+            [--vertical <large-increment|small-increment|large-decrement|small-decrement|none>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation set-scroll-percent --index <n> [--horizontal <percent>] [--vertical <percent>]
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]

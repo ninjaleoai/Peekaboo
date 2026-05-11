@@ -49,6 +49,7 @@ final class Win11ModelTests: XCTestCase {
                 .addUIAutomationItemToSelection,
                 .removeUIAutomationItemFromSelection,
                 .setUIAutomationRangeValue,
+                .scrollUIAutomationElement,
                 .setUIAutomationScrollPercent,
                 .setUIAutomationWindowVisualState,
                 .closeUIAutomationWindow,
@@ -93,6 +94,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationValue))
         XCTAssertTrue(info.capabilities.contains(.getUIAutomationText))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationRangeValue))
+        XCTAssertTrue(info.capabilities.contains(.scrollUIAutomationElement))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationScrollPercent))
         XCTAssertTrue(info.capabilities.contains(.setUIAutomationWindowVisualState))
         XCTAssertTrue(info.capabilities.contains(.closeUIAutomationWindow))
@@ -199,6 +201,13 @@ final class Win11ModelTests: XCTestCase {
             elementIndex: 0,
             horizontalPercent: nil,
             verticalPercent: 75.0))
+        XCTAssertThrowsError(try adapter.scrollUIAutomationElement(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            horizontalAmount: .none,
+            verticalAmount: .largeIncrement))
         XCTAssertThrowsError(try adapter.setUIAutomationElementWindowVisualState(
             scope: .root,
             maxDepth: 1,
@@ -361,6 +370,7 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation set-value --index"))
         XCTAssertTrue(output.contains("automation get-text --index"))
         XCTAssertTrue(output.contains("automation set-range-value --index"))
+        XCTAssertTrue(output.contains("automation scroll --index"))
         XCTAssertTrue(output.contains("automation set-scroll-percent --index"))
         XCTAssertTrue(output.contains("automation set-window-state --index"))
         XCTAssertTrue(output.contains("automation close-window --index"))

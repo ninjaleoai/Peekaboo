@@ -32,6 +32,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case addUIAutomationItemToSelection
     case removeUIAutomationItemFromSelection
     case setUIAutomationRangeValue
+    case scrollUIAutomationElement
     case setUIAutomationScrollPercent
     case setUIAutomationWindowVisualState
     case closeUIAutomationWindow
@@ -401,6 +402,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case addToSelection
     case removeFromSelection
     case setRangeValue
+    case scrollByAmount
     case setScrollPercent
     case setWindowVisualState
     case closeWindow
@@ -470,6 +472,14 @@ public enum DesktopUIAutomationDockPosition: String, Codable, Equatable, Sendabl
 }
 
 public enum DesktopUIAutomationZoomUnit: String, Codable, Equatable, Sendable {
+    case none
+    case largeDecrement = "large-decrement"
+    case smallDecrement = "small-decrement"
+    case largeIncrement = "large-increment"
+    case smallIncrement = "small-increment"
+}
+
+public enum DesktopUIAutomationScrollAmount: String, Codable, Equatable, Sendable {
     case none
     case largeDecrement = "large-decrement"
     case smallDecrement = "small-decrement"
