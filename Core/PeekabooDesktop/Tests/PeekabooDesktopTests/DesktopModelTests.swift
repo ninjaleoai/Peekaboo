@@ -1764,6 +1764,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsKnownUnsupportedAutomationSetScrollPercentAxis() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "set-scroll-percent",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--horizontal",
+            "25",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 cannot scroll horizontally"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationScroll() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -1788,6 +1810,28 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"horizontal=none,vertical=large-increment\""))
         XCTAssertTrue(result.stdout.contains("\"verticalScrollPercent\" : 75"))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsKnownUnsupportedAutomationScrollAxis() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "scroll",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--horizontal",
+            "large-increment",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 cannot scroll horizontally"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationScrollAmount() {
@@ -3474,6 +3518,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
             throw DesktopAdapterError.invalidArgument(
                 "UI Automation element index \(elementIndex) is not enabled")
         }
+        if horizontalPercent != nil, element.isHorizontallyScrollable == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll horizontally")
+        }
+        if verticalPercent != nil, element.isVerticallyScrollable == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll vertically")
+        }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
             maxDepth: maxDepth,
@@ -3785,6 +3837,14 @@ private struct StubDesktopAdapter: DesktopAdapter {
         }
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if horizontalAmount != .none, element.isHorizontallyScrollable == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll horizontally")
+        }
+        if verticalAmount != .none, element.isVerticallyScrollable == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) cannot scroll vertically")
         }
         let horizontalPercent = self.scrollPercent(
             afterApplying: horizontalAmount,
