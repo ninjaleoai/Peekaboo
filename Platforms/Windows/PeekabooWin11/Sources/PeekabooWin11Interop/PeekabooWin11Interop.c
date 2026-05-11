@@ -39,6 +39,9 @@
 #define PEEKABOO_WIN11_UIA_ACTION_NAVIGATE_CUSTOM 28
 #define PEEKABOO_WIN11_UIA_ACTION_GET_SPREADSHEET_ITEM_BY_NAME 29
 #define PEEKABOO_WIN11_UIA_ACTION_GET_GRID_ITEM 30
+#define PEEKABOO_WIN11_UIA_ACTION_FIND_ITEM_BY_PROPERTY 31
+#define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_NAME 1
+#define PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_AUTOMATION_ID 2
 #define PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL -1.0
 
 static int PeekabooWin11Succeeded(HRESULT result) {
@@ -3255,6 +3258,98 @@ static void PeekabooWin11GetSpreadsheetItemByName(
     }
 }
 
+static HRESULT PeekabooWin11PrepareItemContainerProperty(
+    int32_t property,
+    const char *value,
+    PROPERTYID *propertyId,
+    VARIANT *propertyValue)
+{
+    if (propertyId == NULL || propertyValue == NULL || value == NULL) {
+        return E_INVALIDARG;
+    }
+
+    VariantInit(propertyValue);
+    if (property == PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_NAME) {
+        *propertyId = UIA_NamePropertyId;
+    } else if (property == PEEKABOO_WIN11_UIA_ITEM_CONTAINER_PROPERTY_AUTOMATION_ID) {
+        *propertyId = UIA_AutomationIdPropertyId;
+    } else {
+        return E_INVALIDARG;
+    }
+
+    BSTR textValue = PeekabooWin11CopyUTF8BSTR(value);
+    if (textValue == NULL) {
+        return E_OUTOFMEMORY;
+    }
+
+    propertyValue->vt = VT_BSTR;
+    propertyValue->bstrVal = textValue;
+    return S_OK;
+}
+
+static void PeekabooWin11FindItemByProperty(
+    IUIAutomationElement *element,
+    int32_t property,
+    const char *value,
+    PeekabooWin11UIAutomationActionResult *result)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_ItemContainerPatternId,
+        &patternObject);
+    result->patternResult = (int32_t)patternResult;
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        if (PeekabooWin11Succeeded(patternResult)) {
+            result->patternResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    IUIAutomationItemContainerPattern *itemContainerPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationItemContainerPattern,
+        (void **)&itemContainerPattern);
+    result->queryResult = (int32_t)queryResult;
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || itemContainerPattern == NULL) {
+        if (PeekabooWin11Succeeded(queryResult)) {
+            result->queryResult = (int32_t)E_POINTER;
+        }
+        return;
+    }
+
+    PROPERTYID propertyId = 0;
+    VARIANT propertyValue;
+    HRESULT prepareResult = PeekabooWin11PrepareItemContainerProperty(
+        property,
+        value,
+        &propertyId,
+        &propertyValue);
+    if (!PeekabooWin11Succeeded(prepareResult)) {
+        result->actionResult = (int32_t)prepareResult;
+        IUIAutomationItemContainerPattern_Release(itemContainerPattern);
+        return;
+    }
+
+    IUIAutomationElement *resultElement = NULL;
+    result->actionResult = (int32_t)IUIAutomationItemContainerPattern_FindItemByProperty(
+        itemContainerPattern,
+        NULL,
+        propertyId,
+        propertyValue,
+        &resultElement);
+    VariantClear(&propertyValue);
+    IUIAutomationItemContainerPattern_Release(itemContainerPattern);
+
+    if (PeekabooWin11Succeeded((HRESULT)result->actionResult) && resultElement != NULL) {
+        PeekabooWin11CopyActionResultElement(resultElement, result);
+        IUIAutomationElement_Release(resultElement);
+    }
+}
+
 static void PeekabooWin11GetGridItem(
     IUIAutomationElement *element,
     int32_t row,
@@ -3439,6 +3534,8 @@ static int32_t PeekabooWin11VisitElementForAction(
             PeekabooWin11NavigateCustomElement(element, dockPosition, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_GET_SPREADSHEET_ITEM_BY_NAME) {
             PeekabooWin11GetSpreadsheetItemByName(element, value, result);
+        } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_FIND_ITEM_BY_PROPERTY) {
+            PeekabooWin11FindItemByProperty(element, dockPosition, value, result);
         } else if (result->action == PEEKABOO_WIN11_UIA_ACTION_GET_GRID_ITEM) {
             PeekabooWin11GetGridItem(
                 element,
@@ -4136,6 +4233,30 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationSpreadsheetIte
         0.0);
 }
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11FindUIAutomationItemByProperty(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t property,
+    const char *value)
+{
+    return PeekabooWin11PerformUIAutomationAction(
+        scope,
+        maxDepth,
+        maxElements,
+        elementIndex,
+        PEEKABOO_WIN11_UIA_ACTION_FIND_ITEM_BY_PROPERTY,
+        value,
+        0.0,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        PEEKABOO_WIN11_UIA_SCROLL_NO_SCROLL,
+        0,
+        property,
+        0.0,
+        0.0);
+}
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationGridItem(
     int32_t scope,
     int32_t maxDepth,
@@ -4756,6 +4877,27 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationSpreadsheetIte
     result.maxElements = maxElements;
     result.elementIndex = elementIndex;
     (void)name;
+    result.initializeResult = -2147467263;
+    return result;
+}
+
+PeekabooWin11UIAutomationActionResult PeekabooWin11FindUIAutomationItemByProperty(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t property,
+    const char *value)
+{
+    PeekabooWin11UIAutomationActionResult result;
+    memset(&result, 0, sizeof(result));
+    result.action = 31;
+    result.scope = scope;
+    result.maxDepth = maxDepth;
+    result.maxElements = maxElements;
+    result.elementIndex = elementIndex;
+    (void)property;
+    (void)value;
     result.initializeResult = -2147467263;
     return result;
 }

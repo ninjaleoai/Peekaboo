@@ -123,6 +123,13 @@ public protocol DesktopAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         direction: DesktopUIAutomationNavigationDirection) throws -> DesktopUIAutomationActionResult
+    func findUIAutomationItemByProperty(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) throws -> DesktopUIAutomationActionResult
     func getUIAutomationSpreadsheetItemByName(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -324,6 +331,13 @@ public protocol DesktopAsyncAdapter: Sendable {
         maxElements: Int,
         elementIndex: Int,
         direction: DesktopUIAutomationNavigationDirection) async throws -> DesktopUIAutomationActionResult
+    func findUIAutomationItemByProperty(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) async throws -> DesktopUIAutomationActionResult
     func getUIAutomationSpreadsheetItemByName(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -754,6 +768,23 @@ public struct DesktopAdapterAsyncBridge<Adapter: DesktopAdapter>: DesktopAsyncAd
             maxElements: maxElements,
             elementIndex: elementIndex,
             name: name)
+    }
+
+    public func findUIAutomationItemByProperty(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) async throws -> DesktopUIAutomationActionResult
+    {
+        try self.adapter.findUIAutomationItemByProperty(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements,
+            elementIndex: elementIndex,
+            property: property,
+            value: value)
     }
 
     public func getUIAutomationGridItem(

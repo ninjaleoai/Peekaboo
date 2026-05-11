@@ -42,6 +42,7 @@ public enum DesktopPlatformCapability: String, CaseIterable, Codable, Sendable {
     case startUIAutomationSynchronizedInput
     case cancelUIAutomationSynchronizedInput
     case navigateUIAutomationCustom
+    case findUIAutomationItemByProperty
     case getUIAutomationSpreadsheetItemByName
     case getUIAutomationGridItem
     case moveUIAutomationElement
@@ -409,6 +410,7 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case startSynchronizedInput
     case cancelSynchronizedInput
     case navigateCustom
+    case findItemByProperty
     case getSpreadsheetItem
     case getGridItem
     case move
@@ -416,6 +418,11 @@ public enum DesktopUIAutomationAction: String, Codable, Equatable, Sendable {
     case rotate
     case realize
     case scrollIntoView
+}
+
+public enum DesktopUIAutomationItemContainerProperty: String, Codable, Equatable, Sendable {
+    case name
+    case automationId
 }
 
 public enum DesktopUIAutomationToggleState: String, Codable, Equatable, Sendable {

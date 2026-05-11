@@ -189,6 +189,13 @@ final class DesktopModelTests: XCTestCase {
             maxElements: 4,
             elementIndex: 0,
             name: "Revenue")
+        let findItem = try await bridge.findUIAutomationItemByProperty(
+            scope: .root,
+            maxDepth: 1,
+            maxElements: 4,
+            elementIndex: 0,
+            property: .name,
+            value: "Revenue")
         let getGridItem = try await bridge.getUIAutomationGridItem(
             scope: .root,
             maxDepth: 1,
@@ -365,6 +372,7 @@ final class DesktopModelTests: XCTestCase {
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
                 .navigateCustom,
+                .findItemByProperty,
                 .getSpreadsheetItem,
                 .getGridItem,
                 .move,
@@ -558,6 +566,11 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(getSpreadsheetItem.value, "name=Revenue")
         XCTAssertEqual(getSpreadsheetItem.resultElement?.name, "Desktop")
         XCTAssertNil(getSpreadsheetItem.postActionElement)
+        XCTAssertEqual(findItem.action, .findItemByProperty)
+        XCTAssertEqual(findItem.elementIndex, 0)
+        XCTAssertEqual(findItem.value, "property=name,value=Revenue")
+        XCTAssertEqual(findItem.resultElement?.name, "Desktop")
+        XCTAssertNil(findItem.postActionElement)
         XCTAssertEqual(getGridItem.action, .getGridItem)
         XCTAssertEqual(getGridItem.elementIndex, 0)
         XCTAssertEqual(getGridItem.value, "row=1,column=0")
@@ -979,6 +992,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"startSynchronizedInput\""))
         XCTAssertTrue(result.stdout.contains("\"cancelSynchronizedInput\""))
         XCTAssertTrue(result.stdout.contains("\"navigateCustom\""))
+        XCTAssertTrue(result.stdout.contains("\"findItemByProperty\""))
         XCTAssertTrue(result.stdout.contains("\"getSpreadsheetItem\""))
         XCTAssertTrue(result.stdout.contains("\"getGridItem\""))
         XCTAssertTrue(result.stdout.contains("\"rotate\""))
@@ -1794,6 +1808,33 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"resultElement\""))
     }
 
+    func testDesktopCommandRunnerRoutesAutomationFindItemByProperty() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "find-item",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--property",
+            "name",
+            "--value",
+            "Revenue",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ])
+
+        XCTAssertEqual(result.status, 0)
+        XCTAssertEqual(result.stderr, "")
+        XCTAssertTrue(result.stdout.contains("\"action\" : \"findItemByProperty\""))
+        XCTAssertTrue(result.stdout.contains("\"elementIndex\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"value\" : \"property=name,value=Revenue\""))
+        XCTAssertTrue(result.stdout.contains("\"resultElement\""))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationGetGridItem() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -2121,6 +2162,72 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(result.status, 1)
         XCTAssertEqual(result.stdout, "")
         XCTAssertTrue(result.stderr.contains("Missing --name <cell-name>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationFindItemIndex() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "find-item",
+            "--property",
+            "name",
+            "--value",
+            "Revenue",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --index <element-index>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationFindItemProperty() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "find-item",
+            "--index",
+            "0",
+            "--value",
+            "Revenue",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --property <name|automation-id>"))
+    }
+
+    func testDesktopCommandRunnerRejectsMissingAutomationFindItemValue() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "find-item",
+            "--index",
+            "0",
+            "--property",
+            "name",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("Missing --value <property-value>"))
+    }
+
+    func testDesktopCommandRunnerRejectsInvalidAutomationFindItemProperty() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "find-item",
+            "--index",
+            "0",
+            "--property",
+            "class-name",
+            "--value",
+            "ListItem",
+        ])
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation item property must be name or automation-id"))
     }
 
     func testDesktopCommandRunnerRejectsMissingAutomationGetGridItemIndex() {
@@ -2570,6 +2677,7 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("automation start-synchronized-input --index"))
         XCTAssertTrue(result.stdout.contains("automation cancel-synchronized-input --index"))
         XCTAssertTrue(result.stdout.contains("automation navigate-custom --index"))
+        XCTAssertTrue(result.stdout.contains("automation find-item --index"))
         XCTAssertTrue(result.stdout.contains("automation get-spreadsheet-item --index"))
         XCTAssertTrue(result.stdout.contains("automation get-grid-item --index"))
         XCTAssertTrue(result.stdout.contains("automation move --index"))
@@ -3314,6 +3422,33 @@ private struct StubDesktopAdapter: DesktopAdapter {
             resultElement: element)
     }
 
+    func findUIAutomationItemByProperty(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) throws -> DesktopUIAutomationActionResult
+    {
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .findItemByProperty,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "property=\(property.rawValue),value=\(value)",
+            resultElement: element)
+    }
+
     func getUIAutomationGridItem(
         scope: DesktopUIAutomationSnapshotScope,
         maxDepth: Int,
@@ -3944,6 +4079,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
                 .navigateCustom,
+                .findItemByProperty,
                 .getSpreadsheetItem,
                 .getGridItem,
                 .move,
@@ -3974,6 +4110,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
                 .navigateCustom,
+                .findItemByProperty,
                 .getSpreadsheetItem,
                 .getGridItem,
                 .move,
@@ -4004,6 +4141,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
                 .navigateCustom,
+                .findItemByProperty,
                 .getSpreadsheetItem,
                 .getGridItem,
                 .move,
@@ -4035,6 +4173,7 @@ private struct StubDesktopAdapter: DesktopAdapter {
                 .startSynchronizedInput,
                 .cancelSynchronizedInput,
                 .navigateCustom,
+                .findItemByProperty,
                 .getSpreadsheetItem,
                 .getGridItem,
                 .move,

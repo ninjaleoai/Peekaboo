@@ -410,6 +410,14 @@ PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationSpreadsheetIte
     int32_t elementIndex,
     const char *name);
 
+PeekabooWin11UIAutomationActionResult PeekabooWin11FindUIAutomationItemByProperty(
+    int32_t scope,
+    int32_t maxDepth,
+    int32_t maxElements,
+    int32_t elementIndex,
+    int32_t property,
+    const char *value);
+
 PeekabooWin11UIAutomationActionResult PeekabooWin11GetUIAutomationGridItem(
     int32_t scope,
     int32_t maxDepth,

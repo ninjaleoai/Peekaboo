@@ -95,6 +95,9 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - CustomNavigation-pattern UI Automation navigate actions against a bounded
   snapshot element index, returning the navigated UIA element in
   `resultElement`
+- ItemContainer-pattern UI Automation find-item actions against a bounded
+  snapshot element index, returning the matching item UIA element in
+  `resultElement`
 - Spreadsheet-pattern UI Automation get-item-by-name actions against a bounded
   snapshot element index, returning the matching cell UIA element in
   `resultElement`
@@ -155,13 +158,14 @@ bounded element lookup over the same snapshot traversal, and
 `automation start-synchronized-input --index <n>`,
 `automation cancel-synchronized-input --index <n>`,
 `automation navigate-custom --index <n>`,
+`automation find-item --index <n>`,
 `automation get-spreadsheet-item --index <n>`,
 `automation get-grid-item --index <n>`,
 and `automation realize --index <n>` for Invoke-pattern,
 LegacyIAccessible-pattern, Value-pattern, RangeValue-pattern, Scroll-pattern,
 Window-pattern, Dock-pattern, MultipleView-pattern, Transform2-pattern,
-SynchronizedInput-pattern, CustomNavigation-pattern, Spreadsheet-pattern,
-Grid-pattern, and VirtualizedItem-pattern UIA actions.
+SynchronizedInput-pattern, CustomNavigation-pattern, ItemContainer-pattern,
+Spreadsheet-pattern, Grid-pattern, and VirtualizedItem-pattern UIA actions.
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is keyboard
 focusable.
@@ -194,6 +198,10 @@ to stop listening.
 <parent|next-sibling|previous-sibling|first-child|last-child>` covers
 CustomNavigation-pattern controls that expose a custom logical navigation
 order, and returns the target element snapshot in the action `resultElement`.
+`automation find-item --index <n> --property <name|automation-id> --value
+<value>` covers ItemContainer-pattern controls that can search by Name or
+AutomationId, and returns the matching item element snapshot in the action
+`resultElement`.
 `automation get-spreadsheet-item --index <n> --name <cell-name>` covers
 Spreadsheet-pattern controls that expose friendly cell names, and returns the
 matching cell element snapshot in the action `resultElement`.
@@ -661,9 +669,10 @@ UIA reports that zoom is supported, zoomByUnit is available under the same
 Transform2 zoom condition, startSynchronizedInput and cancelSynchronizedInput
 are available when the SynchronizedInput pattern is present, move, resize, and
 rotate are available when the Transform pattern is present and UIA reports the
-matching capability, getSpreadsheetItem is available when the Spreadsheet
-pattern is present, getGridItem is available when the Grid pattern is present,
-realize is available when the VirtualizedItem pattern is
+matching capability, findItemByProperty is available when the ItemContainer
+pattern is present, getSpreadsheetItem is available when the Spreadsheet pattern
+is present, getGridItem is available when the Grid pattern is present, realize
+is available when the VirtualizedItem pattern is
 present, toggle is available when the Toggle pattern is present, expand is
 available for collapsed or partially expanded ExpandCollapse elements, collapse
 is available for expanded or
@@ -723,6 +732,10 @@ or mouse input type. `automation cancel-synchronized-input` performs the same
 pattern's `Cancel` method. These actions return the pre-action element metadata
 without claiming post-action verification because UIA does not expose a stable
 listening-state property in the bounded snapshot.
+`automation find-item --index <n> --property <name|automation-id> --value
+<value>` performs the UIA ItemContainer pattern's `FindItemByProperty` method
+from the start of the container and returns the matching item in
+`resultElement`.
 `automation get-grid-item --index <n> --row <row> --column <column>` performs
 the UIA Grid pattern's `GetItem` method for zero-based coordinates and returns
 the resulting grid item in `resultElement`.

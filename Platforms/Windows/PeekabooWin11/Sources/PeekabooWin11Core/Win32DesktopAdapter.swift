@@ -50,6 +50,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                 .startUIAutomationSynchronizedInput,
                 .cancelUIAutomationSynchronizedInput,
                 .navigateUIAutomationCustom,
+                .findUIAutomationItemByProperty,
                 .getUIAutomationSpreadsheetItemByName,
                 .getUIAutomationGridItem,
                 .moveUIAutomationElement,
@@ -1575,6 +1576,59 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             elementIndex: elementIndex,
             element: element,
             value: "name=\(name)",
+            resultElement: Self.uiAutomationResultElement(from: nativeResult))
+    }
+
+    public func findUIAutomationItemByProperty(
+        scope: DesktopUIAutomationSnapshotScope,
+        maxDepth: Int,
+        maxElements: Int,
+        elementIndex: Int,
+        property: DesktopUIAutomationItemContainerProperty,
+        value: String) throws -> DesktopUIAutomationActionResult
+    {
+        guard !value.isEmpty else {
+            throw Win11DesktopError.invalidArgument("UI Automation item container value must not be empty")
+        }
+        guard elementIndex >= 0 else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index must be a non-negative integer")
+        }
+
+        let snapshot = try self.uiAutomationSnapshot(
+            scope: scope,
+            maxDepth: maxDepth,
+            maxElements: maxElements)
+        if let error = snapshot.error {
+            throw Win11DesktopError.nativeCallFailed(error)
+        }
+        guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) was not found in the bounded snapshot")
+        }
+        guard element.supportedPatterns.contains(.itemContainer) else {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) does not support item container")
+        }
+
+        let nativeResult = PeekabooWin11FindUIAutomationItemByProperty(
+            Self.nativeUIAutomationScope(scope),
+            Int32(maxDepth),
+            Int32(maxElements),
+            Int32(elementIndex),
+            Self.nativeItemContainerProperty(property),
+            value)
+        try Self.validateUIAutomationFindItemByProperty(nativeResult)
+
+        return DesktopUIAutomationActionResult(
+            nativeBackend: snapshot.nativeBackend,
+            action: .findItemByProperty,
+            scope: snapshot.scope,
+            maxDepth: snapshot.maxDepth,
+            maxElements: snapshot.maxElements,
+            elementIndex: elementIndex,
+            element: element,
+            value: "property=\(property.rawValue),value=\(value)",
             resultElement: Self.uiAutomationResultElement(from: nativeResult))
     }
 
@@ -3165,6 +3219,58 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
     }
 
+    private static func validateUIAutomationFindItemByProperty(
+        _ action: PeekabooWin11UIAutomationActionResult) throws
+    {
+        if action.errorResult < 0 {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation find-item failed: \(Self.hresultDescription(action.errorResult))")
+        }
+
+        let didReachAutomation = action.createResult != 0 ||
+            action.rootResult != 0 ||
+            action.walkerResult != 0 ||
+            action.elementCount > 0
+        if action.initializeResult < 0, !didReachAutomation {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoInitialize failed: \(Self.hresultDescription(action.initializeResult))")
+        }
+        if !Self.succeeded(action.createResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "CoCreateInstance(CUIAutomation) failed: \(Self.hresultDescription(action.createResult))")
+        }
+        if !Self.succeeded(action.rootResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation root lookup failed: \(Self.hresultDescription(action.rootResult))")
+        }
+        if !Self.succeeded(action.walkerResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "UI Automation ControlViewWalker failed: \(Self.hresultDescription(action.walkerResult))")
+        }
+        if action.foundElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) was not found in the bounded snapshot")
+        }
+        if !Self.succeeded(action.patternResult) {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(action.elementIndex) does not support item container")
+        }
+        if !Self.succeeded(action.queryResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationItemContainerPattern query failed: " +
+                    "\(Self.hresultDescription(action.queryResult))")
+        }
+        if !Self.succeeded(action.actionResult) {
+            throw Win11DesktopError.nativeCallFailed(
+                "IUIAutomationItemContainerPattern.FindItemByProperty failed: " +
+                    "\(Self.hresultDescription(action.actionResult))")
+        }
+        if action.hasResultElement == 0 {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation item container did not find a matching item")
+        }
+    }
+
     private static func validateUIAutomationToggle(
         _ action: PeekabooWin11UIAutomationActionResult) throws
     {
@@ -4022,6 +4128,9 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.customNavigation) {
             actions.append(.navigateCustom)
         }
+        if supportedPatterns.contains(.itemContainer) {
+            actions.append(.findItemByProperty)
+        }
         if supportedPatterns.contains(.spreadsheet) {
             actions.append(.getSpreadsheetItem)
         }
@@ -4233,6 +4342,17 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             return 3
         case .lastChild:
             return 4
+        }
+    }
+
+    private static func nativeItemContainerProperty(
+        _ property: DesktopUIAutomationItemContainerProperty) -> Int32
+    {
+        switch property {
+        case .name:
+            return 1
+        case .automationId:
+            return 2
         }
     }
 

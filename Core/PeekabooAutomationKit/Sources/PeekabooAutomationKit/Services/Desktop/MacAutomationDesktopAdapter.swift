@@ -495,6 +495,18 @@ public final class MacAutomationDesktopAdapter: DesktopAsyncAdapter {
             "UI Automation get-spreadsheet-item is not implemented by this adapter")
     }
 
+    public func findUIAutomationItemByProperty(
+        scope _: DesktopUIAutomationSnapshotScope,
+        maxDepth _: Int,
+        maxElements _: Int,
+        elementIndex _: Int,
+        property _: DesktopUIAutomationItemContainerProperty,
+        value _: String) async throws -> DesktopUIAutomationActionResult
+    {
+        throw DesktopAdapterError.unsupportedPlatform(
+            "UI Automation find-item is not implemented by this adapter")
+    }
+
     public func getUIAutomationGridItem(
         scope _: DesktopUIAutomationSnapshotScope,
         maxDepth _: Int,
