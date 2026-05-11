@@ -415,6 +415,8 @@ static void PeekabooWin11CopyElementPatterns(
     PeekabooWin11MarkPattern(element, UIA_VirtualizedItemPatternId, 1ULL << 20, snapshot);
     PeekabooWin11MarkPattern(element, UIA_AnnotationPatternId, 1ULL << 21, snapshot);
     PeekabooWin11MarkPattern(element, UIA_StylesPatternId, 1ULL << 22, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_DragPatternId, 1ULL << 23, snapshot);
+    PeekabooWin11MarkPattern(element, UIA_DropTargetPatternId, 1ULL << 24, snapshot);
 }
 
 static void PeekabooWin11CopyElementValuePattern(
@@ -1030,6 +1032,29 @@ static void PeekabooWin11CopyElementArrayCount(
     }
 }
 
+static void PeekabooWin11CopySafeArrayCount(
+    HRESULT result,
+    SAFEARRAY *values,
+    int32_t *hasCount,
+    int32_t *count)
+{
+    if (PeekabooWin11Succeeded(result) && values != NULL) {
+        LONG lowerBound = 0;
+        LONG upperBound = -1;
+        HRESULT lowerBoundResult = SafeArrayGetLBound(values, 1, &lowerBound);
+        HRESULT upperBoundResult = SafeArrayGetUBound(values, 1, &upperBound);
+        if (PeekabooWin11Succeeded(lowerBoundResult) &&
+            PeekabooWin11Succeeded(upperBoundResult))
+        {
+            *hasCount = 1;
+            *count = upperBound >= lowerBound ? (int32_t)(upperBound - lowerBound + 1) : 0;
+        }
+    }
+    if (values != NULL) {
+        SafeArrayDestroy(values);
+    }
+}
+
 static void PeekabooWin11CopyElementTablePattern(
     IUIAutomationElement *element,
     PeekabooWin11UIAutomationElementSnapshot *snapshot)
@@ -1470,6 +1495,108 @@ static void PeekabooWin11CopyElementStylesPattern(
         snapshot->styleExtendedProperties);
 
     IUIAutomationStylesPattern_Release(stylesPattern);
+}
+
+static void PeekabooWin11CopyElementDragPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_DragPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationDragPattern *dragPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationDragPattern,
+        (void **)&dragPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || dragPattern == NULL) {
+        return;
+    }
+
+    BOOL isGrabbed = FALSE;
+    HRESULT isGrabbedResult = IUIAutomationDragPattern_get_CurrentIsGrabbed(
+        dragPattern,
+        &isGrabbed);
+    if (PeekabooWin11Succeeded(isGrabbedResult)) {
+        snapshot->hasDragIsGrabbed = 1;
+        snapshot->dragIsGrabbed = isGrabbed ? 1 : 0;
+    }
+
+    BSTR dropEffect = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationDragPattern_get_CurrentDropEffect(dragPattern, &dropEffect),
+        dropEffect,
+        &snapshot->hasDragDropEffect,
+        snapshot->dragDropEffect);
+
+    SAFEARRAY *dropEffects = NULL;
+    PeekabooWin11CopySafeArrayCount(
+        IUIAutomationDragPattern_get_CurrentDropEffects(dragPattern, &dropEffects),
+        dropEffects,
+        &snapshot->hasDragDropEffectCount,
+        &snapshot->dragDropEffectCount);
+
+    IUIAutomationElementArray *grabbedItems = NULL;
+    PeekabooWin11CopyElementArrayCount(
+        IUIAutomationDragPattern_GetCurrentGrabbedItems(dragPattern, &grabbedItems),
+        grabbedItems,
+        &snapshot->hasDragGrabbedItemCount,
+        &snapshot->dragGrabbedItemCount);
+
+    IUIAutomationDragPattern_Release(dragPattern);
+}
+
+static void PeekabooWin11CopyElementDropTargetPattern(
+    IUIAutomationElement *element,
+    PeekabooWin11UIAutomationElementSnapshot *snapshot)
+{
+    IUnknown *patternObject = NULL;
+    HRESULT patternResult = IUIAutomationElement_GetCurrentPattern(
+        element,
+        UIA_DropTargetPatternId,
+        &patternObject);
+    if (!PeekabooWin11Succeeded(patternResult) || patternObject == NULL) {
+        return;
+    }
+
+    IUIAutomationDropTargetPattern *dropTargetPattern = NULL;
+    HRESULT queryResult = IUnknown_QueryInterface(
+        patternObject,
+        &IID_IUIAutomationDropTargetPattern,
+        (void **)&dropTargetPattern);
+    IUnknown_Release(patternObject);
+
+    if (!PeekabooWin11Succeeded(queryResult) || dropTargetPattern == NULL) {
+        return;
+    }
+
+    BSTR dropTargetEffect = NULL;
+    PeekabooWin11CopyPatternString(
+        IUIAutomationDropTargetPattern_get_CurrentDropTargetEffect(
+            dropTargetPattern,
+            &dropTargetEffect),
+        dropTargetEffect,
+        &snapshot->hasDropTargetEffect,
+        snapshot->dropTargetEffect);
+
+    SAFEARRAY *dropTargetEffects = NULL;
+    PeekabooWin11CopySafeArrayCount(
+        IUIAutomationDropTargetPattern_get_CurrentDropTargetEffects(
+            dropTargetPattern,
+            &dropTargetEffects),
+        dropTargetEffects,
+        &snapshot->hasDropTargetEffectCount,
+        &snapshot->dropTargetEffectCount);
+
+    IUIAutomationDropTargetPattern_Release(dropTargetPattern);
 }
 
 static void PeekabooWin11CopyElementLegacyIAccessiblePattern(
@@ -2653,6 +2780,8 @@ static void PeekabooWin11CopyElementProperties(
     PeekabooWin11CopyElementMultipleViewPattern(element, snapshot);
     PeekabooWin11CopyElementAnnotationPattern(element, snapshot);
     PeekabooWin11CopyElementStylesPattern(element, snapshot);
+    PeekabooWin11CopyElementDragPattern(element, snapshot);
+    PeekabooWin11CopyElementDropTargetPattern(element, snapshot);
     PeekabooWin11CopyElementLegacyIAccessiblePattern(element, snapshot);
     PeekabooWin11CopyElementSelectionPattern(element, snapshot);
     PeekabooWin11CopyElementSelectionItemPattern(element, snapshot);
@@ -4251,6 +4380,18 @@ const char *PeekabooWin11UIAutomationElementStyleExtendedProperties(
     const PeekabooWin11UIAutomationElementSnapshot *element)
 {
     return element == NULL ? "" : element->styleExtendedProperties;
+}
+
+const char *PeekabooWin11UIAutomationElementDragDropEffect(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->dragDropEffect;
+}
+
+const char *PeekabooWin11UIAutomationElementDropTargetEffect(
+    const PeekabooWin11UIAutomationElementSnapshot *element)
+{
+    return element == NULL ? "" : element->dropTargetEffect;
 }
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

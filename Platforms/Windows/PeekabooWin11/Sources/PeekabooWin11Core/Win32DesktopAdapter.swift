@@ -3344,6 +3344,25 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
                         from: PeekabooWin11UIAutomationElementStyleExtendedProperties(
                             &nativeElement))
                     : nil,
+                dragDropEffect: nativeElement.hasDragDropEffect != 0
+                    ? Self.rawString(from: PeekabooWin11UIAutomationElementDragDropEffect(&nativeElement))
+                    : nil,
+                dragDropEffectCount: Self.optionalInt(
+                    hasValue: nativeElement.hasDragDropEffectCount,
+                    value: nativeElement.dragDropEffectCount),
+                dragIsGrabbed: Self.optionalBool(
+                    hasValue: nativeElement.hasDragIsGrabbed,
+                    value: nativeElement.dragIsGrabbed),
+                dragGrabbedItemCount: Self.optionalInt(
+                    hasValue: nativeElement.hasDragGrabbedItemCount,
+                    value: nativeElement.dragGrabbedItemCount),
+                dropTargetEffect: nativeElement.hasDropTargetEffect != 0
+                    ? Self.rawString(
+                        from: PeekabooWin11UIAutomationElementDropTargetEffect(&nativeElement))
+                    : nil,
+                dropTargetEffectCount: Self.optionalInt(
+                    hasValue: nativeElement.hasDropTargetEffectCount,
+                    value: nativeElement.dropTargetEffectCount),
                 legacyChildId: Self.optionalInt(
                     hasValue: nativeElement.hasLegacyChildId,
                     value: nativeElement.legacyChildId),
@@ -3755,6 +3774,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         }
         if Self.hasPatternBit(mask, 22) {
             patterns.append(.styles)
+        }
+        if Self.hasPatternBit(mask, 23) {
+            patterns.append(.drag)
+        }
+        if Self.hasPatternBit(mask, 24) {
+            patterns.append(.dropTarget)
         }
         if Self.hasPatternBit(mask, 13) {
             patterns.append(.scrollItem)

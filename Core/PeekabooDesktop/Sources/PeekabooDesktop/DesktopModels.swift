@@ -365,6 +365,8 @@ public enum DesktopUIAutomationPattern: String, CaseIterable, Codable, Sendable 
     case multipleView
     case annotation
     case styles
+    case drag
+    case dropTarget
     case virtualizedItem
     case scrollItem
 }
@@ -544,6 +546,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
     public let styleFillPatternColor: Int?
     public let styleShape: String?
     public let styleExtendedProperties: String?
+    public let dragDropEffect: String?
+    public let dragDropEffectCount: Int?
+    public let dragIsGrabbed: Bool?
+    public let dragGrabbedItemCount: Int?
+    public let dropTargetEffect: String?
+    public let dropTargetEffectCount: Int?
     public let legacyChildId: Int?
     public let legacyName: String?
     public let legacyValue: String?
@@ -647,6 +655,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         styleFillPatternColor: Int? = nil,
         styleShape: String? = nil,
         styleExtendedProperties: String? = nil,
+        dragDropEffect: String? = nil,
+        dragDropEffectCount: Int? = nil,
+        dragIsGrabbed: Bool? = nil,
+        dragGrabbedItemCount: Int? = nil,
+        dropTargetEffect: String? = nil,
+        dropTargetEffectCount: Int? = nil,
         legacyChildId: Int? = nil,
         legacyName: String? = nil,
         legacyValue: String? = nil,
@@ -749,6 +763,12 @@ public struct DesktopUIAutomationElementSnapshot: Codable, Equatable, Sendable {
         self.styleFillPatternColor = styleFillPatternColor
         self.styleShape = styleShape
         self.styleExtendedProperties = styleExtendedProperties
+        self.dragDropEffect = dragDropEffect
+        self.dragDropEffectCount = dragDropEffectCount
+        self.dragIsGrabbed = dragIsGrabbed
+        self.dragGrabbedItemCount = dragGrabbedItemCount
+        self.dropTargetEffect = dropTargetEffect
+        self.dropTargetEffectCount = dropTargetEffectCount
         self.legacyChildId = legacyChildId
         self.legacyName = legacyName
         self.legacyValue = legacyValue

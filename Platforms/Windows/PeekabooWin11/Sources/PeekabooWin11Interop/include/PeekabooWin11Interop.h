@@ -161,6 +161,16 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     int32_t hasStyleName;
     int32_t hasStyleShape;
     int32_t hasStyleExtendedProperties;
+    int32_t hasDragDropEffect;
+    int32_t hasDragDropEffectCount;
+    int32_t dragDropEffectCount;
+    int32_t hasDragIsGrabbed;
+    int32_t dragIsGrabbed;
+    int32_t hasDragGrabbedItemCount;
+    int32_t dragGrabbedItemCount;
+    int32_t hasDropTargetEffect;
+    int32_t hasDropTargetEffectCount;
+    int32_t dropTargetEffectCount;
     int32_t hasLegacyChildId;
     int32_t legacyChildId;
     int32_t hasLegacyRole;
@@ -198,6 +208,8 @@ typedef struct PeekabooWin11UIAutomationElementSnapshot {
     char styleName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char styleShape[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char styleExtendedProperties[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char dragDropEffect[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
+    char dropTargetEffect[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyName[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyValue[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
     char legacyDescription[PEEKABOO_WIN11_UIA_TEXT_CAPACITY];
@@ -483,6 +495,12 @@ const char *PeekabooWin11UIAutomationElementStyleShape(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementStyleExtendedProperties(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementDragDropEffect(
+    const PeekabooWin11UIAutomationElementSnapshot *element);
+
+const char *PeekabooWin11UIAutomationElementDropTargetEffect(
     const PeekabooWin11UIAutomationElementSnapshot *element);
 
 const char *PeekabooWin11UIAutomationElementLegacyName(

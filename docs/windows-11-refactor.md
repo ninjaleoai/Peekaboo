@@ -78,6 +78,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   in bounded snapshots
 - Styles-pattern UI Automation visual style, fill color, shape, and extended
   property metadata in bounded snapshots
+- Drag-pattern and DropTarget-pattern UI Automation effect and grabbed-state
+  metadata in bounded snapshots
 - VirtualizedItem-pattern UI Automation realize actions against a bounded
   snapshot element index
 - Transform-pattern UI Automation move, resize, and rotate actions against a
@@ -531,8 +533,8 @@ off-screen, and clickable-point status. When UIA exposes a clickable point,
 snapshots include its physical screen coordinates. Elements also report common
 supported UIA patterns, including invoke, value, range value, scroll,
 expand/collapse, window, selection item, text, toggle, grid, grid item, table,
-table item, transform, transform2, multiple view, annotation, styles,
-virtualized item, scroll
+table item, transform, transform2, multiple view, annotation, styles, drag,
+drop target, virtualized item, scroll
 item, and legacy IAccessible. When an element supports the UIA Value pattern, snapshots also
 include its current string value and whether that value is read-only. When an
 element supports the
@@ -574,6 +576,11 @@ Annotation pattern, snapshots include annotation type ID, localized type name,
 author, creation date/time, and target element name when UIA reports them.
 When an element supports the UIA Styles pattern, snapshots include visual style
 ID and name, fill color, fill pattern color, shape, and extended properties
+when UIA reports them.
+When an element supports the UIA Drag pattern, snapshots include the current
+drop effect, supported drop-effect count, grabbed state, and grabbed item count
+when UIA reports them. When an element supports the UIA DropTarget pattern,
+snapshots include the current drop target effect and supported effect count
 when UIA reports them.
 Elements also expose stable
 available actions derived from those

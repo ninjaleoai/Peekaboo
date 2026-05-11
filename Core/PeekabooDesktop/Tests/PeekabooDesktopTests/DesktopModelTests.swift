@@ -302,6 +302,8 @@ final class DesktopModelTests: XCTestCase {
                 .virtualizedItem,
                 .annotation,
                 .styles,
+                .drag,
+                .dropTarget,
                 .scrollItem,
             ])
         XCTAssertEqual(
@@ -396,6 +398,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertEqual(snapshot.elements.first?.styleFillPatternColor, 0x00_00_00)
         XCTAssertEqual(snapshot.elements.first?.styleShape, "Rectangle")
         XCTAssertEqual(snapshot.elements.first?.styleExtendedProperties, "BorderStyle=solid")
+        XCTAssertEqual(snapshot.elements.first?.dragDropEffect, "move")
+        XCTAssertEqual(snapshot.elements.first?.dragDropEffectCount, 2)
+        XCTAssertEqual(snapshot.elements.first?.dragIsGrabbed, false)
+        XCTAssertEqual(snapshot.elements.first?.dragGrabbedItemCount, 0)
+        XCTAssertEqual(snapshot.elements.first?.dropTargetEffect, "copy")
+        XCTAssertEqual(snapshot.elements.first?.dropTargetEffectCount, 2)
         XCTAssertEqual(snapshot.elements.first?.legacyChildId, 0)
         XCTAssertEqual(snapshot.elements.first?.legacyName, "Legacy Desktop")
         XCTAssertEqual(snapshot.elements.first?.legacyValue, "Legacy value")
@@ -897,6 +905,8 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"virtualizedItem\""))
         XCTAssertTrue(result.stdout.contains("\"annotation\""))
         XCTAssertTrue(result.stdout.contains("\"styles\""))
+        XCTAssertTrue(result.stdout.contains("\"drag\""))
+        XCTAssertTrue(result.stdout.contains("\"dropTarget\""))
         XCTAssertTrue(result.stdout.contains("\"scrollItem\""))
         XCTAssertTrue(result.stdout.contains("\"expand\""))
         XCTAssertTrue(result.stdout.contains("\"select\""))
@@ -961,6 +971,12 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"styleFillPatternColor\" : 0"))
         XCTAssertTrue(result.stdout.contains("\"styleShape\" : \"Rectangle\""))
         XCTAssertTrue(result.stdout.contains("\"styleExtendedProperties\" : \"BorderStyle=solid\""))
+        XCTAssertTrue(result.stdout.contains("\"dragDropEffect\" : \"move\""))
+        XCTAssertTrue(result.stdout.contains("\"dragDropEffectCount\" : 2"))
+        XCTAssertTrue(result.stdout.contains("\"dragIsGrabbed\" : false"))
+        XCTAssertTrue(result.stdout.contains("\"dragGrabbedItemCount\" : 0"))
+        XCTAssertTrue(result.stdout.contains("\"dropTargetEffect\" : \"copy\""))
+        XCTAssertTrue(result.stdout.contains("\"dropTargetEffectCount\" : 2"))
         XCTAssertTrue(result.stdout.contains("\"legacyName\" : \"Legacy Desktop\""))
         XCTAssertTrue(result.stdout.contains("\"legacyValue\" : \"Legacy value\""))
         XCTAssertTrue(result.stdout.contains("\"legacyDescription\" : \"Legacy description\""))
@@ -3201,6 +3217,8 @@ private struct StubDesktopAdapter: DesktopAdapter {
         }
         supportedPatterns.append(.annotation)
         supportedPatterns.append(.styles)
+        supportedPatterns.append(.drag)
+        supportedPatterns.append(.dropTarget)
         supportedPatterns.append(.scrollItem)
 
         DesktopUIAutomationSnapshot(
@@ -3302,6 +3320,12 @@ private struct StubDesktopAdapter: DesktopAdapter {
                     styleFillPatternColor: 0x00_00_00,
                     styleShape: "Rectangle",
                     styleExtendedProperties: "BorderStyle=solid",
+                    dragDropEffect: "move",
+                    dragDropEffectCount: 2,
+                    dragIsGrabbed: false,
+                    dragGrabbedItemCount: 0,
+                    dropTargetEffect: "copy",
+                    dropTargetEffectCount: 2,
                     legacyChildId: 0,
                     legacyName: "Legacy Desktop",
                     legacyValue: legacyValue,
