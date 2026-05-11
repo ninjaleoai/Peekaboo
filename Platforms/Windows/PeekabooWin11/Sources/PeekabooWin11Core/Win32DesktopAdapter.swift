@@ -2114,6 +2114,10 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) does not support expand/collapse")
         }
+        if element.isEnabled == false {
+            throw Win11DesktopError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
+        }
         if element.expandCollapseState == .leafNode {
             throw Win11DesktopError.invalidArgument(
                 "UI Automation element index \(elementIndex) is a leaf node")
@@ -4302,7 +4306,7 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
         if supportedPatterns.contains(.toggle) {
             actions.append(.toggle)
         }
-        if supportedPatterns.contains(.expandCollapse) {
+        if supportedPatterns.contains(.expandCollapse), isEnabled != false {
             switch expandCollapseState {
             case .collapsed:
                 actions.append(.expand)

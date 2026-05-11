@@ -702,8 +702,8 @@ pattern is present, getSpreadsheetItem is available when the Spreadsheet pattern
 is present, getGridItem is available when the Grid pattern is present, realize
 is available when the VirtualizedItem pattern is
 present, toggle is available when the Toggle pattern is present, expand is
-available for collapsed or partially expanded ExpandCollapse elements, collapse
-is available for expanded or
+available for enabled collapsed or partially expanded ExpandCollapse elements, collapse
+is available for enabled expanded or
 partially expanded ExpandCollapse elements, select is available when the
 SelectionItem pattern is present, addToSelection and removeFromSelection are
 available when Selection-pattern metadata indicates the selection container can
@@ -798,7 +798,7 @@ refreshed post-action element, including the refreshed toggle state when UIA
 reports one.
 `automation expand`
 and `automation collapse` perform the UIA ExpandCollapse pattern, reject known
-leaf nodes before calling UIA, and return refreshed post-action element
+disabled elements and leaf nodes before calling UIA, and return refreshed post-action element
 metadata with the latest expand/collapse state and verification of the target
 expanded or collapsed state when UIA reports one.
 `automation select` performs the UIA SelectionItem pattern and returns

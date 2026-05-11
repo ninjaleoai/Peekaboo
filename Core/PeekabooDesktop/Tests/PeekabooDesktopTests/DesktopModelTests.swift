@@ -34,6 +34,7 @@ final class DesktopModelTests: XCTestCase {
 
         XCTAssertFalse(actions.contains(.focus))
         XCTAssertFalse(actions.contains(.invoke))
+        XCTAssertFalse(actions.contains(.expand))
         XCTAssertFalse(actions.contains(.setLegacyValue))
         XCTAssertFalse(actions.contains(.setValue))
         XCTAssertTrue(actions.contains(.getText))
@@ -2642,6 +2643,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
     }
 
+    func testDesktopCommandRunnerRejectsDisabledAutomationExpand() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "expand",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
+    }
+
     func testDesktopCommandRunnerRoutesAutomationCollapse() {
         let result = self.runDesktopCommand([
             "peekaboo-desktop",
@@ -2664,6 +2685,26 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(result.stdout.contains("\"value\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"expandCollapseState\" : \"collapsed\""))
         XCTAssertTrue(result.stdout.contains("\"valueWasVerified\" : true"))
+    }
+
+    func testDesktopCommandRunnerRejectsDisabledAutomationCollapse() {
+        let result = self.runDesktopCommand([
+            "peekaboo-desktop",
+            "automation",
+            "collapse",
+            "--scope",
+            "root",
+            "--index",
+            "0",
+            "--max-depth",
+            "1",
+            "--max-elements",
+            "4",
+        ], adapter: StubDesktopAdapter(isEnabled: false))
+
+        XCTAssertEqual(result.status, 1)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("UI Automation element index 0 is not enabled"))
     }
 
     func testDesktopCommandRunnerRoutesAutomationSelect() {
@@ -3150,6 +3191,10 @@ private struct StubDesktopAdapter: DesktopAdapter {
             maxElements: maxElements)
         guard let element = snapshot.elements.first(where: { $0.index == elementIndex }) else {
             throw DesktopAdapterError.invalidArgument("UI Automation element index not found")
+        }
+        if element.isEnabled == false {
+            throw DesktopAdapterError.invalidArgument(
+                "UI Automation element index \(elementIndex) is not enabled")
         }
         let postActionElement = self.stubUIAutomationSnapshot(
             scope: scope,
@@ -4502,7 +4547,9 @@ private struct StubDesktopAdapter: DesktopAdapter {
         }
         return isEnabled
             ? actions
-            : actions.filter { ![.focus, .invoke, .setLegacyValue, .setValue].contains($0) }
+            : actions.filter {
+                ![.focus, .invoke, .expand, .collapse, .setLegacyValue, .setValue].contains($0)
+            }
     }
 
     private func scrollPercentValue(horizontalPercent: Double?, verticalPercent: Double?) -> String {

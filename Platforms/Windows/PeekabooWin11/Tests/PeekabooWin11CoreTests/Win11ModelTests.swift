@@ -643,6 +643,8 @@ final class Win11ModelTests: XCTestCase {
         for element in snapshot.elements where element.isEnabled == false {
             XCTAssertFalse(element.availableActions.contains(.focus))
             XCTAssertFalse(element.availableActions.contains(.invoke))
+            XCTAssertFalse(element.availableActions.contains(.expand))
+            XCTAssertFalse(element.availableActions.contains(.collapse))
             XCTAssertFalse(element.availableActions.contains(.setLegacyValue))
             XCTAssertFalse(element.availableActions.contains(.setValue))
         }
