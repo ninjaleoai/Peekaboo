@@ -37,6 +37,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - SHA-256 checksum publishing for the packaged Windows workflow artifact
 - packaged CLI verification for checksum, archive contents, `--help`, and
   `platform-info`
+- packaged CLI desktop-state smoke verification for display/window/app
+  enumeration and cursor-position reads
 - packaged CLI screen-capture smoke verification, including `gdiRegion`
   capture-method metadata
 - packaged CLI UI Automation status smoke verification
@@ -557,9 +559,10 @@ The script builds the standalone Windows CLI in release mode and writes:
 
 The Windows 11 Platform workflow runs the same packaging and verification
 scripts after build and test. Verification expands the archive, validates the
-checksum, runs packaged `--help`, `platform-info`, `automation status`, and a
-bounded `automation snapshot`, then performs a packaged screen-capture smoke
-test before uploading the zip and checksum as a workflow artifact named
+checksum, runs packaged `--help`, `platform-info`, display/window/app list
+commands, `input position`, `automation status`, and a bounded
+`automation snapshot`, then performs a packaged screen-capture smoke test
+before uploading the zip and checksum as a workflow artifact named
 `peekaboo-win11-<commit-sha>`.
 
 The workflow pins `runs-on: windows-2025-vs2026` so Windows validation stays on

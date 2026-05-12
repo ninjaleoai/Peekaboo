@@ -65,6 +65,31 @@ if ((Get-Item $executablePath).Length -le 0) {
     throw "Packaged peekaboo-win11.exe is empty."
 }
 
+function Invoke-PackagedJsonCommand {
+    param(
+        [string] $Description,
+        [string[]] $Arguments
+    )
+
+    $commandOutput = & $executablePath @Arguments 2>&1
+    $commandExitCode = $LASTEXITCODE
+    if ($commandExitCode -ne 0) {
+        throw "Packaged peekaboo-win11.exe $Description exited with $commandExitCode. Output: $commandOutput"
+    }
+
+    $commandText = $commandOutput -join "`n"
+    try {
+        $commandEnvelope = $commandText | ConvertFrom-Json
+    } catch {
+        throw "Packaged $Description output was not valid JSON. Output: $commandText"
+    }
+
+    [PSCustomObject]@{
+        Envelope = $commandEnvelope
+        Text = $commandText
+    }
+}
+
 $helpOutput = & $executablePath --help 2>&1
 $helpExitCode = $LASTEXITCODE
 if ($helpExitCode -ne 0) {
@@ -115,6 +140,55 @@ if (-not ($platformCapabilities -contains "captureScreenBMP")) {
 }
 if (-not ($platformCapabilities -contains "inspectUIAutomation")) {
     throw "Packaged platform-info did not advertise UI Automation inspection."
+}
+
+$displayList = Invoke-PackagedJsonCommand `
+    -Description "list displays" `
+    -Arguments @("list", "displays")
+if ($displayList.Envelope.ok -ne $true) {
+    throw "Packaged list displays did not return ok=true. Output: $($displayList.Text)"
+}
+
+$displays = @($displayList.Envelope.data)
+if ($displays.Count -lt 1) {
+    throw "Packaged list displays did not return any displays. Output: $($displayList.Text)"
+}
+if ($displays[0].bounds.width -le 0 -or $displays[0].bounds.height -le 0) {
+    throw "Packaged list displays returned invalid display bounds. Output: $($displayList.Text)"
+}
+
+$windowList = Invoke-PackagedJsonCommand `
+    -Description "list windows --include-invisible" `
+    -Arguments @("list", "windows", "--include-invisible")
+if ($windowList.Envelope.ok -ne $true) {
+    throw "Packaged list windows did not return ok=true. Output: $($windowList.Text)"
+}
+if ($null -eq $windowList.Envelope.PSObject.Properties["data"]) {
+    throw "Packaged list windows did not include a data field. Output: $($windowList.Text)"
+}
+
+$appList = Invoke-PackagedJsonCommand `
+    -Description "list apps" `
+    -Arguments @("list", "apps")
+if ($appList.Envelope.ok -ne $true) {
+    throw "Packaged list apps did not return ok=true. Output: $($appList.Text)"
+}
+if ($null -eq $appList.Envelope.PSObject.Properties["data"]) {
+    throw "Packaged list apps did not include a data field. Output: $($appList.Text)"
+}
+
+$cursorPosition = Invoke-PackagedJsonCommand `
+    -Description "input position" `
+    -Arguments @("input", "position")
+if ($cursorPosition.Envelope.ok -ne $true) {
+    throw "Packaged input position did not return ok=true. Output: $($cursorPosition.Text)"
+}
+
+$cursorData = $cursorPosition.Envelope.data
+if ($null -eq $cursorData.PSObject.Properties["x"] -or
+    $null -eq $cursorData.PSObject.Properties["y"])
+{
+    throw "Packaged input position did not include x/y coordinates. Output: $($cursorPosition.Text)"
 }
 
 $screenCapturePath = Join-Path $verifyPath "screen-smoke.bmp"
@@ -240,6 +314,8 @@ Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
 Write-Host "  Extracted: $verifyPath"
+Write-Host "  Desktop state: displays, windows, apps"
+Write-Host "  Cursor position: readable"
 Write-Host "  Screen capture: $screenCapturePath"
 Write-Host "  UI Automation: available"
 Write-Host "  UI Automation snapshot: root"
