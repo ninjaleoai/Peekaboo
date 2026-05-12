@@ -184,9 +184,62 @@ if ($automationEnvelope.data.rootElementAvailable -ne $true) {
     throw "Packaged automation status did not report root availability. Error: $errorMessage"
 }
 
+$snapshotOutput = & $executablePath automation snapshot --scope root --max-depth 0 --max-elements 1 2>&1
+$snapshotExitCode = $LASTEXITCODE
+if ($snapshotExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe automation snapshot exited with $snapshotExitCode. Output: $snapshotOutput"
+}
+
+$snapshotText = $snapshotOutput -join "`n"
+try {
+    $snapshotEnvelope = $snapshotText | ConvertFrom-Json
+} catch {
+    throw "Packaged automation snapshot output was not valid JSON. Output: $snapshotText"
+}
+
+if ($snapshotEnvelope.ok -ne $true) {
+    throw "Packaged automation snapshot did not return ok=true. Output: $snapshotText"
+}
+if ($snapshotEnvelope.data.nativeBackend -ne "UIAutomation") {
+    $backend = $snapshotEnvelope.data.nativeBackend
+    throw "Packaged automation snapshot returned unexpected native backend: $backend"
+}
+if ($snapshotEnvelope.data.scope -ne "root") {
+    throw "Packaged automation snapshot returned unexpected scope: $($snapshotEnvelope.data.scope)"
+}
+if ($snapshotEnvelope.data.maxDepth -ne 0) {
+    throw "Packaged automation snapshot returned unexpected maxDepth: $($snapshotEnvelope.data.maxDepth)"
+}
+if ($snapshotEnvelope.data.maxElements -ne 1) {
+    throw "Packaged automation snapshot returned unexpected maxElements: $($snapshotEnvelope.data.maxElements)"
+}
+$snapshotError = $null
+$snapshotErrorProperty = $snapshotEnvelope.data.PSObject.Properties["error"]
+if ($null -ne $snapshotErrorProperty) {
+    $snapshotError = $snapshotErrorProperty.Value
+}
+if (-not [string]::IsNullOrEmpty($snapshotError)) {
+    throw "Packaged automation snapshot returned an error: $snapshotError"
+}
+if ($snapshotEnvelope.data.elementCount -lt 1) {
+    throw "Packaged automation snapshot did not return any elements. Output: $snapshotText"
+}
+
+$snapshotElements = @($snapshotEnvelope.data.elements)
+if ($snapshotElements.Count -lt 1) {
+    throw "Packaged automation snapshot returned no element payloads. Output: $snapshotText"
+}
+if ($snapshotElements[0].index -ne 0) {
+    throw "Packaged automation snapshot first element had unexpected index: $($snapshotElements[0].index)"
+}
+if ($snapshotElements[0].depth -ne 0) {
+    throw "Packaged automation snapshot first element had unexpected depth: $($snapshotElements[0].depth)"
+}
+
 Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
 Write-Host "  Extracted: $verifyPath"
 Write-Host "  Screen capture: $screenCapturePath"
 Write-Host "  UI Automation: available"
+Write-Host "  UI Automation snapshot: root"
