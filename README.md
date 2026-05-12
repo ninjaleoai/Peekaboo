@@ -1,168 +1,175 @@
-# Peekaboo 🫣 - Mac automation that sees the screen and does the clicks.
+# Peekaboo 🫣 - Windows 11 automation that sees the screen and does the clicks.
 
-![Peekaboo Banner](assets/peekaboo.png)
+![Peekaboo Windows Banner](WINDOWSLOGO.png)
 
-[![npm package](https://img.shields.io/badge/npm_package-3.0.0-brightgreen?logo=npm&logoColor=white&style=flat-square)](https://www.npmjs.com/package/@steipete/peekaboo)
+![Windows branch CI](https://img.shields.io/badge/windows--11--refactor_CI-passing-2ea44f?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ffd60a?style=flat-square)](https://opensource.org/licenses/MIT)
-[![macOS 15.0+ (Sequoia)](https://img.shields.io/badge/macOS-15.0%2B_(Sequoia)-0078d7?logo=apple&logoColor=white&style=flat-square)](https://www.apple.com/macos/)
-[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white&style=flat-square)](https://swift.org/)
-[![node >=22](https://img.shields.io/badge/node-%3E%3D22.0.0-2ea44f?logo=node.js&logoColor=white&style=flat-square)](https://nodejs.org/)
-[![Download macOS](https://img.shields.io/badge/Download-macOS-000000?logo=apple&logoColor=white&style=flat-square)](https://github.com/steipete/peekaboo/releases/latest)
-[![Homebrew](https://img.shields.io/badge/Homebrew-steipete%2Ftap-b28f62?logo=homebrew&logoColor=white&style=flat-square)](https://github.com/steipete/homebrew-tap)
-[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-0088cc?style=flat-square)](https://deepwiki.com/steipete/peekaboo)
+![Windows 11](https://img.shields.io/badge/Windows-11-0078d7?style=flat-square)
+![Swift 6.3.1 CI](https://img.shields.io/badge/Swift-6.3.1_CI-F05138?style=flat-square)
+![Backend Win32](https://img.shields.io/badge/Backend-Win32-0078d7?style=flat-square)
+![Artifact zip](https://img.shields.io/badge/Artifact-peekaboo--win11.zip-2ea44f?style=flat-square)
+![Untested Codex goal](https://img.shields.io/badge/Status-Untested_Codex_goal-b28f62?style=flat-square)
 
-Peekaboo brings high-fidelity screen capture, AI analysis, and complete GUI automation to macOS. Version 3 adds native agent flows and multi-screen automation across the CLI and MCP server.
+Untested: this was a test of `/goal` using Codex. It took 1d 7h 55m, and the
+original prompt was: `fork this project and refactor it for windows 11
+https://github.com/openclaw/Peekaboo`.
+
+Peekaboo brings screen capture and GUI automation to a native Windows 11 fork.
+This branch adds a standalone Swift package, `peekaboo-win11.exe`, with a
+Win32-backed adapter for display/window/app enumeration, BMP capture, cursor
+and keyboard input, and bounded UI Automation snapshots/actions.
 
 ## What you get
-- Pixel-accurate captures (windows, screens, menu bar) with optional Retina 2x scaling.
-- Natural-language agent that chains Peekaboo tools (see, click, type, scroll, hotkey, menu, window, app, dock, space).
-- Action-first UI automation for routine clicks/scrolls, with synthetic input fallback for apps that need it.
-- Direct accessibility tools for settable values and named actions (`set-value`, `perform-action`).
-- Menu and menubar discovery with structured JSON; no clicks required.
-- Multi-provider AI: GPT-5.1 family, Claude 4.x, Grok 4-fast (vision), Gemini 2.5, and local Ollama models.
-- MCP server for Codex, Claude Code, and Cursor plus a native CLI; the same tools in both.
-- Configurable, testable workflows with reproducible sessions and strict typing.
-- Requires macOS Screen Recording + Accessibility permissions (see [docs/permissions.md](docs/permissions.md)).
+- Native Windows 11 Swift package under
+  [`Platforms/Windows/PeekabooWin11`](Platforms/Windows/PeekabooWin11).
+- Win32 display, window, and application enumeration with structured JSON.
+- BMP screen, area, window, and foreground-window capture.
+- Capture-method metadata for `gdiRegion` and `printWindow` paths.
+- Cursor position reads, cursor moves, point clicks, wheel scrolling, drags,
+  modifier hotkeys, and focused text typing through Win32 input APIs.
+- Bounded UI Automation status, snapshots, element lookup, and common UIA
+  pattern actions through the Windows UI Automation COM API.
+- Shared neutral desktop contract in
+  [`Core/PeekabooDesktop`](Core/PeekabooDesktop) so Windows and macOS adapters
+  can use the same command model without hard-coding AppKit/CoreGraphics types.
+- Release-mode package workflow that publishes `peekaboo-win11.zip` plus a
+  SHA-256 checksum, `PACKAGE_MANIFEST.json`, `BUILD_INFO.txt`, and packaged
+  README.
+- Windows CI that builds, tests, packages, verifies, and uploads the Windows
+  CLI artifact on the `windows-11-refactor` branch and PR.
 
 ## Install
-- macOS app + CLI (Homebrew):
-  ```bash
-  brew install steipete/tap/peekaboo
+- Download the latest `peekaboo-win11-<commit-sha>` artifact from the Windows
+  11 Platform workflow on this branch.
+- Verify the checksum after extracting the artifact:
+  ```powershell
+  Get-FileHash -Algorithm SHA256 .\peekaboo-win11.zip
+  Get-Content .\peekaboo-win11.zip.sha256
   ```
-- MCP server (Node 22+, no global install needed):
-  ```bash
-  npx -y @steipete/peekaboo
+- Extract `peekaboo-win11.zip`, then run:
+  ```powershell
+  .\peekaboo-win11.exe --help
   ```
 
 ## Quick start
-```bash
-# Capture full screen at Retina scale and save to Desktop
-peekaboo image --mode screen --retina --path ~/Desktop/screen.png
+```powershell
+# Inspect the native Windows backend and advertised capabilities
+.\peekaboo-win11.exe platform-info
 
-# Click a button by label (captures, resolves, and clicks in one go)
-peekaboo see --app Safari --json | jq -r '.data.snapshot_id' | read SNAPSHOT
-peekaboo click --on "Reload this page" --snapshot "$SNAPSHOT"
+# List displays, windows, and apps
+.\peekaboo-win11.exe list displays
+.\peekaboo-win11.exe list windows
+.\peekaboo-win11.exe list apps
 
-# Directly set a text field value when the accessibility value is settable
-peekaboo set-value --on T1 --value "hello" --snapshot "$SNAPSHOT"
+# Capture the full desktop, a rectangle, a window, or the foreground window
+.\peekaboo-win11.exe capture screen --path .\screen.bmp
+.\peekaboo-win11.exe capture area --rect 0,0,640,480 --path .\area.bmp
+.\peekaboo-win11.exe capture window --id <window-id> --path .\window.bmp
+.\peekaboo-win11.exe capture frontmost --path .\frontmost.bmp
 
-# Invoke a named accessibility action on an element
-peekaboo perform-action --on B1 --action AXPress --snapshot "$SNAPSHOT"
+# Read and move the cursor
+.\peekaboo-win11.exe input position
+.\peekaboo-win11.exe input move --point 100,100
 
-# Run a natural-language automation
-peekaboo agent "Open Notes and create a TODO list with three items"
+# Send basic mouse and keyboard input
+.\peekaboo-win11.exe input click --point 100,100 --button left --count 1
+.\peekaboo-win11.exe input scroll --point 100,100 --direction down --amount 3
+.\peekaboo-win11.exe input drag --from 100,100 --to 200,200 --button left --steps 10
+.\peekaboo-win11.exe input hotkey --keys ctrl,shift,escape --hold-ms 25
+.\peekaboo-win11.exe input type --text "hello from Windows" --delay-ms 5
 
-# Run as an MCP server (Codex, Claude Code, Cursor)
-npx -y @steipete/peekaboo
-
-# Minimal MCP client config snippet:
-# {
-#   "mcpServers": {
-#     "peekaboo": {
-#       "command": "npx",
-#       "args": ["-y", "@steipete/peekaboo"],
-#       "env": {
-#         "PEEKABOO_AI_PROVIDERS": "openai/gpt-5.1,anthropic/claude-opus-4"
-#       }
-#     }
-#   }
-# }
+# Probe and inspect Windows UI Automation
+.\peekaboo-win11.exe automation status
+.\peekaboo-win11.exe automation snapshot --scope foreground --max-depth 2 --max-elements 64
+.\peekaboo-win11.exe automation element --scope root --index 0 --max-depth 0 --max-elements 1
 ```
 
 ## Shell completions
 
-Peekaboo can generate shell-native completions directly from the same Commander
-metadata that powers CLI help and docs:
+The Windows fork does not currently ship shell completion generation. The
+packaged CLI exposes its supported command surface through:
 
-```bash
-# Current shell (recommended)
-eval "$(peekaboo completions $SHELL)"
-
-# Explicit shells
-eval "$(peekaboo completions zsh)"
-eval "$(peekaboo completions bash)"
-peekaboo completions fish | source
+```powershell
+.\peekaboo-win11.exe --help
 ```
 
-For persistent setup and troubleshooting, see
-[docs/commands/completions.md](docs/commands/completions.md).
+For the full Windows command list and current integration notes, see
+[`docs/windows-11-refactor.md`](docs/windows-11-refactor.md).
 
 | Command | Key flags / subcommands | What it does |
 | --- | --- | --- |
-| [see](docs/commands/see.md) | `--app`, `--mode screen/window`, `--retina`, `--json` | Capture and annotate UI, return snapshot + element IDs |
-| [click](docs/commands/click.md) | `--on <id/query>`, `--snapshot`, `--wait`, coords | Click by element ID, label, or coordinates |
-| [type](docs/commands/type.md) | `--text`, `--clear`, `--delay-ms` | Enter text with pacing options |
-| [set-value](docs/commands/set-value.md) | `--on <id/query>`, `--value`, `--snapshot` | Directly set a settable accessibility value |
-| [perform-action](docs/commands/perform-action.md) | `--on <id/query>`, `--action`, `--snapshot` | Invoke a named accessibility action |
-| [press](docs/commands/press.md) | key names, `--repeat` | Special keys and sequences |
-| [hotkey](docs/commands/hotkey.md) | combos like `cmd,shift,t` | Modifier combos (cmd/ctrl/alt/shift) |
-| [scroll](docs/commands/scroll.md) | `--on <id>`, `--direction up/down`, `--ticks` | Scroll views or elements |
-| [swipe](docs/commands/swipe.md) | `--from/--to`, `--duration`, `--steps` | Smooth gesture-style drags |
-| [drag](docs/commands/drag.md) | `--from/--to`, modifiers, Dock/Trash targets | Drag-and-drop between elements/coords |
-| [move](docs/commands/move.md) | `--to <id/coords>`, `--screen-index` | Position the cursor without clicking |
-| [window](docs/commands/window.md) | `list`, `move`, `resize`, `focus`, `set-bounds` | Move/resize/focus windows and Spaces |
-| [app](docs/commands/app.md) | `launch`, `quit`, `relaunch`, `switch`, `list` | Launch, quit, relaunch, switch apps |
-| [space](docs/commands/space.md) | `list`, `switch`, `move-window` | List or switch macOS Spaces |
-| [menu](docs/commands/menu.md) | `list`, `list-all`, `click`, `click-extra` | List/click app menus and extras |
-| [menubar](docs/commands/menubar.md) | `list`, `click` | Target status-bar items by name/index |
-| [dock](docs/commands/dock.md) | `launch`, `right-click`, `hide`, `show`, `list` | Interact with Dock items |
-| [dialog](docs/commands/dialog.md) | `list`, `click`, `input`, `file`, `dismiss` | Drive system dialogs (open/save/etc.) |
-| [image](docs/commands/image.md) | `--mode screen/window/menu`, `--retina`, `--analyze` | Screenshot screen/window/menu bar (+analyze) |
-| [list](docs/commands/list.md) | `apps`, `windows`, `screens`, `menubar`, `permissions` | Enumerate apps, windows, screens, permissions |
-| [tools](docs/commands/tools.md) | `--verbose`, `--json`, `--no-sort` | Inspect native Peekaboo tools |
-| [completions](docs/commands/completions.md) | `[shell]` | Generate zsh/bash/fish completion scripts from Commander metadata |
-| [config](docs/commands/config.md) | `init`, `show`, `add`, `login`, `models` | Manage credentials/providers/settings |
-| [permissions](docs/commands/permissions.md) | `status`, `grant` | Check/grant required macOS permissions |
-| [run](docs/commands/run.md) | `.peekaboo.json`, `--output`, `--no-fail-fast` | Execute `.peekaboo.json` automation scripts |
-| [sleep](docs/commands/sleep.md) | `--duration` (ms) | Millisecond delays between steps |
-| [clean](docs/commands/clean.md) | `--all-snapshots`, `--older-than`, `--snapshot` | Prune snapshots and caches |
-| [agent](docs/commands/agent.md) | `--model`, `--dry-run`, `--resume`, `--max-steps`, audio | Natural-language multi-step automation |
-| [mcp](docs/commands/mcp.md) | `serve` (default) | Run Peekaboo as an MCP server |
+| `platform-info` | none | Report Windows platform metadata and native capabilities |
+| `list` | `apps`, `windows`, `displays`, `--include-invisible` | Enumerate apps, windows, and displays |
+| `capture screen` | `--path`, `--display` | Capture a display or the desktop to BMP |
+| `capture area` | `--rect`, `--path` | Capture a rectangular screen region to BMP |
+| `capture window` | `--id`, `--path` | Capture a window to BMP via `PrintWindow` or GDI fallback |
+| `capture frontmost` | `--path` | Capture the foreground window to BMP |
+| `input position` | none | Read the current cursor position |
+| `input move` | `--point` | Move the cursor to screen coordinates |
+| `input click` | `--point`, `--button`, `--count` | Send point-based mouse clicks |
+| `input scroll` | `--point`, `--direction`, `--amount` | Send wheel scrolling at a point |
+| `input drag` | `--from`, `--to`, `--button`, `--steps` | Drag between two screen points |
+| `input hotkey` | `--keys`, `--hold-ms` | Send modifier and virtual-key hotkeys |
+| `input type` | `--text`, `--delay-ms` | Type keyboard-layout translated text into the focused control |
+| `automation status` | none | Probe Windows UI Automation availability |
+| `automation snapshot` | `--scope`, `--max-depth`, `--max-elements` | Capture a bounded UIA control-view snapshot |
+| `automation element` | `--index`, snapshot flags | Return one UIA element from a bounded snapshot |
+| `automation invoke` | `--index`, snapshot flags | Invoke a UIA element when the pattern is available |
+| `automation focus` | `--index`, snapshot flags | Set UIA focus on an element |
+| `automation set-value` | `--index`, `--value` | Set a UIA Value-pattern value |
+| `automation get-text` | `--index`, `--source`, `--max-length` | Read UIA document, selected, or visible text |
+| `automation set-range-value` | `--index`, `--value` | Set a UIA RangeValue-pattern value |
+| `automation scroll` | `--index`, `--horizontal`, `--vertical` | Scroll through a UIA Scroll-pattern element |
+| `automation set-scroll-percent` | `--index`, `--horizontal`, `--vertical` | Set UIA scroll percentages |
+| `automation set-window-state` | `--index`, `--state` | Set a UIA Window-pattern visual state |
+| `automation close-window` | `--index` | Close a UIA Window-pattern window |
+| `automation wait-window-idle` | `--index`, `--timeout-ms` | Wait for UIA Window-pattern input idle |
+| `automation toggle` | `--index`, snapshot flags | Toggle a UIA Toggle-pattern element |
+| `automation expand` / `collapse` | `--index`, snapshot flags | Expand or collapse a UIA element |
+| `automation select` | `--index`, snapshot flags | Select a UIA SelectionItem-pattern element |
+| `automation add-to-selection` / `remove-from-selection` | `--index` | Adjust UIA selection membership |
+| `automation scroll-into-view` | `--index` | Ask UIA to scroll an element into view |
 
 ## Models and providers
-- OpenAI: GPT-5.1 (default) and GPT-4.1/4o vision
-- Anthropic: Claude 4.x
-- xAI: Grok 4-fast reasoning + vision
-- Google: Gemini 2.5 (pro/flash)
-- Local: Ollama (llama3.3, llava, etc.)
-
-Set providers via `PEEKABOO_AI_PROVIDERS` or `peekaboo config add`.
+- The Windows fork does not currently package the macOS natural-language agent
+  or MCP server.
+- AI provider configuration remains part of the upstream macOS application and
+  shared codebase, not the standalone `peekaboo-win11.exe` artifact.
+- The Windows 11 work is focused on the native desktop automation adapter and
+  command-runner seam.
 
 ## Learn more
-- Command reference: [docs/commands/](docs/commands/)
-- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Building from source: [docs/building.md](docs/building.md)
-- Testing guide: [docs/testing/tools.md](docs/testing/tools.md)
-- MCP setup: [docs/commands/mcp.md](docs/commands/mcp.md)
-- Permissions: [docs/permissions.md](docs/permissions.md)
-- Ollama/local models: [docs/ollama.md](docs/ollama.md)
-- Agent chat loop: [docs/agent-chat.md](docs/agent-chat.md)
-- Service API reference: [docs/service-api-reference.md](docs/service-api-reference.md)
+- Windows refactor notes: [docs/windows-11-refactor.md](docs/windows-11-refactor.md)
+- Windows package: [Platforms/Windows/PeekabooWin11](Platforms/Windows/PeekabooWin11)
+- Shared desktop contract: [Core/PeekabooDesktop](Core/PeekabooDesktop)
+- Windows build script: [scripts/windows/build-win11.ps1](scripts/windows/build-win11.ps1)
+- Windows package script: [scripts/windows/package-win11.ps1](scripts/windows/package-win11.ps1)
+- Windows package verifier: [scripts/windows/verify-package-win11.ps1](scripts/windows/verify-package-win11.ps1)
+- Windows CI workflow: [.github/workflows/windows-11-platform.yml](.github/workflows/windows-11-platform.yml)
+- Upstream project: [openclaw/Peekaboo](https://github.com/openclaw/Peekaboo)
 
 ## Community
 
-- [PeekabooWin](https://github.com/FelixKruger/PeekabooWin) — Windows-first rewrite of the Peekaboo automation loop (JavaScript + PowerShell) by [@FelixKruger](https://github.com/FelixKruger)
-
-## Windows 11 fork status
-
-This fork includes a native Windows 11 refactor track in
-[`Platforms/Windows/PeekabooWin11`](Platforms/Windows/PeekabooWin11). It is a
-standalone Swift package with a Win32-backed adapter for display/window/app
-enumeration, BMP screen/window capture, cursor and keyboard input, and bounded
-UI Automation snapshots/actions. The package is built on the shared desktop
-model and command-runner seam in
-[`Core/PeekabooDesktop`](Core/PeekabooDesktop), while `PeekabooAutomationKit`
-maps the existing macOS service models into the same neutral contract without
-changing macOS runtime behavior. The Windows CI packages and verifies
-`peekaboo-win11.exe` and its checksum as a workflow artifact for branch and PR
-validation, including packaged `--help` and `platform-info` smoke checks. See
-[`docs/windows-11-refactor.md`](docs/windows-11-refactor.md) for the current
-Windows command surface, build steps, and remaining integration notes.
+- [openclaw/Peekaboo](https://github.com/openclaw/Peekaboo) - the original
+  upstream project this fork was created from.
+- [PeekabooWin](https://github.com/FelixKruger/PeekabooWin) - a separate
+  Windows-first rewrite of the Peekaboo automation loop (JavaScript +
+  PowerShell) by [@FelixKruger](https://github.com/FelixKruger).
 
 ## Development basics
-- Requirements: macOS 15+, Xcode 16+/Swift 6.2. Node 22+ only if you run the pnpm docs/build helper scripts (core CLI/app/MCP are Swift-only).
-- Install deps: `pnpm install` then `pnpm run build:cli` or `pnpm run test:safe`.
-- Lint/format: `pnpm run lint && pnpm run format`.
+- Requirements: Windows 11 with Swift installed. The workflow currently uses
+  Swift 6.3.1 on GitHub's Windows Server 2025 image family.
+- Build and test:
+  ```powershell
+  .\scripts\windows\build-win11.ps1
+  ```
+- Package and verify:
+  ```powershell
+  .\scripts\windows\package-win11.ps1
+  .\scripts\windows\verify-package-win11.ps1
+  ```
+- Local Linux/macOS checkouts can run docs lint and C syntax checks, but Swift
+  and PowerShell execution are covered by Windows CI for this branch.
 
 ## License
 MIT
