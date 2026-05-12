@@ -37,8 +37,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - SHA-256 checksum publishing for the packaged Windows workflow artifact
 - machine-readable `PACKAGE_MANIFEST.json` and `BUILD_INFO.txt` metadata in
   the packaged zip
-- packaged CLI verification for checksum, archive contents, `--help`, and
-  `platform-info`
+- packaged CLI verification for checksum, flat archive contents, `--help`,
+  and `platform-info`
 - packaged metadata verification that keeps manifest configuration, commit,
   and build timestamp aligned with `BUILD_INFO.txt`
 - packaged README verification for current capture and UI Automation examples

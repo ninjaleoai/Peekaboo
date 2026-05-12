@@ -155,7 +155,14 @@ if ($manifest.commit -ne "unknown" -and -not $manifest.commit.StartsWith($buildC
 }
 
 $manifestContents = @($manifest.contents)
-$archiveFiles = @(Get-ChildItem -Path $verifyPath -File | ForEach-Object { $_.Name })
+$archiveDirectories = @(Get-ChildItem -Path $verifyPath -Directory -Recurse)
+if ($archiveDirectories.Count -ne 0) {
+    $directoryNames = ($archiveDirectories |
+        ForEach-Object { $_.FullName }) -join ", "
+    throw "Package archive contained unexpected nested directories: $directoryNames"
+}
+
+$archiveFiles = @(Get-ChildItem -Path $verifyPath -File -Recurse | ForEach-Object { $_.Name })
 foreach ($fileName in $manifestContents) {
     $filePath = Join-Path $verifyPath $fileName
     if (-not (Test-Path $filePath)) {
