@@ -524,6 +524,48 @@ if ($snapshotElements[0].depth -ne 0) {
     throw "Packaged automation snapshot first element had unexpected depth: $($snapshotElements[0].depth)"
 }
 
+$elementOutput = & $executablePath automation element --scope root --index 0 --max-depth 0 --max-elements 1 2>&1
+$elementExitCode = $LASTEXITCODE
+if ($elementExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe automation element exited with $elementExitCode. Output: $elementOutput"
+}
+
+$elementText = $elementOutput -join "`n"
+try {
+    $elementEnvelope = $elementText | ConvertFrom-Json
+} catch {
+    throw "Packaged automation element output was not valid JSON. Output: $elementText"
+}
+
+if ($elementEnvelope.ok -ne $true) {
+    throw "Packaged automation element did not return ok=true. Output: $elementText"
+}
+if ($elementEnvelope.data.nativeBackend -ne "UIAutomation") {
+    $backend = $elementEnvelope.data.nativeBackend
+    throw "Packaged automation element returned unexpected native backend: $backend"
+}
+if ($elementEnvelope.data.scope -ne "root") {
+    throw "Packaged automation element returned unexpected scope: $($elementEnvelope.data.scope)"
+}
+if ($elementEnvelope.data.maxDepth -ne 0) {
+    throw "Packaged automation element returned unexpected maxDepth: $($elementEnvelope.data.maxDepth)"
+}
+if ($elementEnvelope.data.maxElements -ne 1) {
+    throw "Packaged automation element returned unexpected maxElements: $($elementEnvelope.data.maxElements)"
+}
+if ($elementEnvelope.data.elementCount -lt 1) {
+    throw "Packaged automation element did not report any available elements. Output: $elementText"
+}
+if ($elementEnvelope.data.elementIndex -ne 0) {
+    throw "Packaged automation element returned unexpected elementIndex: $($elementEnvelope.data.elementIndex)"
+}
+if ($elementEnvelope.data.element.index -ne 0) {
+    throw "Packaged automation element payload had unexpected index: $($elementEnvelope.data.element.index)"
+}
+if ($elementEnvelope.data.element.depth -ne 0) {
+    throw "Packaged automation element payload had unexpected depth: $($elementEnvelope.data.element.depth)"
+}
+
 Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
@@ -537,3 +579,4 @@ Write-Host "  Window capture: $windowCapturePath"
 Write-Host "  Frontmost capture: $frontmostCapturePath"
 Write-Host "  UI Automation: available"
 Write-Host "  UI Automation snapshot: root"
+Write-Host "  UI Automation element lookup: root index 0"

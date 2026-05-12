@@ -48,6 +48,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   or `gdiRegion` capture-method metadata
 - packaged CLI UI Automation status smoke verification
 - packaged CLI bounded UI Automation snapshot smoke verification
+- packaged CLI bounded UI Automation element lookup smoke verification
 - native UI Automation availability probing through the Windows UI Automation
   COM API
 - bounded native UI Automation root, foreground-window, focused-element, or
@@ -570,9 +571,10 @@ scripts after build and test. Verification expands the archive, validates the
 checksum and package manifest, confirms the manifest matches the archive
 contents, runs packaged `--help`, `platform-info`, display/window/app list
 commands, `input position`, `automation status`, and a bounded
-`automation snapshot`, then performs packaged screen-capture, area-capture,
-window-capture, and frontmost-capture smoke tests before uploading the zip and
-checksum as a workflow artifact named `peekaboo-win11-<commit-sha>`.
+`automation snapshot` plus bounded `automation element` lookup, then performs
+packaged screen-capture, area-capture, window-capture, and frontmost-capture
+smoke tests before uploading the zip and checksum as a workflow artifact named
+`peekaboo-win11-<commit-sha>`.
 
 The workflow pins `runs-on: windows-2025-vs2026` so Windows validation stays on
 the same Windows Server 2025 image family GitHub currently redirects
