@@ -53,16 +53,43 @@ Copy-Item $binaryPath $packagedBinaryPath -Force
 Copy-Item (Join-Path $repoRoot "LICENSE") (Join-Path $stagingPath "LICENSE") -Force
 
 $gitSha = "unknown"
+$gitShortSha = "unknown"
 if (Get-Command git -ErrorAction SilentlyContinue) {
-    $gitSha = (git -C $repoRoot rev-parse --short HEAD).Trim()
+    $gitSha = (git -C $repoRoot rev-parse HEAD).Trim()
+    $gitShortSha = (git -C $repoRoot rev-parse --short HEAD).Trim()
 }
+
+$builtAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
 @(
     "Peekaboo Windows 11 CLI",
     "Configuration: $Configuration",
-    "Commit: $gitSha",
-    "Built: $((Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"))"
+    "Commit: $gitShortSha",
+    "Built: $builtAt"
 ) | Set-Content -Path (Join-Path $stagingPath "BUILD_INFO.txt") -Encoding UTF8
+
+$manifest = [ordered]@{
+    schemaVersion = 1
+    name = "peekaboo-win11"
+    platform = "Windows"
+    minimumSystemVersion = "Windows 11"
+    nativeBackend = "Win32"
+    configuration = $Configuration
+    commit = $gitSha
+    builtAt = $builtAt
+    executable = "peekaboo-win11.exe"
+    contents = @(
+        "peekaboo-win11.exe",
+        "LICENSE",
+        "BUILD_INFO.txt",
+        "README.md",
+        "PACKAGE_MANIFEST.json"
+    )
+}
+
+$manifest |
+    ConvertTo-Json -Depth 4 |
+    Set-Content -Path (Join-Path $stagingPath "PACKAGE_MANIFEST.json") -Encoding UTF8
 
 @'
 # Peekaboo Windows 11 CLI

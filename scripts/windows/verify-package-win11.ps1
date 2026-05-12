@@ -50,7 +50,8 @@ $requiredFiles = @(
     "peekaboo-win11.exe",
     "LICENSE",
     "BUILD_INFO.txt",
-    "README.md"
+    "README.md",
+    "PACKAGE_MANIFEST.json"
 )
 
 foreach ($fileName in $requiredFiles) {
@@ -63,6 +64,46 @@ foreach ($fileName in $requiredFiles) {
 $executablePath = Join-Path $verifyPath "peekaboo-win11.exe"
 if ((Get-Item $executablePath).Length -le 0) {
     throw "Packaged peekaboo-win11.exe is empty."
+}
+
+$manifestPath = Join-Path $verifyPath "PACKAGE_MANIFEST.json"
+try {
+    $manifest = Get-Content -Raw -Path $manifestPath | ConvertFrom-Json
+} catch {
+    throw "Package manifest was not valid JSON: $manifestPath"
+}
+
+if ($manifest.schemaVersion -ne 1) {
+    throw "Package manifest returned unexpected schemaVersion: $($manifest.schemaVersion)"
+}
+if ($manifest.name -ne "peekaboo-win11") {
+    throw "Package manifest returned unexpected name: $($manifest.name)"
+}
+if ($manifest.platform -ne "Windows") {
+    throw "Package manifest returned unexpected platform: $($manifest.platform)"
+}
+if ($manifest.minimumSystemVersion -ne "Windows 11") {
+    $version = $manifest.minimumSystemVersion
+    throw "Package manifest returned unexpected minimum system version: $version"
+}
+if ($manifest.nativeBackend -ne "Win32") {
+    throw "Package manifest returned unexpected native backend: $($manifest.nativeBackend)"
+}
+if ($manifest.executable -ne "peekaboo-win11.exe") {
+    throw "Package manifest returned unexpected executable: $($manifest.executable)"
+}
+if ([string]::IsNullOrWhiteSpace($manifest.commit)) {
+    throw "Package manifest did not include a commit."
+}
+if ([string]::IsNullOrWhiteSpace($manifest.builtAt)) {
+    throw "Package manifest did not include a build timestamp."
+}
+
+$manifestContents = @($manifest.contents)
+foreach ($fileName in $requiredFiles) {
+    if (-not ($manifestContents -contains $fileName)) {
+        throw "Package manifest contents did not include $fileName."
+    }
 }
 
 function Invoke-PackagedJsonCommand {
@@ -314,6 +355,7 @@ Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
 Write-Host "  Extracted: $verifyPath"
+Write-Host "  Manifest: $manifestPath"
 Write-Host "  Desktop state: displays, windows, apps"
 Write-Host "  Cursor position: readable"
 Write-Host "  Screen capture: $screenCapturePath"
