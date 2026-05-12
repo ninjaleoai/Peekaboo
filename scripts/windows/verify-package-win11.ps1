@@ -66,6 +66,7 @@ $readmeText = Get-Content -Raw -Path $readmePath
 $requiredReadmeSnippets = @(
     "peekaboo-win11.exe platform-info",
     "capture frontmost --path",
+    "input move --point",
     "automation status",
     "automation snapshot --scope foreground",
     "automation element --scope root --index 0"
@@ -278,6 +279,19 @@ if ($null -eq $cursorData.PSObject.Properties["x"] -or
     $null -eq $cursorData.PSObject.Properties["y"])
 {
     throw "Packaged input position did not include x/y coordinates. Output: $($cursorPosition.Text)"
+}
+
+$cursorX = [int] $cursorData.x
+$cursorY = [int] $cursorData.y
+$cursorPoint = "$cursorX,$cursorY"
+$cursorMove = Invoke-PackagedJsonCommand `
+    -Description "input move --point $cursorPoint" `
+    -Arguments @("input", "move", "--point", $cursorPoint)
+if ($cursorMove.Envelope.ok -ne $true) {
+    throw "Packaged input move did not return ok=true. Output: $($cursorMove.Text)"
+}
+if ($cursorMove.Envelope.data.x -ne $cursorX -or $cursorMove.Envelope.data.y -ne $cursorY) {
+    throw "Packaged input move returned unexpected coordinates. Output: $($cursorMove.Text)"
 }
 
 $screenCapturePath = Join-Path $verifyPath "screen-smoke.bmp"
@@ -589,6 +603,7 @@ Write-Host "  Extracted: $verifyPath"
 Write-Host "  Manifest: $manifestPath"
 Write-Host "  Desktop state: displays, windows, apps"
 Write-Host "  Cursor position: readable"
+Write-Host "  Cursor move: current position"
 Write-Host "  Screen capture: $screenCapturePath"
 Write-Host "  Area capture: $areaCapturePath"
 Write-Host "  Window capture: $windowCapturePath"

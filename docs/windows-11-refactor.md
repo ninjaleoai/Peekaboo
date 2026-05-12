@@ -41,6 +41,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - packaged README verification for current capture and UI Automation examples
 - packaged CLI desktop-state smoke verification for display/window/app
   enumeration and cursor-position reads
+- packaged CLI cursor-move smoke verification by moving to the current
+  position
 - packaged CLI screen-capture and area-capture smoke verification, including
   `gdiRegion` capture-method metadata
 - packaged CLI window-capture smoke verification, including `printWindow` or
@@ -572,7 +574,8 @@ scripts after build and test. Verification expands the archive, validates the
 checksum and package manifest, confirms the manifest matches the archive
 contents, runs packaged `--help`, `platform-info`, display/window/app list
 commands, validates that the packaged README includes current capture and UI
-Automation examples, runs `input position`, `automation status`, and a bounded
+Automation examples, runs `input position`, performs a no-op `input move` to
+the current cursor position, runs `automation status`, and a bounded
 `automation snapshot` plus bounded `automation element` lookup, then performs
 packaged screen-capture, area-capture, window-capture, and frontmost-capture
 smoke tests before uploading the zip and checksum as a workflow artifact named
