@@ -1,5 +1,6 @@
 import Commander
 import PeekabooCore
+import PeekabooDesktop
 
 extension ListCommand {
     @MainActor
@@ -38,7 +39,8 @@ extension ListCommand {
 
             do {
                 try await requireScreenRecordingPermission(services: self.services)
-                let output = try await self.services.applications.listApplications()
+                let applications = try await self.services.desktop.listApplications()
+                let output = self.buildApplicationOutput(from: applications)
 
                 if self.jsonOutput {
                     outputSuccessCodable(data: output.data, logger: self.outputLogger)
@@ -49,6 +51,32 @@ extension ListCommand {
                 self.handleError(error)
                 throw ExitCode(1)
             }
+        }
+
+        private func buildApplicationOutput(
+            from applications: [DesktopApplication]
+        ) -> UnifiedToolOutput<ServiceApplicationListData> {
+            let serviceApplications = applications.map { application in
+                ServiceApplicationInfo(
+                    processIdentifier: Int32(clamping: application.processIdentifier),
+                    bundleIdentifier: application.bundleIdentifier,
+                    name: application.executableName,
+                    bundlePath: application.executablePath,
+                    isActive: application.isActive,
+                    isHidden: application.isHidden,
+                    windowCount: application.visibleWindowCount)
+            }
+
+            return UnifiedToolOutput(
+                data: ServiceApplicationListData(applications: serviceApplications),
+                summary: UnifiedToolOutput<ServiceApplicationListData>.Summary(
+                    brief: "Found \(serviceApplications.count) application"
+                        + (serviceApplications.count == 1 ? "" : "s"),
+                    status: .success,
+                    counts: ["applications": serviceApplications.count]
+                ),
+                metadata: .init(duration: 0)
+            )
         }
     }
 }

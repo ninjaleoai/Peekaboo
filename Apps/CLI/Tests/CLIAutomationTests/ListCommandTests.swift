@@ -68,6 +68,32 @@ struct ListCommandCLIHarnessTests {
     }
 
     @Test
+    func `list screens outputs stub display data in JSON mode`() async throws {
+        let screens = [
+            ScreenInfo(
+                index: 0,
+                name: "Built-in Display",
+                frame: CGRect(x: 0, y: 0, width: 1512, height: 982),
+                visibleFrame: CGRect(x: 0, y: 25, width: 1512, height: 921),
+                isPrimary: true,
+                scaleFactor: 2,
+                displayID: 12345),
+        ]
+        let context = await self.makeContext(applications: [], screens: screens)
+
+        let result = try await self.runList(arguments: ["list", "screens", "--json"], services: context.services)
+        #expect(result.exitStatus == 0)
+
+        let data = try #require(self.output(from: result).data(using: .utf8))
+        let payload = try JSONDecoder().decode(CodableJSONResponse<ScreenListData>.self, from: data)
+        #expect(payload.success == true)
+        #expect(payload.data.screens.count == 1)
+        #expect(payload.data.screens.first?.name == "Built-in Display")
+        #expect(payload.data.screens.first?.scaleFactor == 2)
+        #expect(payload.data.primaryIndex == 0)
+    }
+
+    @Test
     func `list windows with include details filters output`() async throws {
         let appName = "Finder"
         let applications = [
@@ -146,22 +172,28 @@ struct ListCommandCLIHarnessTests {
 
     private func makeContext(
         applications: [ServiceApplicationInfo],
+        screens: [ScreenInfo] = [],
         screenCapture: StubScreenCaptureService? = nil
     ) async -> HarnessContext {
         let applicationService = await MainActor.run {
             StubApplicationService(applications: applications)
         }
-        return await self.makeContext(applicationService: applicationService, screenCapture: screenCapture)
+        return await self.makeContext(
+            applicationService: applicationService,
+            screens: screens,
+            screenCapture: screenCapture)
     }
 
     @MainActor
     private func makeContext(
         applicationService: any ApplicationServiceProtocol,
+        screens: [ScreenInfo] = [],
         screenCapture: StubScreenCaptureService? = nil
     ) async -> HarnessContext {
         let captureService = screenCapture ?? StubScreenCaptureService(permissionGranted: true)
         let services = TestServicesFactory.makePeekabooServices(
             applications: applicationService,
+            screens: screens,
             screenCapture: captureService
         )
 

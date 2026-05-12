@@ -43,6 +43,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../PeekabooAutomationKit"),
+        .package(path: "../PeekabooDesktop"),
         .package(path: "../PeekabooFoundation"),
         .package(path: "../PeekabooProtocols"),
         .package(path: "../PeekabooExternalDependencies"),
@@ -92,6 +93,7 @@ let package = Package(
             dependencies: [
                 .target(name: "PeekabooAutomation"),
                 .product(name: "PeekabooAutomationKit", package: "PeekabooAutomationKit"),
+                .product(name: "PeekabooDesktop", package: "PeekabooDesktop"),
                 .product(name: "PeekabooVisualizer", package: "PeekabooVisualizer"),
                 .product(name: "PeekabooFoundation", package: "PeekabooFoundation"),
                 .product(name: "PeekabooProtocols", package: "PeekabooProtocols"),

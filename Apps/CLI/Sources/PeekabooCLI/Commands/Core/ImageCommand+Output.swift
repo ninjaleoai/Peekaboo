@@ -25,6 +25,18 @@ struct ImageObservationDiagnostics: Codable {
         self.state_snapshot = diagnostics.stateSnapshot.map(SeeDesktopStateSnapshotSummary.init)
         self.target = diagnostics.target.map(SeeObservationTargetDiagnostics.init)
     }
+
+    init(
+        spans: [ObservationSpan],
+        warnings: [String] = [],
+        stateSnapshot: DesktopStateSnapshotSummary? = nil,
+        target: DesktopObservationTargetDiagnostics? = nil)
+    {
+        self.spans = spans.map(SeeObservationSpan.init)
+        self.warnings = warnings
+        self.state_snapshot = stateSnapshot.map(SeeDesktopStateSnapshotSummary.init)
+        self.target = target.map(SeeObservationTargetDiagnostics.init)
+    }
 }
 
 struct ImageCaptureResult: Codable {

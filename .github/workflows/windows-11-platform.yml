@@ -1,0 +1,63 @@
+name: Windows 11 Platform
+
+on:
+  push:
+    paths:
+      - "Platforms/Windows/PeekabooWin11/**"
+      - "Core/PeekabooDesktop/**"
+      - "scripts/windows/build-win11.ps1"
+      - "scripts/windows/package-win11.ps1"
+      - "scripts/windows/verify-package-win11.ps1"
+      - "docs/windows-11-refactor.md"
+      - ".github/workflows/windows-11-platform.yml"
+  pull_request:
+    paths:
+      - "Platforms/Windows/PeekabooWin11/**"
+      - "Core/PeekabooDesktop/**"
+      - "scripts/windows/build-win11.ps1"
+      - "scripts/windows/package-win11.ps1"
+      - "scripts/windows/verify-package-win11.ps1"
+      - "docs/windows-11-refactor.md"
+      - ".github/workflows/windows-11-platform.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: windows-11-platform-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and test Windows 11 adapter
+    runs-on: windows-2025-vs2026
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Swift
+        uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.3.1-release
+          swift-build: 6.3.1-RELEASE
+          update-sdk-modules: true
+
+      - name: Build and test
+        run: .\scripts\windows\build-win11.ps1
+
+      - name: Package Windows CLI
+        run: .\scripts\windows\package-win11.ps1
+
+      - name: Verify packaged Windows CLI
+        run: .\scripts\windows\verify-package-win11.ps1
+
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: peekaboo-win11-${{ github.sha }}
+          path: |
+            .artifacts\windows\peekaboo-win11.zip
+            .artifacts\windows\peekaboo-win11.zip.sha256
+          if-no-files-found: error
+          retention-days: 14

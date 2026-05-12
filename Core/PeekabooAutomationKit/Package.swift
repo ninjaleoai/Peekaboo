@@ -24,6 +24,7 @@ let package = Package(
             targets: ["PeekabooAutomationKit"]),
     ],
     dependencies: [
+        .package(path: "../PeekabooDesktop"),
         .package(path: "../PeekabooFoundation"),
         .package(path: "../PeekabooProtocols"),
         .package(path: "../../AXorcist"),
@@ -33,6 +34,7 @@ let package = Package(
         .target(
             name: "PeekabooAutomationKit",
             dependencies: [
+                .product(name: "PeekabooDesktop", package: "PeekabooDesktop"),
                 .product(name: "PeekabooFoundation", package: "PeekabooFoundation"),
                 .product(name: "PeekabooProtocols", package: "PeekabooProtocols"),
                 .product(name: "AXorcist", package: "AXorcist"),
@@ -42,7 +44,10 @@ let package = Package(
             swiftSettings: kitTargetSettings),
         .testTarget(
             name: "PeekabooAutomationKitTests",
-            dependencies: ["PeekabooAutomationKit"],
+            dependencies: [
+                "PeekabooAutomationKit",
+                .product(name: "PeekabooDesktop", package: "PeekabooDesktop"),
+            ],
             path: "Tests/PeekabooAutomationKitTests",
             swiftSettings: approachableConcurrencySettings),
     ],

@@ -1,8 +1,7 @@
-import Algorithms
 import Commander
-import CoreGraphics
 import Foundation
 import PeekabooCore
+import PeekabooDesktop
 
 private typealias ScreenOutput = UnifiedToolOutput<ScreenListData>
 
@@ -42,74 +41,74 @@ extension ListCommand {
             self.runtime = runtime
             self.logger.setJsonOutputMode(self.jsonOutput)
 
-            let screens = self.services.screens.listScreens()
-            let screenListData = self.buildScreenListData(from: screens)
+            let displays = try await self.services.desktop.listDisplays()
+            let screenListData = self.buildScreenListData(from: displays)
             let output = UnifiedToolOutput(
                 data: screenListData,
-                summary: self.buildScreenSummary(for: screens),
+                summary: self.buildScreenSummary(for: displays),
                 metadata: self.buildScreenMetadata()
             )
 
             if self.jsonOutput {
                 outputSuccessCodable(data: output.data, logger: self.outputLogger)
             } else {
-                self.displayScreenDetails(screens, count: screens.count)
+                self.displayScreenDetails(displays)
             }
         }
 
         @MainActor
-        private func displayScreenDetails(_ screens: [PeekabooCore.ScreenInfo], count: Int) {
-            Swift.print("Screens (\(count) total):")
-            for screen in screens {
-                let primaryBadge = screen.isPrimary ? " (Primary)" : ""
-                Swift.print("\n\(screen.index). \(screen.name)\(primaryBadge)")
-                Swift.print("   Resolution: \(Int(screen.frame.width))×\(Int(screen.frame.height))")
-                Swift.print("   Position: \(Int(screen.frame.origin.x)),\(Int(screen.frame.origin.y))")
-                let retinaBadge = screen.scaleFactor > 1 ? " (Retina)" : ""
-                Swift.print("   Scale: \(screen.scaleFactor)x\(retinaBadge)")
-                if screen.visibleFrame.size != screen.frame.size {
-                    Swift.print("   Visible Area: \(Int(screen.visibleFrame.width))×\(Int(screen.visibleFrame.height))")
+        private func displayScreenDetails(_ displays: [DesktopDisplay]) {
+            Swift.print("Screens (\(displays.count) total):")
+            for display in displays {
+                let primaryBadge = display.isPrimary ? " (Primary)" : ""
+                Swift.print("\n\(display.index). \(self.displayName(display))\(primaryBadge)")
+                Swift.print("   Resolution: \(display.bounds.width)×\(display.bounds.height)")
+                Swift.print("   Position: \(display.bounds.x),\(display.bounds.y)")
+                let retinaBadge = display.scaleFactor > 1 ? " (Retina)" : ""
+                Swift.print("   Scale: \(display.scaleFactor)x\(retinaBadge)")
+                if display.workArea.size != display.bounds.size {
+                    Swift.print("   Visible Area: \(display.workArea.width)×\(display.workArea.height)")
                 }
             }
             Swift.print("\n💡 Use 'peekaboo see --screen-index N' to capture a specific screen")
         }
 
         @MainActor
-        private func buildScreenListData(from screens: [PeekabooCore.ScreenInfo]) -> ScreenListData {
-            let details = screens.map { screen in
+        private func buildScreenListData(from displays: [DesktopDisplay]) -> ScreenListData {
+            let details = displays.map { display in
                 ScreenListData.ScreenDetails(
-                    index: screen.index,
-                    name: screen.name,
+                    index: display.index,
+                    name: self.displayName(display),
                     resolution: ScreenListData.Resolution(
-                        width: Int(screen.frame.width),
-                        height: Int(screen.frame.height)
+                        width: display.bounds.width,
+                        height: display.bounds.height
                     ),
                     position: ScreenListData.Position(
-                        x: Int(screen.frame.origin.x),
-                        y: Int(screen.frame.origin.y)
+                        x: display.bounds.x,
+                        y: display.bounds.y
                     ),
                     visibleArea: ScreenListData.Resolution(
-                        width: Int(screen.visibleFrame.width),
-                        height: Int(screen.visibleFrame.height)
+                        width: display.workArea.width,
+                        height: display.workArea.height
                     ),
-                    isPrimary: screen.isPrimary,
-                    scaleFactor: screen.scaleFactor,
-                    displayID: Int(screen.displayID)
+                    isPrimary: display.isPrimary,
+                    scaleFactor: display.scaleFactor,
+                    displayID: Int(clamping: display.id)
                 )
             }
 
             return ScreenListData(
                 screens: details,
-                primaryIndex: screens.firstIndex { $0.isPrimary }
+                primaryIndex: displays.firstIndex { $0.isPrimary }
             )
         }
 
-        private func buildScreenSummary(for screens: [PeekabooCore.ScreenInfo]) -> ScreenOutput.Summary {
-            let count = screens.count
-            let highlights = screens.indexed().compactMap { index, screen in
-                screen.isPrimary ? ScreenOutput.Summary.Highlight(
+        private func buildScreenSummary(for displays: [DesktopDisplay]) -> ScreenOutput.Summary {
+            let count = displays.count
+            let highlights = displays.enumerated().compactMap { index, display in
+                display.isPrimary ? ScreenOutput.Summary.Highlight(
                     label: "Primary",
-                    value: "\(screen.name) (Index \(index))",
+                    value: "\(self.displayName(display)) (Index \(index))",
                     kind: .primary
                 ) : nil
             }
@@ -129,6 +128,10 @@ extension ListCommand {
                 hints: ["Use 'peekaboo see --screen-index N' to capture a specific screen"]
             )
         }
+
+        private func displayName(_ display: DesktopDisplay) -> String {
+            display.name ?? "Display \(display.index)"
+        }
     }
 }
 
@@ -145,7 +148,7 @@ struct ScreenListData {
         let position: Position
         let visibleArea: Resolution
         let isPrimary: Bool
-        let scaleFactor: CGFloat
+        let scaleFactor: Double
         let displayID: Int
     }
 
