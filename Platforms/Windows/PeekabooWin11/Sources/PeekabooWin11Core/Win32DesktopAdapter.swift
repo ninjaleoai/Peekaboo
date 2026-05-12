@@ -5315,7 +5315,8 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             bitmap: bitmap,
             dc: memoryDC,
             bounds: bounds,
-            outputPath: outputPath)
+            outputPath: outputPath,
+            captureMethod: .gdiRegion)
     }
 
     private static func captureWindowImage(
@@ -5353,14 +5354,16 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             bitmap: bitmap,
             dc: memoryDC,
             bounds: bounds,
-            outputPath: outputPath)
+            outputPath: outputPath,
+            captureMethod: .printWindow)
     }
 
     private static func writeBitmapCapture(
         bitmap: HBITMAP,
         dc: HDC,
         bounds: Win11Rect,
-        outputPath: String) throws -> Win11CaptureResult
+        outputPath: String,
+        captureMethod: DesktopCaptureMethod) throws -> Win11CaptureResult
     {
         let data = try Self.bitmapData(bitmap: bitmap, dc: dc, width: bounds.width, height: bounds.height)
         let outputURL = URL(fileURLWithPath: outputPath)
@@ -5369,7 +5372,12 @@ public struct Win32DesktopAdapter: Win11DesktopAdapter {
             withIntermediateDirectories: true)
         try data.write(to: outputURL, options: [.atomic])
 
-        return Win11CaptureResult(path: outputPath, bounds: bounds, format: .bmp, byteCount: data.count)
+        return Win11CaptureResult(
+            path: outputPath,
+            bounds: bounds,
+            format: .bmp,
+            byteCount: data.count,
+            captureMethod: captureMethod)
     }
 
     private static func windowHandle(from identifier: UInt64) -> HWND? {

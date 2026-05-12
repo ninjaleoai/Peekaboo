@@ -238,17 +238,30 @@ public enum DesktopCaptureFormat: String, Codable, Sendable {
     case png
 }
 
+public enum DesktopCaptureMethod: String, Codable, Sendable {
+    case gdiRegion
+    case printWindow
+}
+
 public struct DesktopCaptureResult: Codable, Equatable, Sendable {
     public let path: String
     public let bounds: DesktopRect
     public let format: DesktopCaptureFormat
     public let byteCount: Int
+    public let captureMethod: DesktopCaptureMethod?
 
-    public init(path: String, bounds: DesktopRect, format: DesktopCaptureFormat, byteCount: Int) {
+    public init(
+        path: String,
+        bounds: DesktopRect,
+        format: DesktopCaptureFormat,
+        byteCount: Int,
+        captureMethod: DesktopCaptureMethod? = nil)
+    {
         self.path = path
         self.bounds = bounds
         self.format = format
         self.byteCount = byteCount
+        self.captureMethod = captureMethod
     }
 }
 

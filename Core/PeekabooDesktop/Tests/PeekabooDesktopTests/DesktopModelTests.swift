@@ -27,6 +27,27 @@ final class DesktopModelTests: XCTestCase {
         XCTAssertTrue(output.contains("\"nativeBackend\" : \"Win32\""))
     }
 
+    func testCaptureResultEncodesMethodWhenPresentAndOmitsWhenMissing() throws {
+        let capture = DesktopCaptureResult(
+            path: "window.bmp",
+            bounds: DesktopRect(x: 1, y: 2, width: 3, height: 4),
+            format: .bmp,
+            byteCount: 128,
+            captureMethod: .printWindow)
+        let output = try DesktopJSON.encode(capture)
+
+        XCTAssertTrue(output.contains("\"captureMethod\" : \"printWindow\""))
+
+        let legacyCapture = DesktopCaptureResult(
+            path: "window.bmp",
+            bounds: DesktopRect(x: 1, y: 2, width: 3, height: 4),
+            format: .bmp,
+            byteCount: 128)
+        let legacyOutput = try DesktopJSON.encode(legacyCapture)
+
+        XCTAssertFalse(legacyOutput.contains("captureMethod"))
+    }
+
     func testDisabledUIAutomationElementsOmitUnavailableActions() throws {
         let adapter = StubDesktopAdapter(isEnabled: false)
         let snapshot = try adapter.uiAutomationSnapshot(scope: .root, maxDepth: 1, maxElements: 4)

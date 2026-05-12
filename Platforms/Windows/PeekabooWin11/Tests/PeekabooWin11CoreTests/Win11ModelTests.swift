@@ -361,6 +361,7 @@ final class Win11ModelTests: XCTestCase {
         let result = try adapter.captureScreen(displayIndex: nil, outputPath: outputPath)
 
         XCTAssertEqual(result.format, .bmp)
+        XCTAssertEqual(result.captureMethod, .gdiRegion)
         XCTAssertGreaterThan(result.byteCount, 54)
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         #else
@@ -391,6 +392,7 @@ final class Win11ModelTests: XCTestCase {
 
         XCTAssertEqual(result.format, .bmp)
         XCTAssertEqual(result.bounds, area)
+        XCTAssertEqual(result.captureMethod, .gdiRegion)
         XCTAssertGreaterThan(result.byteCount, 54)
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         #else
@@ -419,6 +421,7 @@ final class Win11ModelTests: XCTestCase {
 
         XCTAssertEqual(result.format, .bmp)
         XCTAssertEqual(result.bounds, window.bounds)
+        XCTAssertTrue([.gdiRegion, .printWindow].contains(try XCTUnwrap(result.captureMethod)))
         XCTAssertGreaterThan(result.byteCount, 54)
         XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         #else
@@ -442,6 +445,7 @@ final class Win11ModelTests: XCTestCase {
             let result = try adapter.captureFrontmost(outputPath: outputPath)
 
             XCTAssertEqual(result.format, .bmp)
+            XCTAssertTrue([.gdiRegion, .printWindow].contains(try XCTUnwrap(result.captureMethod)))
             XCTAssertGreaterThan(result.byteCount, 54)
             XCTAssertTrue(FileManager.default.fileExists(atPath: outputPath))
         } catch let error as Win11DesktopError {

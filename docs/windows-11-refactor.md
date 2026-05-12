@@ -25,6 +25,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - rectangular-area BMP capture through the same GDI capture path
 - window BMP capture through `PrintWindow` with region-backed GDI fallback
 - foreground-window BMP capture through the same window capture path
+- optional capture-method metadata in capture results so Windows callers can
+  distinguish `printWindow` captures from `gdiRegion` fallback captures
 - cursor position reads and cursor movement through Win32 cursor APIs
 - point-based mouse clicks through Win32 mouse input APIs
 - point-based wheel scrolling through Win32 mouse input APIs
@@ -664,7 +666,9 @@ Windows window captures first ask the owning window to render itself into a
 memory device context through `PrintWindow`, then fall back to the existing
 region-backed GDI capture path when a provider cannot render on request. This
 improves the path toward semantic window capture but does not yet guarantee
-off-screen rendering for every Windows app.
+off-screen rendering for every Windows app. Capture results include
+`captureMethod: "printWindow"` when the semantic path succeeds and
+`captureMethod: "gdiRegion"` for screen, area, or fallback captures.
 
 The first Windows typing path sends keyboard-layout translated keystrokes to
 the current focus. It supports characters that `VkKeyScanW` can translate for
