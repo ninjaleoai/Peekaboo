@@ -398,6 +398,51 @@ if ([int64] $windowEnvelope.data.byteCount -ne $windowCaptureSize) {
     throw "Packaged window byteCount $byteCount did not match file size $windowCaptureSize."
 }
 
+$frontmostCapturePath = Join-Path $verifyPath "frontmost-smoke.bmp"
+Remove-Item $frontmostCapturePath -Force -ErrorAction SilentlyContinue
+$frontmostOutput = & $executablePath capture frontmost --path $frontmostCapturePath 2>&1
+$frontmostExitCode = $LASTEXITCODE
+if ($frontmostExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe capture frontmost exited with $frontmostExitCode. Output: $frontmostOutput"
+}
+
+$frontmostText = $frontmostOutput -join "`n"
+try {
+    $frontmostEnvelope = $frontmostText | ConvertFrom-Json
+} catch {
+    throw "Packaged capture frontmost output was not valid JSON. Output: $frontmostText"
+}
+
+if ($frontmostEnvelope.ok -ne $true) {
+    throw "Packaged capture frontmost did not return ok=true. Output: $frontmostText"
+}
+if ($frontmostEnvelope.data.format -ne "bmp") {
+    $format = $frontmostEnvelope.data.format
+    throw "Packaged capture frontmost returned unexpected format: $format"
+}
+if (-not (@("gdiRegion", "printWindow") -contains $frontmostEnvelope.data.captureMethod)) {
+    $method = $frontmostEnvelope.data.captureMethod
+    throw "Packaged capture frontmost returned unexpected capture method: $method"
+}
+if ($frontmostEnvelope.data.bounds.width -le 0 -or
+    $frontmostEnvelope.data.bounds.height -le 0)
+{
+    throw "Packaged capture frontmost returned invalid bounds. Output: $frontmostText"
+}
+if (-not (Test-Path $frontmostCapturePath)) {
+    throw "Packaged capture frontmost did not write $frontmostCapturePath."
+}
+
+$frontmostCaptureSize = (Get-Item $frontmostCapturePath).Length
+if ($frontmostCaptureSize -le 54) {
+    $size = $frontmostCaptureSize
+    throw "Packaged capture frontmost wrote an invalid BMP-sized file: $size bytes."
+}
+if ([int64] $frontmostEnvelope.data.byteCount -ne $frontmostCaptureSize) {
+    $byteCount = $frontmostEnvelope.data.byteCount
+    throw "Packaged frontmost byteCount $byteCount did not match file size $frontmostCaptureSize."
+}
+
 $automationOutput = & $executablePath automation status 2>&1
 $automationExitCode = $LASTEXITCODE
 if ($automationExitCode -ne 0) {
@@ -489,5 +534,6 @@ Write-Host "  Cursor position: readable"
 Write-Host "  Screen capture: $screenCapturePath"
 Write-Host "  Area capture: $areaCapturePath"
 Write-Host "  Window capture: $windowCapturePath"
+Write-Host "  Frontmost capture: $frontmostCapturePath"
 Write-Host "  UI Automation: available"
 Write-Host "  UI Automation snapshot: root"
