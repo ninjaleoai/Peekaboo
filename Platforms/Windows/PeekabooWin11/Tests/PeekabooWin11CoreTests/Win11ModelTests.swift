@@ -331,6 +331,20 @@ final class Win11ModelTests: XCTestCase {
         XCTAssertTrue(output.contains("automation add-to-selection --index"))
         XCTAssertTrue(output.contains("automation remove-from-selection --index"))
         XCTAssertTrue(output.contains("automation scroll-into-view --index"))
+        XCTAssertTrue(output.contains("mcp serve"))
+    }
+
+    func testCliMCPHelpDescribesStdioServer() {
+        var output = ""
+        let status = Win11CLI.run(
+            arguments: ["peekaboo-win11", "mcp", "--help"],
+            adapter: UnsupportedWin11DesktopAdapter(),
+            stdout: { output = $0 },
+            stderr: { _ in })
+
+        XCTAssertEqual(status, 0)
+        XCTAssertTrue(output.contains("peekaboo-win11 mcp serve"))
+        XCTAssertTrue(output.contains("JSON-RPC MCP server over stdio"))
     }
 
     func testNativeWindowsAdapterCanReadDesktopState() throws {
