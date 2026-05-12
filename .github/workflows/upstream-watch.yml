@@ -1,0 +1,45 @@
+name: Upstream Watch
+
+on:
+  schedule:
+    - cron: "23 15 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report changes without creating or updating the tracking issue"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  check-upstream:
+    name: Check OpenClaw upstream
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Check upstream changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_REPO: openclaw/Peekaboo
+          UPSTREAM_BRANCH: main
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          args=()
+          if [ "$DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          node scripts/upstream/check-upstream.mjs "${args[@]}"
