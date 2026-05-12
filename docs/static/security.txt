@@ -1,4 +1,4 @@
-Contact: https://github.com/openclaw/Peekaboo/security
+Contact: https://github.com/ninjaleoai/Peekaboo/security
 Preferred-Languages: en
-Canonical: https://peekaboo.sh/.well-known/security.txt
-Policy: https://github.com/openclaw/Peekaboo/security/policy
+Canonical: https://ninjaleoai.github.io/Peekaboo/.well-known/security.txt
+Policy: https://github.com/ninjaleoai/Peekaboo/security/policy

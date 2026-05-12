@@ -8,8 +8,9 @@ read_when:
 
 # Windows 11 Refactor
 
-Peekaboo is still macOS-first. The Windows fork now has a first native seam at
-`Platforms/Windows/PeekabooWin11`.
+This fork is now Windows-first. It preserves the original Peekaboo project as
+upstream context, but the published fork docs and packaged artifact focus on
+the native Windows 11 surface at `Platforms/Windows/PeekabooWin11`.
 
 ## Current Slice
 

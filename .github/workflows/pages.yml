@@ -5,8 +5,12 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "README.md"
       - "scripts/build-docs-site.mjs"
       - "scripts/docs-site-assets.mjs"
+      - "Platforms/Windows/PeekabooWin11/**"
+      - "Core/PeekabooDesktop/**"
+      - "scripts/windows/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://peekaboo.sh/sitemap.xml
+Sitemap: https://ninjaleoai.github.io/Peekaboo/sitemap.xml
