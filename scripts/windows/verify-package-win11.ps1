@@ -115,7 +115,15 @@ if ($manifest.executable -ne "peekaboo-win11.exe") {
 if ([string]::IsNullOrWhiteSpace($manifest.commit)) {
     throw "Package manifest did not include a commit."
 }
-if ([string]::IsNullOrWhiteSpace($manifest.builtAt)) {
+
+$manifestBuiltAt = $manifest.builtAt
+if ($manifestBuiltAt -is [DateTime]) {
+    $manifestBuiltAt = $manifestBuiltAt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+} else {
+    $manifestBuiltAt = [string] $manifestBuiltAt
+}
+
+if ([string]::IsNullOrWhiteSpace($manifestBuiltAt)) {
     throw "Package manifest did not include a build timestamp."
 }
 
@@ -127,8 +135,8 @@ if (-not $buildInfoText.Contains("Peekaboo Windows 11 CLI")) {
 if (-not $buildInfoText.Contains("Configuration: $($manifest.configuration)")) {
     throw "Package build info did not match manifest configuration: $($manifest.configuration)"
 }
-if (-not $buildInfoText.Contains("Built: $($manifest.builtAt)")) {
-    throw "Package build info did not match manifest build timestamp: $($manifest.builtAt)"
+if (-not $buildInfoText.Contains("Built: $manifestBuiltAt")) {
+    throw "Package build info did not match manifest build timestamp: $manifestBuiltAt"
 }
 
 $buildCommitLine = @(($buildInfoText -split "\r?\n") |
