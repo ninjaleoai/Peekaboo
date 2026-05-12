@@ -35,9 +35,12 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - focused text typing through Win32 keyboard input APIs
 - release-mode `peekaboo-win11.exe` packaging as a Windows workflow artifact
 - SHA-256 checksum publishing for the packaged Windows workflow artifact
-- machine-readable `PACKAGE_MANIFEST.json` metadata in the packaged zip
+- machine-readable `PACKAGE_MANIFEST.json` and `BUILD_INFO.txt` metadata in
+  the packaged zip
 - packaged CLI verification for checksum, archive contents, `--help`, and
   `platform-info`
+- packaged metadata verification that keeps manifest configuration, commit,
+  and build timestamp aligned with `BUILD_INFO.txt`
 - packaged README verification for current capture and UI Automation examples
 - packaged CLI desktop-state smoke verification for display/window/app
   enumeration and cursor-position reads
@@ -566,13 +569,14 @@ The script builds the standalone Windows CLI in release mode and writes:
 .artifacts\windows\peekaboo-win11.zip.sha256
 ```
 
-The zip contains `peekaboo-win11.exe`, `LICENSE`, `BUILD_INFO.txt`, `README.md`,
-and `PACKAGE_MANIFEST.json`.
+The zip contains `peekaboo-win11.exe`, `LICENSE`, `BUILD_INFO.txt`,
+`README.md`, and `PACKAGE_MANIFEST.json`.
 
 The Windows 11 Platform workflow runs the same packaging and verification
 scripts after build and test. Verification expands the archive, validates the
 checksum and package manifest, confirms the manifest matches the archive
-contents, runs packaged `--help`, `platform-info`, display/window/app list
+contents, checks `BUILD_INFO.txt` against the manifest, runs packaged `--help`,
+`platform-info`, display/window/app list
 commands, validates that the packaged README includes current capture and UI
 Automation examples, runs `input position`, performs a no-op `input move` to
 the current cursor position, runs `automation status`, and a bounded

@@ -106,6 +106,9 @@ if ($manifest.minimumSystemVersion -ne "Windows 11") {
 if ($manifest.nativeBackend -ne "Win32") {
     throw "Package manifest returned unexpected native backend: $($manifest.nativeBackend)"
 }
+if ($manifest.configuration -ne "release") {
+    throw "Package manifest returned unexpected configuration: $($manifest.configuration)"
+}
 if ($manifest.executable -ne "peekaboo-win11.exe") {
     throw "Package manifest returned unexpected executable: $($manifest.executable)"
 }
@@ -114,6 +117,33 @@ if ([string]::IsNullOrWhiteSpace($manifest.commit)) {
 }
 if ([string]::IsNullOrWhiteSpace($manifest.builtAt)) {
     throw "Package manifest did not include a build timestamp."
+}
+
+$buildInfoPath = Join-Path $verifyPath "BUILD_INFO.txt"
+$buildInfoText = Get-Content -Raw -Path $buildInfoPath
+if (-not $buildInfoText.Contains("Peekaboo Windows 11 CLI")) {
+    throw "Package build info did not identify the Windows 11 CLI."
+}
+if (-not $buildInfoText.Contains("Configuration: $($manifest.configuration)")) {
+    throw "Package build info did not match manifest configuration: $($manifest.configuration)"
+}
+if (-not $buildInfoText.Contains("Built: $($manifest.builtAt)")) {
+    throw "Package build info did not match manifest build timestamp: $($manifest.builtAt)"
+}
+
+$buildCommitLine = @(($buildInfoText -split "\r?\n") |
+    Where-Object { $_.StartsWith("Commit: ") } |
+    Select-Object -First 1)
+if ($buildCommitLine.Count -ne 1) {
+    throw "Package build info did not include a commit line."
+}
+
+$buildCommit = $buildCommitLine[0].Substring("Commit: ".Length).Trim()
+if ([string]::IsNullOrWhiteSpace($buildCommit)) {
+    throw "Package build info commit was empty."
+}
+if ($manifest.commit -ne "unknown" -and -not $manifest.commit.StartsWith($buildCommit)) {
+    throw "Package build info commit $buildCommit did not match manifest commit $($manifest.commit)."
 }
 
 $manifestContents = @($manifest.contents)
