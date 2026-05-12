@@ -220,6 +220,26 @@ if ($null -eq $windowList.Envelope.PSObject.Properties["data"]) {
     throw "Packaged list windows did not include a data field. Output: $($windowList.Text)"
 }
 
+$visibleWindowList = Invoke-PackagedJsonCommand `
+    -Description "list windows" `
+    -Arguments @("list", "windows")
+if ($visibleWindowList.Envelope.ok -ne $true) {
+    throw "Packaged list visible windows did not return ok=true. Output: $($visibleWindowList.Text)"
+}
+
+$visibleWindows = @($visibleWindowList.Envelope.data)
+$captureWindow = $visibleWindows |
+    Where-Object {
+        $_.isVisible -eq $true -and
+        $_.isMinimized -ne $true -and
+        $_.bounds.width -gt 0 -and
+        $_.bounds.height -gt 0
+    } |
+    Select-Object -First 1
+if ($null -eq $captureWindow) {
+    throw "Packaged list windows did not return a visible non-minimized capture candidate."
+}
+
 $appList = Invoke-PackagedJsonCommand `
     -Description "list apps" `
     -Arguments @("list", "apps")
@@ -332,6 +352,52 @@ if ([int64] $areaEnvelope.data.byteCount -ne $areaCaptureSize) {
     throw "Packaged area byteCount $byteCount did not match file size $areaCaptureSize."
 }
 
+$windowCapturePath = Join-Path $verifyPath "window-smoke.bmp"
+$windowId = [string] $captureWindow.windowIdentifier
+Remove-Item $windowCapturePath -Force -ErrorAction SilentlyContinue
+$windowOutput = & $executablePath capture window --id $windowId --path $windowCapturePath 2>&1
+$windowExitCode = $LASTEXITCODE
+if ($windowExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe capture window exited with $windowExitCode. Output: $windowOutput"
+}
+
+$windowText = $windowOutput -join "`n"
+try {
+    $windowEnvelope = $windowText | ConvertFrom-Json
+} catch {
+    throw "Packaged capture window output was not valid JSON. Output: $windowText"
+}
+
+if ($windowEnvelope.ok -ne $true) {
+    throw "Packaged capture window did not return ok=true. Output: $windowText"
+}
+if ($windowEnvelope.data.format -ne "bmp") {
+    throw "Packaged capture window returned unexpected format: $($windowEnvelope.data.format)"
+}
+if (-not (@("gdiRegion", "printWindow") -contains $windowEnvelope.data.captureMethod)) {
+    $method = $windowEnvelope.data.captureMethod
+    throw "Packaged capture window returned unexpected capture method: $method"
+}
+if ($windowEnvelope.data.bounds.x -ne $captureWindow.bounds.x -or
+    $windowEnvelope.data.bounds.y -ne $captureWindow.bounds.y -or
+    $windowEnvelope.data.bounds.width -ne $captureWindow.bounds.width -or
+    $windowEnvelope.data.bounds.height -ne $captureWindow.bounds.height)
+{
+    throw "Packaged capture window returned unexpected bounds. Output: $windowText"
+}
+if (-not (Test-Path $windowCapturePath)) {
+    throw "Packaged capture window did not write $windowCapturePath."
+}
+
+$windowCaptureSize = (Get-Item $windowCapturePath).Length
+if ($windowCaptureSize -le 54) {
+    throw "Packaged capture window wrote an invalid BMP-sized file: $windowCaptureSize bytes."
+}
+if ([int64] $windowEnvelope.data.byteCount -ne $windowCaptureSize) {
+    $byteCount = $windowEnvelope.data.byteCount
+    throw "Packaged window byteCount $byteCount did not match file size $windowCaptureSize."
+}
+
 $automationOutput = & $executablePath automation status 2>&1
 $automationExitCode = $LASTEXITCODE
 if ($automationExitCode -ne 0) {
@@ -422,5 +488,6 @@ Write-Host "  Desktop state: displays, windows, apps"
 Write-Host "  Cursor position: readable"
 Write-Host "  Screen capture: $screenCapturePath"
 Write-Host "  Area capture: $areaCapturePath"
+Write-Host "  Window capture: $windowCapturePath"
 Write-Host "  UI Automation: available"
 Write-Host "  UI Automation snapshot: root"
