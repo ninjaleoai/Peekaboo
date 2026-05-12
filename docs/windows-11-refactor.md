@@ -180,6 +180,18 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   and preflight rejection
 - Dock/MultipleView-pattern UI Automation disabled-state action suppression and
   preflight rejection
+- line-delimited JSON-RPC MCP stdio serving through
+  `peekaboo-win11 mcp serve`
+- Windows MCP tool discovery for `list`, `image`, `see`, `observe`,
+  `snapshot`, `move`, `click`, `scroll`, `drag`, `hotkey`, `type`, `uia`,
+  `perform_action`, and `set_value`
+- Windows MCP `see`/`observe` snapshots that combine BMP capture and bounded
+  UI Automation trees in one agent-readable response
+- Windows MCP input actions backed by the same Win32 cursor, mouse, keyboard,
+  and typing adapter methods as the CLI
+- Windows MCP UIA actions backed by the same bounded UI Automation adapter
+  methods as the CLI for status, snapshot, invoke, focus, value setting,
+  toggle, expand, collapse, and select
 
 The `peekaboo-win11` executable now delegates its basic command parsing to
 `DesktopCommandRunner` in `PeekabooDesktop`. The Windows target owns native
@@ -229,6 +241,31 @@ ItemContainer-pattern, Spreadsheet-pattern, Grid-pattern,
 VirtualizedItem-pattern, ScrollItem-pattern, Toggle-pattern,
 ExpandCollapse-pattern, SelectionItem-pattern, and Transform-pattern UIA
 actions.
+
+`peekaboo-win11 mcp serve` starts a Windows-focused MCP server over stdio. It
+does not load the macOS `PeekabooAgentRuntime` package yet because that package
+still depends on macOS-only services and package platform settings. Instead,
+the Windows bridge exposes the first agent-usable desktop subset directly on
+top of `PeekabooDesktop` and `Win32DesktopAdapter`:
+
+- `list` for running applications, application windows, displays, and server
+  status
+- `image` for screen, display, area, foreground-window, app-window, and
+  window-ID BMP capture
+- `see` and `observe` for capture plus bounded UIA snapshots and an in-process
+  snapshot ID
+- `snapshot` for reading, listing, or clearing snapshots created by
+  `see`/`observe`
+- `move`, `click`, `scroll`, `drag`, `hotkey`, and `type` for input actions
+- `uia`, `perform_action`, and `set_value` for UIA status/snapshot/action
+  calls by bounded element index
+
+Unsupported macOS-only MCP/agent tools are explicit in the server instructions
+and `list server_status`: `agent`, `analyze`, `browser`, `clipboard`,
+`dialog`, `dock`, `menu`, `paste`, `permissions`, and `space`. Those require a
+future Windows service-provider layer rather than the current desktop-adapter
+subset.
+
 `automation focus --index <n>` calls UIA `SetFocus` for a bounded element and
 advertises availability only when UIA reports that the element is enabled and
 keyboard focusable.
@@ -690,6 +727,23 @@ swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation add-to-selection --scope foreground --index 0 --max-depth 2 --max-elements 64
 swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 `
   automation remove-from-selection --scope foreground --index 0 --max-depth 2 --max-elements 64
+```
+
+Serve the Windows MCP subset over stdio:
+
+```powershell
+swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 mcp serve
+```
+
+Minimal line-delimited JSON-RPC smoke:
+
+```powershell
+@(
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"manual","version":"1"}}}',
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list","arguments":{"item_type":"server_status"}}}'
+) -join "`n" | swift run --package-path Platforms/Windows/PeekabooWin11 peekaboo-win11 mcp serve
 ```
 
 Windows window captures first ask the owning window to render itself into a

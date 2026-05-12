@@ -69,7 +69,8 @@ $requiredReadmeSnippets = @(
     "input move --point",
     "automation status",
     "automation snapshot --scope foreground",
-    "automation element --scope root --index 0"
+    "automation element --scope root --index 0",
+    "mcp serve"
 )
 
 foreach ($snippet in $requiredReadmeSnippets) {
@@ -220,6 +221,51 @@ if (-not $helpText.Contains("capture screen --path")) {
 }
 if (-not $helpText.Contains("automation snapshot")) {
     throw "Packaged help output did not include the automation command surface."
+}
+if (-not $helpText.Contains("mcp serve")) {
+    throw "Packaged help output did not include the MCP command surface."
+}
+
+$mcpInput = @(
+    '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"verify-package","version":"1"}}}',
+    '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+    '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
+    '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list","arguments":{"item_type":"server_status"}}}'
+) -join "`n"
+
+$mcpOutput = $mcpInput | & $executablePath mcp serve 2>&1
+$mcpExitCode = $LASTEXITCODE
+if ($mcpExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe mcp serve exited with $mcpExitCode. Output: $mcpOutput"
+}
+
+$mcpLines = @($mcpOutput | Where-Object { $_ -match '^\s*\{' })
+if ($mcpLines.Count -lt 3) {
+    throw "Packaged mcp serve did not return initialize, tools/list, and tools/call responses. Output: $mcpOutput"
+}
+
+try {
+    $mcpInitialize = $mcpLines[0] | ConvertFrom-Json
+    $mcpToolList = $mcpLines[1] | ConvertFrom-Json
+    $mcpServerStatus = $mcpLines[2] | ConvertFrom-Json
+} catch {
+    throw "Packaged mcp serve output was not valid JSON-RPC. Output: $mcpOutput"
+}
+
+if ($mcpInitialize.result.serverInfo.name -ne "peekaboo-win11") {
+    throw "Packaged mcp initialize returned unexpected server name: $($mcpInitialize.result.serverInfo.name)"
+}
+
+$mcpToolNames = @($mcpToolList.result.tools | ForEach-Object { $_.name })
+foreach ($toolName in @("list", "image", "see", "snapshot", "click", "type", "uia", "perform_action", "set_value")) {
+    if (-not ($mcpToolNames -contains $toolName)) {
+        throw "Packaged mcp tools/list did not include expected tool '$toolName'."
+    }
+}
+
+if ($mcpServerStatus.result.isError -ne $false) {
+    $statusJson = $mcpServerStatus | ConvertTo-Json -Depth 8
+    throw "Packaged mcp list server_status returned an error: $statusJson"
 }
 
 $platformOutput = & $executablePath platform-info 2>&1

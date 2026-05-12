@@ -7,6 +7,7 @@ public enum DesktopCommandRunner {
         arguments: [String] = CommandLine.arguments,
         adapter: any DesktopAdapter,
         commandName: String = "peekaboo-desktop",
+        additionalCommands: [String] = [],
         stdout: OutputHandler = { print($0) },
         stderr: OutputHandler = { message in
             FileHandle.standardError.write(Data((message + "\n").utf8))
@@ -14,7 +15,7 @@ public enum DesktopCommandRunner {
     {
         let args = Array(arguments.dropFirst())
         guard let command = args.first else {
-            stdout(self.helpText(commandName: commandName, adapter: adapter))
+            stdout(self.helpText(commandName: commandName, adapter: adapter, additionalCommands: additionalCommands))
             return 0
         }
 
@@ -31,7 +32,7 @@ public enum DesktopCommandRunner {
             case "automation", "uia":
                 try self.runAutomation(args: Array(args.dropFirst()), adapter: adapter, stdout: stdout)
             case "help", "--help", "-h":
-                stdout(self.helpText(commandName: commandName, adapter: adapter))
+                stdout(self.helpText(commandName: commandName, adapter: adapter, additionalCommands: additionalCommands))
             default:
                 throw DesktopAdapterError.invalidArgument("Unknown command: \(command)")
             }
@@ -1847,8 +1848,15 @@ public enum DesktopCommandRunner {
         try DesktopJSON.encode(DesktopCommandEnvelope(ok: true, data: data, error: nil))
     }
 
-    private static func helpText(commandName: String, adapter: any DesktopAdapter) -> String {
+    private static func helpText(
+        commandName: String,
+        adapter: any DesktopAdapter,
+        additionalCommands: [String]) -> String
+    {
         let capturePath = self.capturePathExample(for: adapter.platformInfo())
+        let additional = additionalCommands.isEmpty
+            ? ""
+            : "\n" + additionalCommands.map { "  \($0)" }.joined(separator: "\n")
         return """
         \(commandName)
 
@@ -1938,6 +1946,7 @@ public enum DesktopCommandRunner {
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
           automation scroll-into-view --index <n>
             [--scope root|foreground|focused|cursor] [--max-depth <n>] [--max-elements <n>]
+        \(additional)
         """
     }
 

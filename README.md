@@ -29,6 +29,9 @@ and keyboard input, and bounded UI Automation snapshots/actions.
   modifier hotkeys, and focused text typing through Win32 input APIs.
 - Bounded UI Automation status, snapshots, element lookup, and common UIA
   pattern actions through the Windows UI Automation COM API.
+- A Windows MCP stdio bridge at `peekaboo-win11.exe mcp serve` with an
+  agent-usable desktop subset: `list`, `image`, `see`/`observe`, `snapshot`,
+  input actions, and UIA inspection/actions backed by the Windows adapter.
 - Shared neutral desktop contract in
   [`Core/PeekabooDesktop`](Core/PeekabooDesktop) so Windows and macOS adapters
   can use the same command model without hard-coding AppKit/CoreGraphics types.
@@ -82,6 +85,9 @@ and keyboard input, and bounded UI Automation snapshots/actions.
 .\peekaboo-win11.exe automation status
 .\peekaboo-win11.exe automation snapshot --scope foreground --max-depth 2 --max-elements 64
 .\peekaboo-win11.exe automation element --scope root --index 0 --max-depth 0 --max-elements 1
+
+# Serve the Windows MCP subset over stdio for MCP clients
+.\peekaboo-win11.exe mcp serve
 ```
 
 ## Shell completions
@@ -129,14 +135,19 @@ For the full Windows command list and current integration notes, see
 | `automation select` | `--index`, snapshot flags | Select a UIA SelectionItem-pattern element |
 | `automation add-to-selection` / `remove-from-selection` | `--index` | Adjust UIA selection membership |
 | `automation scroll-into-view` | `--index` | Ask UIA to scroll an element into view |
+| `mcp serve` | stdio JSON-RPC | Expose the Windows desktop subset to MCP clients |
 
 ## Models and providers
-- The Windows fork does not currently package the macOS natural-language agent
-  or MCP server.
-- AI provider configuration remains part of the upstream macOS application and
-  shared codebase, not the standalone `peekaboo-win11.exe` artifact.
-- The Windows 11 work is focused on the native desktop automation adapter and
-  command-runner seam.
+- The Windows fork now packages a first MCP stdio server in
+  `peekaboo-win11.exe mcp serve`.
+- The Windows MCP bridge exposes the desktop subset that is backed by the
+  Windows adapter today: list apps/windows/displays, capture images, observe
+  with UIA snapshots, basic input actions, UIA actions, and in-process
+  snapshots.
+- The macOS natural-language agent loop and AI provider-backed analysis tools
+  are still not packaged in the standalone Windows artifact. macOS-only tools
+  such as menu, dock, dialog, space, browser, clipboard, paste, permissions,
+  and provider-backed analysis are documented as unsupported by this bridge.
 
 ## Learn more
 - Windows refactor notes: [docs/windows-11-refactor.md](docs/windows-11-refactor.md)
