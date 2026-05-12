@@ -40,8 +40,8 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
   `platform-info`
 - packaged CLI desktop-state smoke verification for display/window/app
   enumeration and cursor-position reads
-- packaged CLI screen-capture smoke verification, including `gdiRegion`
-  capture-method metadata
+- packaged CLI screen-capture and area-capture smoke verification, including
+  `gdiRegion` capture-method metadata
 - packaged CLI UI Automation status smoke verification
 - packaged CLI bounded UI Automation snapshot smoke verification
 - native UI Automation availability probing through the Windows UI Automation
@@ -566,8 +566,8 @@ scripts after build and test. Verification expands the archive, validates the
 checksum and package manifest, confirms the manifest matches the archive
 contents, runs packaged `--help`, `platform-info`, display/window/app list
 commands, `input position`, `automation status`, and a bounded
-`automation snapshot`, then performs a packaged screen-capture smoke test
-before uploading the zip and checksum as a workflow artifact named
+`automation snapshot`, then performs packaged screen-capture and area-capture
+smoke tests before uploading the zip and checksum as a workflow artifact named
 `peekaboo-win11-<commit-sha>`.
 
 The workflow pins `runs-on: windows-2025-vs2026` so Windows validation stays on

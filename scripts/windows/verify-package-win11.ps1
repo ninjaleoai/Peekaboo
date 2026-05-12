@@ -282,6 +282,56 @@ if ([int64] $captureEnvelope.data.byteCount -ne $screenCaptureSize) {
     throw "Packaged capture byteCount $byteCount did not match file size $screenCaptureSize."
 }
 
+$areaCapturePath = Join-Path $verifyPath "area-smoke.bmp"
+$areaX = [int] $displays[0].bounds.x
+$areaY = [int] $displays[0].bounds.y
+$areaWidth = [Math]::Min(10, [int] $displays[0].bounds.width)
+$areaHeight = [Math]::Min(10, [int] $displays[0].bounds.height)
+$areaRect = "$areaX,$areaY,$areaWidth,$areaHeight"
+Remove-Item $areaCapturePath -Force -ErrorAction SilentlyContinue
+$areaOutput = & $executablePath capture area --rect $areaRect --path $areaCapturePath 2>&1
+$areaExitCode = $LASTEXITCODE
+if ($areaExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe capture area exited with $areaExitCode. Output: $areaOutput"
+}
+
+$areaText = $areaOutput -join "`n"
+try {
+    $areaEnvelope = $areaText | ConvertFrom-Json
+} catch {
+    throw "Packaged capture area output was not valid JSON. Output: $areaText"
+}
+
+if ($areaEnvelope.ok -ne $true) {
+    throw "Packaged capture area did not return ok=true. Output: $areaText"
+}
+if ($areaEnvelope.data.format -ne "bmp") {
+    throw "Packaged capture area returned unexpected format: $($areaEnvelope.data.format)"
+}
+if ($areaEnvelope.data.captureMethod -ne "gdiRegion") {
+    $method = $areaEnvelope.data.captureMethod
+    throw "Packaged capture area returned unexpected capture method: $method"
+}
+if ($areaEnvelope.data.bounds.x -ne $areaX -or
+    $areaEnvelope.data.bounds.y -ne $areaY -or
+    $areaEnvelope.data.bounds.width -ne $areaWidth -or
+    $areaEnvelope.data.bounds.height -ne $areaHeight)
+{
+    throw "Packaged capture area returned unexpected bounds. Output: $areaText"
+}
+if (-not (Test-Path $areaCapturePath)) {
+    throw "Packaged capture area did not write $areaCapturePath."
+}
+
+$areaCaptureSize = (Get-Item $areaCapturePath).Length
+if ($areaCaptureSize -le 54) {
+    throw "Packaged capture area wrote an invalid BMP-sized file: $areaCaptureSize bytes."
+}
+if ([int64] $areaEnvelope.data.byteCount -ne $areaCaptureSize) {
+    $byteCount = $areaEnvelope.data.byteCount
+    throw "Packaged area byteCount $byteCount did not match file size $areaCaptureSize."
+}
+
 $automationOutput = & $executablePath automation status 2>&1
 $automationExitCode = $LASTEXITCODE
 if ($automationExitCode -ne 0) {
@@ -371,5 +421,6 @@ Write-Host "  Manifest: $manifestPath"
 Write-Host "  Desktop state: displays, windows, apps"
 Write-Host "  Cursor position: readable"
 Write-Host "  Screen capture: $screenCapturePath"
+Write-Host "  Area capture: $areaCapturePath"
 Write-Host "  UI Automation: available"
 Write-Host "  UI Automation snapshot: root"
