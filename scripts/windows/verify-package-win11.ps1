@@ -117,7 +117,46 @@ if (-not ($platformCapabilities -contains "inspectUIAutomation")) {
     throw "Packaged platform-info did not advertise UI Automation inspection."
 }
 
+$screenCapturePath = Join-Path $verifyPath "screen-smoke.bmp"
+Remove-Item $screenCapturePath -Force -ErrorAction SilentlyContinue
+$captureOutput = & $executablePath capture screen --path $screenCapturePath 2>&1
+$captureExitCode = $LASTEXITCODE
+if ($captureExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe capture screen exited with $captureExitCode. Output: $captureOutput"
+}
+
+$captureText = $captureOutput -join "`n"
+try {
+    $captureEnvelope = $captureText | ConvertFrom-Json
+} catch {
+    throw "Packaged capture screen output was not valid JSON. Output: $captureText"
+}
+
+if ($captureEnvelope.ok -ne $true) {
+    throw "Packaged capture screen did not return ok=true. Output: $captureText"
+}
+if ($captureEnvelope.data.format -ne "bmp") {
+    throw "Packaged capture screen returned unexpected format: $($captureEnvelope.data.format)"
+}
+if ($captureEnvelope.data.captureMethod -ne "gdiRegion") {
+    $method = $captureEnvelope.data.captureMethod
+    throw "Packaged capture screen returned unexpected capture method: $method"
+}
+if (-not (Test-Path $screenCapturePath)) {
+    throw "Packaged capture screen did not write $screenCapturePath."
+}
+
+$screenCaptureSize = (Get-Item $screenCapturePath).Length
+if ($screenCaptureSize -le 54) {
+    throw "Packaged capture screen wrote an invalid BMP-sized file: $screenCaptureSize bytes."
+}
+if ([int64] $captureEnvelope.data.byteCount -ne $screenCaptureSize) {
+    $byteCount = $captureEnvelope.data.byteCount
+    throw "Packaged capture byteCount $byteCount did not match file size $screenCaptureSize."
+}
+
 Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
 Write-Host "  Extracted: $verifyPath"
+Write-Host "  Screen capture: $screenCapturePath"
