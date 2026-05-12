@@ -110,7 +110,10 @@ native Windows 11 Swift package.
 .\peekaboo-win11.exe platform-info
 .\peekaboo-win11.exe list displays
 .\peekaboo-win11.exe capture screen --path .\screen.bmp
+.\peekaboo-win11.exe capture frontmost --path .\frontmost.bmp
+.\peekaboo-win11.exe automation status
 .\peekaboo-win11.exe automation snapshot --scope foreground --max-depth 2 --max-elements 64
+.\peekaboo-win11.exe automation element --scope root --index 0 --max-depth 0 --max-elements 1
 ```
 
 See `docs/windows-11-refactor.md` in the source checkout for the full command

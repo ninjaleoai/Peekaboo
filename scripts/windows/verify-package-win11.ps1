@@ -61,6 +61,22 @@ foreach ($fileName in $requiredFiles) {
     }
 }
 
+$readmePath = Join-Path $verifyPath "README.md"
+$readmeText = Get-Content -Raw -Path $readmePath
+$requiredReadmeSnippets = @(
+    "peekaboo-win11.exe platform-info",
+    "capture frontmost --path",
+    "automation status",
+    "automation snapshot --scope foreground",
+    "automation element --scope root --index 0"
+)
+
+foreach ($snippet in $requiredReadmeSnippets) {
+    if (-not $readmeText.Contains($snippet)) {
+        throw "Packaged README did not include expected command example: $snippet"
+    }
+}
+
 $executablePath = Join-Path $verifyPath "peekaboo-win11.exe"
 if ((Get-Item $executablePath).Length -le 0) {
     throw "Packaged peekaboo-win11.exe is empty."

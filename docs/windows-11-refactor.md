@@ -38,6 +38,7 @@ publishes Windows-named type aliases for Windows 11 automation primitives:
 - machine-readable `PACKAGE_MANIFEST.json` metadata in the packaged zip
 - packaged CLI verification for checksum, archive contents, `--help`, and
   `platform-info`
+- packaged README verification for current capture and UI Automation examples
 - packaged CLI desktop-state smoke verification for display/window/app
   enumeration and cursor-position reads
 - packaged CLI screen-capture and area-capture smoke verification, including
@@ -570,7 +571,8 @@ The Windows 11 Platform workflow runs the same packaging and verification
 scripts after build and test. Verification expands the archive, validates the
 checksum and package manifest, confirms the manifest matches the archive
 contents, runs packaged `--help`, `platform-info`, display/window/app list
-commands, `input position`, `automation status`, and a bounded
+commands, validates that the packaged README includes current capture and UI
+Automation examples, runs `input position`, `automation status`, and a bounded
 `automation snapshot` plus bounded `automation element` lookup, then performs
 packaged screen-capture, area-capture, window-capture, and frontmost-capture
 smoke tests before uploading the zip and checksum as a workflow artifact named
