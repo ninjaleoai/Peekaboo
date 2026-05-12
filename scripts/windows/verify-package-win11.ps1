@@ -155,8 +155,38 @@ if ([int64] $captureEnvelope.data.byteCount -ne $screenCaptureSize) {
     throw "Packaged capture byteCount $byteCount did not match file size $screenCaptureSize."
 }
 
+$automationOutput = & $executablePath automation status 2>&1
+$automationExitCode = $LASTEXITCODE
+if ($automationExitCode -ne 0) {
+    throw "Packaged peekaboo-win11.exe automation status exited with $automationExitCode. Output: $automationOutput"
+}
+
+$automationText = $automationOutput -join "`n"
+try {
+    $automationEnvelope = $automationText | ConvertFrom-Json
+} catch {
+    throw "Packaged automation status output was not valid JSON. Output: $automationText"
+}
+
+if ($automationEnvelope.ok -ne $true) {
+    throw "Packaged automation status did not return ok=true. Output: $automationText"
+}
+if ($automationEnvelope.data.nativeBackend -ne "UIAutomation") {
+    $backend = $automationEnvelope.data.nativeBackend
+    throw "Packaged automation status returned unexpected native backend: $backend"
+}
+if ($automationEnvelope.data.isAvailable -ne $true) {
+    $errorMessage = $automationEnvelope.data.error
+    throw "Packaged automation status did not report UIA availability. Error: $errorMessage"
+}
+if ($automationEnvelope.data.rootElementAvailable -ne $true) {
+    $errorMessage = $automationEnvelope.data.error
+    throw "Packaged automation status did not report root availability. Error: $errorMessage"
+}
+
 Write-Host "Verified peekaboo-win11 package:"
 Write-Host "  Archive: $zipPath"
 Write-Host "  Checksum: $checksumPath"
 Write-Host "  Extracted: $verifyPath"
 Write-Host "  Screen capture: $screenCapturePath"
+Write-Host "  UI Automation: available"
