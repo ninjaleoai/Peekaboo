@@ -100,10 +100,22 @@ if ([string]::IsNullOrWhiteSpace($manifest.builtAt)) {
 }
 
 $manifestContents = @($manifest.contents)
-foreach ($fileName in $requiredFiles) {
-    if (-not ($manifestContents -contains $fileName)) {
-        throw "Package manifest contents did not include $fileName."
+$archiveFiles = @(Get-ChildItem -Path $verifyPath -File | ForEach-Object { $_.Name })
+foreach ($fileName in $manifestContents) {
+    $filePath = Join-Path $verifyPath $fileName
+    if (-not (Test-Path $filePath)) {
+        throw "Package manifest contents listed missing file $fileName."
     }
+}
+foreach ($fileName in $archiveFiles) {
+    if (-not ($manifestContents -contains $fileName)) {
+        throw "Package manifest contents did not include archive file $fileName."
+    }
+}
+if ($manifestContents.Count -ne $archiveFiles.Count) {
+    $manifestCount = $manifestContents.Count
+    $archiveCount = $archiveFiles.Count
+    throw "Package manifest listed $manifestCount files but archive contained $archiveCount files."
 }
 
 function Invoke-PackagedJsonCommand {

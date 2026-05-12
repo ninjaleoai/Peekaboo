@@ -563,10 +563,11 @@ and `PACKAGE_MANIFEST.json`.
 
 The Windows 11 Platform workflow runs the same packaging and verification
 scripts after build and test. Verification expands the archive, validates the
-checksum and package manifest, runs packaged `--help`, `platform-info`,
-display/window/app list commands, `input position`, `automation status`, and a
-bounded `automation snapshot`, then performs a packaged screen-capture smoke
-test before uploading the zip and checksum as a workflow artifact named
+checksum and package manifest, confirms the manifest matches the archive
+contents, runs packaged `--help`, `platform-info`, display/window/app list
+commands, `input position`, `automation status`, and a bounded
+`automation snapshot`, then performs a packaged screen-capture smoke test
+before uploading the zip and checksum as a workflow artifact named
 `peekaboo-win11-<commit-sha>`.
 
 The workflow pins `runs-on: windows-2025-vs2026` so Windows validation stays on
