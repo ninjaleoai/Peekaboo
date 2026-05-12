@@ -21,7 +21,7 @@ public enum Win11CLI {
                 stderr: stderr)
         }
 
-        DesktopCommandRunner.run(
+        return DesktopCommandRunner.run(
             arguments: arguments,
             adapter: adapter,
             commandName: "peekaboo-win11",
