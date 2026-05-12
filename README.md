@@ -10,9 +10,11 @@
 ![Artifact zip](https://img.shields.io/badge/Artifact-peekaboo--win11.zip-2ea44f?style=flat-square)
 ![Untested Codex goal](https://img.shields.io/badge/Status-Untested_Codex_goal-b28f62?style=flat-square)
 
-Untested: this was a test of `/goal` using Codex. It took 1d 7h 55m, and the
-original prompt was: `fork this project and refactor it for windows 11
-https://github.com/openclaw/Peekaboo`.
+Untested: this was a test of `/goal` using Codex. The first Windows 11 refactor
+pass took 1d 7h 55m, and the original prompt was: `fork this project and
+refactor it for windows 11 https://github.com/openclaw/Peekaboo`. A second
+`/goal` pass connected Peekaboo's original agent/MCP product layer to the
+Windows 11 fork and took 46m 17s to finish.
 
 Peekaboo brings screen capture and GUI automation to a native Windows 11 fork.
 This branch adds a standalone Swift package, `peekaboo-win11.exe`, with a
