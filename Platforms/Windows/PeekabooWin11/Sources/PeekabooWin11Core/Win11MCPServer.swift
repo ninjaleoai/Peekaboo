@@ -589,7 +589,8 @@ public final class Win11MCPServer {
             range: 0...10_000,
             label: "hold_ms")
         let result = try self.desktop.hotkey(keys: keys, holdDurationMilliseconds: hold)
-        return try self.toolResult(message: "Sent hotkey \(keys.joined(separator: \"+\")).", encodableContent: result)
+        let displayedKeys = keys.joined(separator: "+")
+        return try self.toolResult(message: "Sent hotkey \(displayedKeys).", encodableContent: result)
     }
 
     private func executeType(_ arguments: [String: Win11MCPJSONValue]) throws -> Win11MCPJSONValue {
